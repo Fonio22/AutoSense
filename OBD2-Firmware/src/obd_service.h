@@ -30,6 +30,33 @@ struct ObdVehicleInfo
     uint32_t lastDtcMs{0};
 };
 
+enum ObdCompactField : uint16_t
+{
+    OBD_SAMPLE_RPM = 1U << 0,
+    OBD_SAMPLE_SPEED = 1U << 1,
+    OBD_SAMPLE_COOLANT = 1U << 2,
+    OBD_SAMPLE_THROTTLE = 1U << 3,
+    OBD_SAMPLE_FUEL_LEVEL = 1U << 4,
+    OBD_SAMPLE_ENGINE_LOAD = 1U << 5,
+    OBD_SAMPLE_MAP = 1U << 6,
+    OBD_SAMPLE_MAF = 1U << 7,
+    OBD_SAMPLE_ECU_VOLTAGE = 1U << 8,
+};
+
+struct ObdCompactSample
+{
+    uint16_t validMask{0};
+    uint16_t rpm{0};
+    uint8_t speedKph{0};
+    int16_t coolantC{0};
+    uint8_t throttlePct{0};
+    uint8_t fuelLevelPct{0};
+    uint8_t engineLoadPct{0};
+    uint8_t mapKpa{0};
+    uint16_t mafCentiGps{0};
+    uint16_t ecuMv{0};
+};
+
 class ObdService
 {
 public:
@@ -51,6 +78,7 @@ public:
     uint32_t bgQueryPerSec() const;
 
     uint16_t collectMetrics(ObdMetric *out, uint16_t maxOut) const;
+    bool collectCompactSample(uint32_t nowMs, uint32_t maxAgeMs, ObdCompactSample *out) const;
     const ObdVehicleInfo &vehicleInfo() const;
 
     void clearWindowCounters();
@@ -122,6 +150,7 @@ private:
                        bool error,
                        uint32_t nowMs);
     void setRawMetric(uint8_t pid, const uint8_t *data, uint8_t dataLen, uint32_t nowMs);
+    void markCompactField(uint8_t fieldIndex, uint32_t nowMs);
 
     void parseMode09Support(const uint8_t *data, uint8_t dataLen);
     void updateMode09Ascii(char *target,
@@ -188,6 +217,8 @@ private:
 
     ObdMetric metrics_[256];
     ObdVehicleInfo vehicle_{};
+    ObdCompactSample compactSample_{};
+    uint32_t compactLastUpdateMs_[9] = {0};
 
     // Indexed by frame number (1..15) for simple ISO-TP style chunk assembly.
     uint8_t vinChunkLen_[16] = {0};

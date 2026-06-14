@@ -12,6 +12,8 @@
 #include "config.example.h"
 #endif
 
+#include "app_config.h"
+#include "obd_binary_logger.h"
 #include "obd_dashboard.h"
 #include "obd_service.h"
 
@@ -48,9 +50,12 @@ struct CanConfig
 
 ObdService OBD;
 ObdDashboard DASH;
+ObdBinaryLogger LOGGER;
+AppRuntimeConfig RUNTIME_CONFIG;
 
 bool wifi_ok = false;
 bool can_ok = false;
+bool config_loaded = false;
 
 CanConfig active_can = {CAN_RX_PIN, CAN_TX_PIN, APP_CAN_DEFAULT_BAUD};
 
@@ -207,12 +212,12 @@ void refreshSecondStats(uint32_t nowMs)
 
 void emitSerialDiag(uint32_t nowMs)
 {
-    if (!SERIAL_DIAG)
+    if (!SERIAL_DIAG || RUNTIME_CONFIG.serialDiagIntervalMs == 0)
     {
         return;
     }
 
-    if (nowMs - last_serial_diag_ms < 2000)
+    if (nowMs - last_serial_diag_ms < RUNTIME_CONFIG.serialDiagIntervalMs)
     {
         return;
     }
@@ -222,8 +227,9 @@ void emitSerialDiag(uint32_t nowMs)
     IPAddress mask = WiFi.subnetMask();
     IPAddress gw = WiFi.gatewayIP();
     IPAddress target = DASH.target();
+    const ObdLogStats &logStats = LOGGER.stats();
 
-    Serial.printf("[diag] wifi=%s ip=%u.%u.%u.%u mask=%u.%u.%u.%u gw=%u.%u.%u.%u target=%u.%u.%u.%u udp_tx=%lu udp_err=%lu can=%s route=%s key=%u bg=%u query=%u sup=%u key_q/s=%lu bg_q/s=%lu\n",
+    Serial.printf("[diag] wifi=%s ip=%u.%u.%u.%u mask=%u.%u.%u.%u gw=%u.%u.%u.%u target=%u.%u.%u.%u udp_tx=%lu udp_err=%lu can=%s route=%s rsp/s=%lu decoded/s=%lu key=%u bg=%u query=%u sup=%u key_q/s=%lu bg_q/s=%lu log=%s log_seq=%lu log_records=%lu/%lu log_err=%lu cfg=%s\n",
                   wifi_ok ? "UP" : "DOWN",
                   ip[0], ip[1], ip[2], ip[3],
                   mask[0], mask[1], mask[2], mask[3],
@@ -233,12 +239,20 @@ void emitSerialDiag(uint32_t nowMs)
                   (unsigned long)DASH.txErrors(),
                   can_ok ? "OK" : "DOWN",
                   OBD.mode01RouteName(),
+                  (unsigned long)stats_rsp_fps,
+                  (unsigned long)stats_dec_fps,
                   (unsigned int)OBD.keyPidCount(),
                   (unsigned int)OBD.bgPidCount(),
                   (unsigned int)OBD.queryPidCount(),
                   (unsigned int)OBD.supportedPidCount(),
                   (unsigned long)stats_key_qps,
-                  (unsigned long)stats_bg_qps);
+                  (unsigned long)stats_bg_qps,
+                  logStats.ready ? (logStats.enabled ? "ON" : "OFF") : "DOWN",
+                  (unsigned long)logStats.lastSequence,
+                  (unsigned long)logStats.recordsWritten,
+                  (unsigned long)logStats.capacityRecords,
+                  (unsigned long)(logStats.writeErrors + logStats.eraseErrors),
+                  config_loaded ? "ini" : "defaults");
 }
 } // namespace
 
@@ -257,6 +271,18 @@ void appSetup()
     digitalWrite(CAN_LBK_PIN, LOW);
 
     OBD.begin();
+    config_loaded = loadAppRuntimeConfig(RUNTIME_CONFIG);
+    DASH.setIntervalMs(RUNTIME_CONFIG.dashboardIntervalMs);
+    LOGGER.configure(RUNTIME_CONFIG.loggingEnabled, RUNTIME_CONFIG.loggingIntervalSeconds);
+    bool logReady = LOGGER.begin();
+
+    Serial.printf("[boot] config=%s log=%s log_capacity=%lu interval=%lus dashboard=%s/%lums\n",
+                  config_loaded ? "ini" : "defaults",
+                  logReady ? "ready" : "down",
+                  (unsigned long)LOGGER.stats().capacityRecords,
+                  (unsigned long)LOGGER.stats().intervalSeconds,
+                  RUNTIME_CONFIG.dashboardEnabled ? "on" : "off",
+                  (unsigned long)RUNTIME_CONFIG.dashboardIntervalMs);
 
     connectWifiWithTimeout();
 
@@ -275,6 +301,10 @@ void appLoop()
     processCanFrames(nowMs);
     refreshSecondStats(nowMs);
 
+    ObdCompactSample compactSample{};
+    OBD.collectCompactSample(nowMs, RUNTIME_CONFIG.loggingMaxSampleAgeSeconds * 1000UL, &compactSample);
+    LOGGER.tick(nowMs, compactSample);
+
     ObdDashboardState dashState{};
     dashState.wifiUp = wifi_ok;
     dashState.canOk = can_ok;
@@ -290,9 +320,20 @@ void appLoop()
     dashState.bgQueryPerSec = stats_bg_qps;
     dashState.uptimeMs = nowMs;
     dashState.rssi = WiFi.RSSI();
+    const ObdLogStats &logStats = LOGGER.stats();
+    dashState.logReady = logStats.ready;
+    dashState.logEnabled = logStats.enabled;
+    dashState.logSequence = logStats.lastSequence;
+    dashState.logRecords = logStats.recordsWritten;
+    dashState.logCapacity = logStats.capacityRecords;
+    dashState.logErrors = logStats.writeErrors + logStats.eraseErrors;
+    dashState.logIntervalSeconds = logStats.intervalSeconds;
     snprintf(dashState.mode01Route, sizeof(dashState.mode01Route), "%s", OBD.mode01RouteName());
 
-    DASH.tick(nowMs, dashState, OBD, OBD.vehicleInfo());
+    if (RUNTIME_CONFIG.dashboardEnabled)
+    {
+        DASH.tick(nowMs, dashState, OBD, OBD.vehicleInfo());
+    }
     emitSerialDiag(nowMs);
 
     delay(1);

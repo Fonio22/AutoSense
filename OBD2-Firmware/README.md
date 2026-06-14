@@ -1,55 +1,58 @@
-# OBD-Firmware
+# OBD2-Firmware
 
-Firmware para ESP32-S3 que consulta datos OBD2 por CAN y envia un dashboard ANSI por UDP para verlo en una terminal de la computadora.
+Firmware para ESP32-S3 que consulta datos OBD2 por CAN, muestra un dashboard ANSI por UDP y guarda un historial binario compacto en la flash interna.
 
-Este proyecto no depende de la app Expo. El flujo actual es:
+Flujo actual:
 
 ```text
 Simulador OBD2 -> CAN -> ESP32-S3 -> WiFi UDP :3333 -> terminal en la Mac
+                                      -> flash interna -> log binario circular
 ```
 
 ## Que hace
 
 - Inicializa WiFi y CAN en el ESP32-S3.
 - Consulta PIDs OBD2 importantes en tiempo real.
-- Decodifica metricas como RPM, velocidad, temperatura, throttle, MAF, MAP, voltaje ECU, DTCs y datos Mode 09.
-- Renderiza una pantalla completa de terminal usando secuencias ANSI.
-- Envia el dashboard por UDP cada ~200 ms.
-- Usa broadcast UDP por defecto porque fue lo mas estable con la Mac y Ghostty.
+- Decodifica metricas como RPM, velocidad, temperatura, throttle, combustible, MAF, MAP, voltaje ECU, DTCs y Mode 09.
+- Envia un dashboard por UDP, configurable desde `data/config.ini`.
+- Guarda una muestra binaria compacta cada N segundos, tambien configurable.
+- Usa una particion raw circular para guardar alrededor de un mes a 10 segundos por muestra.
 
-## Hardware probado
+## Optimizacion de almacenamiento
 
-- Board PlatformIO: `esp32-s3-devkitm-1`
-- Framework: Arduino
-- CAN transceiver: SN65HVD233 o compatible
-- Pines CAN actuales:
-  - RX: `GPIO12`
-  - TX: `GPIO13`
-  - LBK/loopback transceiver: `GPIO14` en LOW
-- Puerto dashboard UDP: `3333`
-- Puerto local UDP del ESP32: `3334`
+El log no usa JSON, CSV ni texto dentro del ESP32. Cada registro mide exactamente 24 bytes y se escribe directo en una particion raw llamada `obdlog`.
 
-## Estructura del proyecto
+Formato v1 por muestra:
 
-```text
-platformio.ini
-src/
-  app.cpp              # WiFi, CAN, scheduler principal y envio dashboard
-  app.h
-  config.example.h    # plantilla de configuracion local
-  main.cpp
-  obd_dashboard.cpp   # renderer ANSI y envio UDP
-  obd_dashboard.h
-  obd_service.cpp     # consultas y decodificacion OBD2
-  obd_service.h
-tools/
-  udp_terminal_client.py
-README.md
-```
+- Magic `AS`
+- Version
+- `valid_mask`
+- Secuencia
+- `uptime_seconds`
+- RPM
+- Velocidad
+- Coolant
+- Throttle
+- Fuel level
+- Engine load
+- MAP
+- MAF
+- ECU voltage
+- CRC8
 
-## Configuracion local
+Retencion aproximada con la particion actual:
 
-La configuracion privada no se sube a GitHub. Antes de flashear, crea `src/config.h` desde la plantilla:
+| Intervalo | Retencion |
+| --- | ---: |
+| 5 s | ~15.9 dias |
+| 10 s | ~31.8 dias |
+| 30 s | ~95.4 dias |
+
+La particion usa sectores de 4096 bytes, 170 registros por sector y 274,720 registros utiles. El logger recupera la siguiente posicion escaneando la secuencia al arrancar, asi evita escribir metadata extra en flash.
+
+## Configuracion
+
+Las credenciales WiFi siguen en `src/config.h`, que no se sube a GitHub:
 
 ```bash
 cp src/config.example.h src/config.h
@@ -65,57 +68,64 @@ Edita `src/config.h`:
 #define OBD_DASH_USE_BROADCAST true
 ```
 
-Notas:
-
-- `OBD_DASH_USE_BROADCAST true` envia a la red local completa y fue lo que funciono mejor.
-- Si quieres enviar solo a una IP fija, pon `OBD_DASH_USE_BROADCAST false` y ajusta `OBD_DASH_HOST_FIXED_OCTETS`.
-- `src/config.h` esta ignorado por Git para no publicar credenciales.
-
-## Instalar dependencias
-
-Instala PlatformIO CLI si no lo tienes:
-
-```bash
-python3 -m pip install platformio
-```
-
-Las librerias CAN se instalan desde `platformio.ini`:
+Los parametros operativos estan en `data/config.ini`:
 
 ```ini
-collin80/can_common
-https://github.com/collin80/esp32_can.git
+[logging]
+enabled=true
+interval_seconds=10
+max_sample_age_seconds=15
+
+[dashboard]
+enabled=true
+interval_ms=200
+
+[serial]
+diag_interval_ms=2000
 ```
 
-## Compilar
+Sube el `config.ini` al LittleFS:
+
+```bash
+pio run -t uploadfs
+```
+
+Con puerto explicito:
+
+```bash
+pio run -t uploadfs -e esp32-s3-devkitm-1 --upload-port /dev/cu.usbmodem1101
+```
+
+## Compilar y flashear
 
 Desde esta carpeta:
 
 ```bash
-cd OBD-Firmware
 pio run
-```
-
-## Flashear el ESP32
-
-Con el ESP32 conectado por USB:
-
-```bash
 pio run -t upload
 ```
 
-Para ver diagnostico serial:
+Con puerto explicito:
 
 ```bash
-pio device monitor -b 115200
+pio run -t upload -e esp32-s3-devkitm-1 --upload-port /dev/cu.usbmodem1101
 ```
 
-En el monitor serial debes ver lineas parecidas a:
+Ver diagnostico serial:
+
+```bash
+pio device monitor -p /dev/cu.usbmodem1101 -b 115200
+```
+
+Linea esperada:
 
 ```text
-[diag] wifi=UP ... target=192.168.31.255 udp_tx=123 udp_err=0 can=OK route=7DF ...
+[diag] wifi=UP ... can=OK ... rsp/s=... decoded/s=... log=ON log_seq=...
 ```
 
-## Ver el dashboard en terminal
+`log_seq` debe subir cada `logging.interval_seconds` si hay datos OBD frescos.
+
+## Ver dashboard UDP
 
 Recomendado:
 
@@ -123,44 +133,101 @@ Recomendado:
 python3 tools/udp_terminal_client.py --port 3333
 ```
 
-Tambien puede funcionar con `nc`, pero en esta Mac/Ghostty el cliente Python fue mas estable:
+En esta Mac tambien puedes usar el Python del sistema si tu `python3` del PATH no muestra salida:
+
+```bash
+/usr/bin/python3 tools/udp_terminal_client.py --port 3333
+```
+
+Tambien puede funcionar:
 
 ```bash
 nc -luk 3333
 ```
 
-Cuando funciona, la terminal se limpia y redibuja en vivo cada ~200 ms.
+## Exportar el log
+
+Exporta la particion raw a CSV usando el puerto serial:
+
+```bash
+python3 tools/dump_obd_log.py --port /dev/cu.usbmodem1101 --out output/obdlog.csv
+```
+
+Equivalente con el Python del sistema:
+
+```bash
+/usr/bin/python3 tools/dump_obd_log.py --port /dev/cu.usbmodem1101 --out output/obdlog.csv
+```
+
+Exportar solo las ultimas muestras validas:
+
+```bash
+python3 tools/dump_obd_log.py --port /dev/cu.usbmodem1101 --out output/obdlog.csv --limit 256
+```
+
+Guardar tambien el binario crudo:
+
+```bash
+python3 tools/dump_obd_log.py --port /dev/cu.usbmodem1101 --out output/obdlog.csv --keep-raw output/obdlog.bin
+```
+
+## Hardware probado
+
+- Board PlatformIO: `esp32-s3-devkitm-1`
+- Framework: Arduino
+- Flash: 8 MB
+- CAN transceiver: SN65HVD233 o compatible
+- Pines CAN:
+  - RX: `GPIO12`
+  - TX: `GPIO13`
+  - LBK/loopback transceiver: `GPIO14` en LOW
+- Puerto dashboard UDP: `3333`
+- Puerto local UDP del ESP32: `3334`
+
+## Estructura relevante
+
+```text
+platformio.ini
+partitions.csv
+data/config.ini
+src/
+  app.cpp
+  app_config.cpp
+  config.example.h
+  main.cpp
+  obd_binary_logger.cpp
+  obd_dashboard.cpp
+  obd_service.cpp
+tools/
+  dump_obd_log.py
+  udp_terminal_client.py
+```
 
 ## Troubleshooting
 
-Si no aparece nada:
+Si no aparece dashboard:
 
 - Confirma que la Mac y el ESP32 estan en la misma red WiFi.
-- Usa el cliente Python: `python3 tools/udp_terminal_client.py --port 3333`.
-- Revisa el monitor serial y confirma `wifi=UP`, `udp_tx` subiendo y `udp_err=0`.
-- Si `udp_err` sube, revisa firewall/red o usa broadcast (`OBD_DASH_USE_BROADCAST true`).
+- Usa `python3 tools/udp_terminal_client.py --port 3333`.
+- Revisa serial y confirma `wifi=UP`, `udp_tx` subiendo y `udp_err=0`.
 
-Si el dashboard aparece pero los valores no cambian:
+Si no hay datos OBD:
 
-- Confirma que `can=UP`.
-- Confirma que `rsp/s` y `decoded/s` son mayores que `0`.
-- Si `rsp/s=0`, el ESP32 no esta recibiendo respuestas OBD del simulador.
-- Si `rsp/s` sube pero un PID no cambia, revisa si ese PID esta siendo actualizado por el simulador.
+- Confirma `can=OK`.
+- Confirma `rsp/s > 0` y `decoded/s > 0`.
+- Si `rsp/s=0`, el ESP32 no esta recibiendo respuestas del simulador.
 
-Si cambias de WiFi o de computadora:
+Si no se guardan logs:
 
-- Actualiza `src/config.h`.
-- Si usas IP fija, cambia `OBD_DASH_HOST_FIXED_OCTETS`.
-- Si usas broadcast, normalmente no hay que cambiar IP.
+- Confirma `log=ON`.
+- Confirma que `decoded/s > 0`.
+- Revisa que `max_sample_age_seconds` no sea menor al tiempo real entre respuestas OBD.
+- `log_seq` solo sube cuando hay al menos una metrica compacta fresca.
 
 ## Archivos que no se suben
-
-Estos se ignoran por Git:
 
 - `.pio/`
 - `src/config.h`
 - `sdkconfig.*`
 - `output/`
-- logs y cache de Python
-
-Esto mantiene el repo limpio para GitHub y evita subir credenciales o archivos generados.
+- logs y caches locales

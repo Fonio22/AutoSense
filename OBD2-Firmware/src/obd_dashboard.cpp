@@ -13,7 +13,6 @@ constexpr const char *C_YEL = "\x1b[33m";
 constexpr const char *C_RED = "\x1b[31m";
 constexpr const char *C_GRY = "\x1b[90m";
 
-constexpr uint32_t kFrameIntervalMs = 200;
 constexpr uint32_t kPageRotateMs = 2000;
 constexpr uint16_t kPageRowsPerFrame = 6;
 constexpr uint16_t kDashboardLocalUdpPort = 3334;
@@ -35,6 +34,11 @@ void ObdDashboard::begin(IPAddress host, uint16_t port)
     // Keep a stable UDP source port so listeners like `nc -ulk` keep receiving frames.
     udp_.begin(kDashboardLocalUdpPort);
     started_ = true;
+}
+
+void ObdDashboard::setIntervalMs(uint32_t intervalMs)
+{
+    frameIntervalMs_ = intervalMs < 50 ? 50 : intervalMs;
 }
 
 void ObdDashboard::setTarget(IPAddress host, uint16_t port)
@@ -217,6 +221,17 @@ void ObdDashboard::renderFrame(ObdFrameBuffer *frame,
            (unsigned long)state.keyQueryPerSec,
            (unsigned long)state.bgQueryPerSec);
 
+    append(frame->data, cap, &pos,
+           "log=%s%s%s seq=%lu records=%lu/%lu interval=%lus err=%lu\n\n",
+           (state.logReady && state.logEnabled) ? C_GRN : (state.logReady ? C_YEL : C_RED),
+           state.logReady ? (state.logEnabled ? "ON" : "OFF") : "DOWN",
+           C_RST,
+           (unsigned long)state.logSequence,
+           (unsigned long)state.logRecords,
+           (unsigned long)state.logCapacity,
+           (unsigned long)state.logIntervalSeconds,
+           (unsigned long)state.logErrors);
+
     renderKeyMetrics(frame->data, cap, &pos, nowMs, metrics, metricCount);
 
     append(frame->data, cap, &pos,
@@ -313,7 +328,7 @@ void ObdDashboard::tick(uint32_t nowMs,
         return;
     }
 
-    if (nowMs - lastFrameMs_ < kFrameIntervalMs)
+    if (nowMs - lastFrameMs_ < frameIntervalMs_)
     {
         return;
     }

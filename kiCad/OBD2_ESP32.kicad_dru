@@ -1,0 +1,6 @@
+(version 1)
+
+(rule no_blind_buried_vias
+    (condition "A.Type == 'Via' && A.Via_Type == 'Blind/buried'")
+    (constraint disallow via)
+)

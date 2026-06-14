@@ -26,6 +26,16 @@ constexpr uint32_t kMode01RouteLockMs = 60000;
 constexpr uint32_t kMode01ReprobeIntervalMs = 60000;
 constexpr uint32_t kMode01ReprobeWindowMs = 2000;
 
+constexpr uint8_t kCompactRpm = 0;
+constexpr uint8_t kCompactSpeed = 1;
+constexpr uint8_t kCompactCoolant = 2;
+constexpr uint8_t kCompactThrottle = 3;
+constexpr uint8_t kCompactFuelLevel = 4;
+constexpr uint8_t kCompactEngineLoad = 5;
+constexpr uint8_t kCompactMap = 6;
+constexpr uint8_t kCompactMaf = 7;
+constexpr uint8_t kCompactEcuVoltage = 8;
+
 uint16_t be16(const uint8_t *d)
 {
     return ((uint16_t)d[0] << 8) | d[1];
@@ -306,6 +316,40 @@ uint32_t ObdService::bgQueryPerSec() const
 const ObdVehicleInfo &ObdService::vehicleInfo() const
 {
     return vehicle_;
+}
+
+bool ObdService::collectCompactSample(uint32_t nowMs, uint32_t maxAgeMs, ObdCompactSample *out) const
+{
+    if (!out)
+    {
+        return false;
+    }
+
+    *out = compactSample_;
+    out->validMask = 0;
+
+    static const uint16_t kBits[] = {
+        OBD_SAMPLE_RPM,
+        OBD_SAMPLE_SPEED,
+        OBD_SAMPLE_COOLANT,
+        OBD_SAMPLE_THROTTLE,
+        OBD_SAMPLE_FUEL_LEVEL,
+        OBD_SAMPLE_ENGINE_LOAD,
+        OBD_SAMPLE_MAP,
+        OBD_SAMPLE_MAF,
+        OBD_SAMPLE_ECU_VOLTAGE,
+    };
+
+    for (uint8_t i = 0; i < sizeof(kBits) / sizeof(kBits[0]); i++)
+    {
+        uint32_t updatedMs = compactLastUpdateMs_[i];
+        if (updatedMs != 0 && (nowMs - updatedMs) <= maxAgeMs)
+        {
+            out->validMask |= kBits[i];
+        }
+    }
+
+    return out->validMask != 0;
 }
 
 void ObdService::clearWindowCounters()
@@ -684,6 +728,8 @@ void ObdService::resetDiscovery()
 
     memset(metrics_, 0, sizeof(metrics_));
     memset(&vehicle_, 0, sizeof(vehicle_));
+    memset(&compactSample_, 0, sizeof(compactSample_));
+    memset(compactLastUpdateMs_, 0, sizeof(compactLastUpdateMs_));
 
     memset(vinChunkLen_, 0, sizeof(vinChunkLen_));
     memset(vinChunks_, 0, sizeof(vinChunks_));
@@ -909,6 +955,16 @@ void ObdService::setRawMetric(uint8_t pid, const uint8_t *data, uint8_t dataLen,
     setMetricText(pid, key, rawHex, "", false, false, false, nowMs);
 }
 
+void ObdService::markCompactField(uint8_t fieldIndex, uint32_t nowMs)
+{
+    if (fieldIndex >= (sizeof(compactLastUpdateMs_) / sizeof(compactLastUpdateMs_[0])))
+    {
+        return;
+    }
+
+    compactLastUpdateMs_[fieldIndex] = nowMs;
+}
+
 bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataLen, uint32_t nowMs)
 {
     char val[24];
@@ -954,7 +1010,12 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
     case 0x04:
         if (dataLen < 1)
             return false;
-        snprintf(val, sizeof(val), "%u.%u", (unsigned int)(pct10(data[0]) / 10), (unsigned int)(pct10(data[0]) % 10));
+        {
+            uint16_t load10 = pct10(data[0]);
+            compactSample_.engineLoadPct = (uint8_t)((load10 + 5U) / 10U);
+            markCompactField(kCompactEngineLoad, nowMs);
+            snprintf(val, sizeof(val), "%u.%u", (unsigned int)(load10 / 10), (unsigned int)(load10 % 10));
+        }
         setMetricText(pid, "engine_load", val, "pct", true, false, false, nowMs);
         return true;
 
@@ -963,6 +1024,8 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
             return false;
         {
             int16_t c = (int16_t)data[0] - 40;
+            compactSample_.coolantC = c;
+            markCompactField(kCompactCoolant, nowMs);
             snprintf(val, sizeof(val), "%d", (int)c);
             warn = (c >= 100);
             err = (c >= 110);
@@ -994,6 +1057,8 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
     case 0x0B:
         if (dataLen < 1)
             return false;
+        compactSample_.mapKpa = data[0];
+        markCompactField(kCompactMap, nowMs);
         snprintf(val, sizeof(val), "%u", (unsigned int)data[0]);
         setMetricText(pid, "map", val, "kPa", true, false, false, nowMs);
         return true;
@@ -1003,6 +1068,8 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
             return false;
         {
             uint16_t rpm10 = (uint16_t)((be16(data) * 10UL) / 4UL);
+            compactSample_.rpm = (uint16_t)((rpm10 + 5U) / 10U);
+            markCompactField(kCompactRpm, nowMs);
             snprintf(val, sizeof(val), "%u.%u", (unsigned int)(rpm10 / 10), (unsigned int)(rpm10 % 10));
             warn = (rpm10 >= 45000);
             err = (rpm10 >= 60000);
@@ -1013,6 +1080,8 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
     case 0x0D:
         if (dataLen < 1)
             return false;
+        compactSample_.speedKph = data[0];
+        markCompactField(kCompactSpeed, nowMs);
         snprintf(val, sizeof(val), "%u", (unsigned int)data[0]);
         setMetricText(pid, "speed", val, "km/h", true, false, false, nowMs);
         return true;
@@ -1039,6 +1108,8 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
             return false;
         {
             uint16_t maf100 = be16(data);
+            compactSample_.mafCentiGps = maf100;
+            markCompactField(kCompactMaf, nowMs);
             snprintf(val, sizeof(val), "%u.%02u", (unsigned int)(maf100 / 100), (unsigned int)(maf100 % 100));
             setMetricText(pid, "maf", val, "g/s", true, false, false, nowMs);
         }
@@ -1047,7 +1118,12 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
     case 0x11:
         if (dataLen < 1)
             return false;
-        snprintf(val, sizeof(val), "%u.%u", (unsigned int)(pct10(data[0]) / 10), (unsigned int)(pct10(data[0]) % 10));
+        {
+            uint16_t throttle10 = pct10(data[0]);
+            compactSample_.throttlePct = (uint8_t)((throttle10 + 5U) / 10U);
+            markCompactField(kCompactThrottle, nowMs);
+            snprintf(val, sizeof(val), "%u.%u", (unsigned int)(throttle10 / 10), (unsigned int)(throttle10 % 10));
+        }
         setMetricText(pid, "throttle", val, "pct", true, false, false, nowMs);
         return true;
 
@@ -1166,7 +1242,12 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
     case 0x2F:
         if (dataLen < 1)
             return false;
-        snprintf(val, sizeof(val), "%u.%u", (unsigned int)(pct10(data[0]) / 10), (unsigned int)(pct10(data[0]) % 10));
+        {
+            uint16_t fuel10 = pct10(data[0]);
+            compactSample_.fuelLevelPct = (uint8_t)((fuel10 + 5U) / 10U);
+            markCompactField(kCompactFuelLevel, nowMs);
+            snprintf(val, sizeof(val), "%u.%u", (unsigned int)(fuel10 / 10), (unsigned int)(fuel10 % 10));
+        }
         setMetricText(pid, "fuel_level", val, "pct", true, false, false, nowMs);
         return true;
 
@@ -1246,6 +1327,8 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
             return false;
         {
             uint16_t mv = be16(data);
+            compactSample_.ecuMv = mv;
+            markCompactField(kCompactEcuVoltage, nowMs);
             snprintf(val, sizeof(val), "%u.%03u", (unsigned int)(mv / 1000), (unsigned int)(mv % 1000));
             warn = (mv < 11800);
             err = (mv < 11000);
