@@ -1,0 +1,35 @@
+# macOS / editor
+.DS_Store
+.vscode/
+
+# Logs and local run output
+*.log
+nohup.out
+output/
+
+# Python local files
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+ticket.py
+
+# Node / Expo local files
+node_modules/
+.expo/
+dist/
+web-build/
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# PlatformIO / firmware generated files
+.pio/
+sdkconfig.*
+OBD-Firmware/src/config.h
+**/src/config.h

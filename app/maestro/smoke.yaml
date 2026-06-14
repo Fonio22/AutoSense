@@ -1,0 +1,66 @@
+appId: com.antoniozhong.autosense
+
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+- runFlow:
+    when:
+      visible: "http://192.168.31.239:8082"
+    commands:
+      - tapOn: "http://192.168.31.239:8082"
+
+- runFlow:
+    when:
+      visible: "http://192.168.31.239:8081"
+      notVisible: "http://192.168.31.239:8082"
+    commands:
+      - tapOn: "http://192.168.31.239:8081"
+
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - tapOn:
+          point: "90%, 47%"
+
+- assertVisible: "Tu correo"
+- tapOn: "Iniciar sesión"
+
+- assertVisible: "Honda Civic 1.5T"
+- tapOn: "Avisos"
+- assertVisible: "Lista de alertas"
+- tapOn:
+    point: "33%, 28%"
+- assertVisible: "Causa detectada"
+- tapOn: "Volver"
+- tapOn: "Volver"
+
+- assertVisible: "Honda Civic 1.5T"
+- tapOn: "Eficiencia"
+- assertVisible: "Puntuación general"
+- tapOn: "Volver"
+
+- tapOn: "Tiempo real"
+- assertVisible: "Conecta tu OBD2"
+- tapOn: "Emparejar OBD2"
+- assertVisible: "OBD2 en vivo"
+
+- tapOn: "Viajes"
+- assertVisible: "Historial de viajes"
+- tapOn: "Ver"
+- assertVisible: "Detalle de viaje"
+
+- tapOn: "Perfil"
+- assertVisible: "Mi perfil"
+- tapOn:
+    point: "55%, 49%"
+- assertVisible: "Guardar ajustes"
