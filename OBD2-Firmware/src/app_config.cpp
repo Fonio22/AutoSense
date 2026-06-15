@@ -109,6 +109,24 @@ void applySetting(AppRuntimeConfig &config, const char *section, const char *key
             config.dashboardIntervalMs = parseU32(value, config.dashboardIntervalMs, 50, 10000);
         }
     }
+    else if (strcmp(section, "obd") == 0)
+    {
+        if (strcmp(key, "diagnostic_info_enabled") == 0)
+        {
+            config.obdDiagnosticInfoEnabled = parseBool(value, config.obdDiagnosticInfoEnabled);
+        }
+    }
+    else if (strcmp(section, "vag") == 0)
+    {
+        if (strcmp(key, "enabled") == 0)
+        {
+            config.vagExtendedEnabled = parseBool(value, config.vagExtendedEnabled);
+        }
+        else if (strcmp(key, "force_profile") == 0)
+        {
+            config.vagForceProfile = parseBool(value, config.vagForceProfile);
+        }
+    }
 }
 } // namespace
 

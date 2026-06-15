@@ -3,6 +3,7 @@
 #include <Arduino.h>
 
 #include "obd_service.h"
+#include "uds_vag_scanner.h"
 
 struct ObdDashboardState
 {
@@ -17,6 +18,10 @@ struct ObdDashboardState
     uint32_t obdDecPerSec{0};
     uint32_t keyQueryPerSec{0};
     uint32_t bgQueryPerSec{0};
+    uint32_t readGuardBlocked{0};
+    bool vagEnabled{false};
+    bool vagActive{false};
+    uint32_t vagGuardBlocked{0};
     uint32_t uptimeMs{0};
     bool logReady{false};
     bool logEnabled{false};
@@ -32,7 +37,7 @@ struct ObdDashboardState
 
 struct ObdFrameBuffer
 {
-    static constexpr size_t kCapacity = 1200;
+    static constexpr size_t kCapacity = 3600;
 
     char data[kCapacity]{0};
     size_t len{0};
@@ -51,7 +56,8 @@ public:
     void tick(uint32_t nowMs,
               const ObdDashboardState &state,
               const ObdService &obdService,
-              const ObdVehicleInfo &vehicleInfo);
+              const ObdVehicleInfo &vehicleInfo,
+              const UdsVagScanner &vagScanner);
 
 private:
     static const char *colorForMetric(const ObdMetric &metric, uint32_t nowMs);
@@ -61,7 +67,8 @@ private:
                      uint32_t nowMs,
                      const ObdDashboardState &state,
                      const ObdService &obdService,
-                     const ObdVehicleInfo &vehicleInfo);
+                     const ObdVehicleInfo &vehicleInfo,
+                     const UdsVagScanner &vagScanner);
     bool sendFrameTo();
 
     void renderKeyMetrics(char *dst,
@@ -77,11 +84,10 @@ private:
     uint32_t frameIntervalMs_{1000};
 
     uint32_t lastFrameMs_{0};
-    uint32_t lastPageSwitchMs_{0};
-    uint16_t pageIndex_{0};
     uint32_t txPackets_{0};
     uint32_t txErrors_{0};
 
     ObdMetric metricsScratch_[kMaxMetrics]{};
+    UdsVagModuleStatus vagScratch_[UdsVagScanner::kMaxModules]{};
     ObdFrameBuffer frame_{};
 };

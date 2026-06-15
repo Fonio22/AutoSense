@@ -4,10 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "obd_read_only_guard.h"
+
 namespace
 {
 constexpr uint8_t kSupportProbePids[] = {0x00, 0x20, 0x40, 0x60, 0x80, 0xA0, 0xC0};
-constexpr uint8_t kMode09ProbePids[] = {0x00, 0x02, 0x04, 0x06};
+constexpr uint8_t kMode09ProbePids[] = {0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0B, 0x0C};
 constexpr uint8_t kKeyPidList[] = {0x0C, 0x0D, 0x05, 0x11, 0x2F, 0x10, 0x0B, 0x0F, 0x42, 0x5C, 0x5E};
 
 constexpr uint8_t kFallbackPids[] = {
@@ -17,14 +19,23 @@ constexpr uint8_t kFallbackPids[] = {
 
 constexpr uint32_t kKeyIntervalMs = 50;
 constexpr uint32_t kBgIntervalMs = 350;
-constexpr uint32_t kMode03IntervalMs = 5000;
-constexpr uint32_t kMode09IntervalMs = 10000;
+constexpr uint32_t kMode02IntervalMs = 25000;
+constexpr uint32_t kMode03IntervalMs = 15000;
+constexpr uint32_t kMode06IntervalMs = 10000;
+constexpr uint32_t kMode07IntervalMs = 20000;
+constexpr uint32_t kMode0AIntervalMs = 30000;
+constexpr uint32_t kMode09IntervalMs = 3000;
 
 constexpr uint32_t kMode01NoRespFallbackMs = 2000;
 constexpr uint32_t kMode01RouteStreakMs = 1500;
 constexpr uint32_t kMode01RouteLockMs = 60000;
 constexpr uint32_t kMode01ReprobeIntervalMs = 60000;
 constexpr uint32_t kMode01ReprobeWindowMs = 2000;
+
+bool alwaysProbeMode09Pid(uint8_t pid)
+{
+    return pid == 0x02 || pid == 0x04 || pid == 0x06 || pid == 0x08 || pid == 0x0A || pid == 0x0B || pid == 0x0C;
+}
 
 constexpr uint8_t kCompactRpm = 0;
 constexpr uint8_t kCompactSpeed = 1;
@@ -35,6 +46,114 @@ constexpr uint8_t kCompactEngineLoad = 5;
 constexpr uint8_t kCompactMap = 6;
 constexpr uint8_t kCompactMaf = 7;
 constexpr uint8_t kCompactEcuVoltage = 8;
+
+struct Mode01PidMeta
+{
+    uint8_t pid;
+    const char *name;
+    const char *unit;
+    const char *formula;
+    const char *category;
+    const char *notes;
+};
+
+constexpr Mode01PidMeta kMode01Meta[] = {
+    {0x01, "monitor", "", "bitfield", "readiness", "MIL+DTC count"},
+    {0x02, "freeze_dtc", "", "DTC word", "dtc", "freeze trigger"},
+    {0x03, "fuel_sys", "", "bitfield", "fuel", "loop status"},
+    {0x04, "engine_load", "pct", "A*100/255", "engine", "calculated"},
+    {0x05, "coolant", "C", "A-40", "temp", "ECT"},
+    {0x06, "stft_b1", "pct", "(A-128)*100/128", "fuel_trim", "bank1"},
+    {0x07, "ltft_b1", "pct", "(A-128)*100/128", "fuel_trim", "bank1"},
+    {0x08, "stft_b2", "pct", "(A-128)*100/128", "fuel_trim", "bank2"},
+    {0x09, "ltft_b2", "pct", "(A-128)*100/128", "fuel_trim", "bank2"},
+    {0x0A, "fuel_press", "kPa", "A*3", "fuel", "gauge"},
+    {0x0B, "map", "kPa", "A", "air", "intake"},
+    {0x0C, "rpm", "rpm", "((A*256)+B)/4", "engine", "key"},
+    {0x0D, "speed", "km/h", "A", "vehicle", "key"},
+    {0x0E, "spark_adv", "deg", "A/2-64", "ignition", "timing"},
+    {0x0F, "intake_air", "C", "A-40", "temp", "IAT"},
+    {0x10, "maf", "g/s", "((A*256)+B)/100", "air", "key"},
+    {0x11, "throttle", "pct", "A*100/255", "throttle", "absolute"},
+    {0x1C, "obd_std", "", "A", "protocol", "standard"},
+    {0x1F, "runtime", "s", "A*256+B", "engine", "since start"},
+    {0x21, "dist_mil", "km", "A*256+B", "dtc", "MIL on"},
+    {0x22, "fuel_rail", "kPa", "0.079*(A*256+B)", "fuel", "rail"},
+    {0x23, "fuel_rail_g", "kPa", "10*(A*256+B)", "fuel", "gauge"},
+    {0x2C, "cmd_egr", "pct", "A*100/255", "emissions", "commanded"},
+    {0x2D, "egr_error", "pct", "(A-128)*100/128", "emissions", "error"},
+    {0x2E, "evap_purge", "pct", "A*100/255", "emissions", "purge"},
+    {0x2F, "fuel_level", "pct", "A*100/255", "fuel", "tank"},
+    {0x30, "warmups", "", "A", "dtc", "since clear"},
+    {0x31, "dist_clear", "km", "A*256+B", "dtc", "since clear"},
+    {0x32, "evap_press", "kPa", "((A*256)+B)/4", "emissions", "vapor"},
+    {0x33, "baro", "kPa", "A", "air", "barometric"},
+    {0x41, "monitor_dc", "", "bitfield", "readiness", "drive cycle"},
+    {0x42, "ecu_v", "V", "((A*256)+B)/1000", "electrical", "module"},
+    {0x43, "abs_load", "pct", "100*(A*256+B)/255", "engine", "absolute"},
+    {0x44, "eq_ratio", "", "2*(A*256+B)/65536", "fuel", "lambda"},
+    {0x46, "ambient", "C", "A-40", "temp", "ambient"},
+    {0x4D, "time_mil", "min", "A*256+B", "dtc", "MIL on"},
+    {0x4E, "time_clear", "min", "A*256+B", "dtc", "since clear"},
+    {0x50, "maf_max", "g/s", "A*10", "air", "max"},
+    {0x51, "fuel_type", "", "A", "fuel", "type"},
+    {0x52, "ethanol", "pct", "A*100/255", "fuel", "ethanol"},
+    {0x53, "evap_abs", "kPa", "((A*256)+B)/200", "emissions", "absolute"},
+    {0x54, "evap_s", "Pa", "((A*256)+B-32768)/4", "emissions", "signed"},
+    {0x59, "fuel_rail_a", "kPa", "10*(A*256+B)", "fuel", "absolute"},
+    {0x5A, "pedal_rel", "pct", "A*100/255", "pedal", "relative"},
+    {0x5B, "hybrid_batt", "pct", "A*100/255", "hybrid", "battery"},
+    {0x5C, "oil_temp", "C", "A-40", "temp", "engine oil"},
+    {0x5D, "inj_timing", "deg", "((A*256+B)/128)-210", "fuel", "diesel"},
+    {0x5E, "fuel_rate", "L/h", "((A*256)+B)*0.05", "fuel", "rate"},
+    {0x5F, "emis_req", "", "A", "emissions", "requirements"},
+};
+
+const Mode01PidMeta *findMode01Meta(uint8_t pid)
+{
+    for (const Mode01PidMeta &meta : kMode01Meta)
+    {
+        if (meta.pid == pid)
+        {
+            return &meta;
+        }
+    }
+    return nullptr;
+}
+
+bool isSupportPidValue(uint8_t pid)
+{
+    return pid == 0x00 || (pid % 0x20) == 0;
+}
+
+const char *defaultCategoryForPid(uint8_t pid)
+{
+    if (isSupportPidValue(pid))
+    {
+        return "support";
+    }
+    if (pid >= 0x14 && pid <= 0x1B)
+    {
+        return "o2";
+    }
+    if ((pid >= 0x24 && pid <= 0x2B) || (pid >= 0x34 && pid <= 0x3B))
+    {
+        return "lambda";
+    }
+    if (pid >= 0x3C && pid <= 0x3F)
+    {
+        return "temp";
+    }
+    if ((pid >= 0x45 && pid <= 0x4C) || pid == 0x5A)
+    {
+        return "pedal";
+    }
+    if (pid >= 0x55 && pid <= 0x58)
+    {
+        return "fuel_trim";
+    }
+    return "unknown";
+}
 
 uint16_t be16(const uint8_t *d)
 {
@@ -90,6 +209,11 @@ void formatDataHex(const uint8_t *data, uint8_t len, char *out, size_t outSize)
         }
         pos += w;
     }
+}
+
+uint8_t boundedPayloadLen(uint8_t declaredLen, uint8_t availableLen)
+{
+    return declaredLen < availableLen ? declaredLen : availableLen;
 }
 
 void decodeDtcWord(uint8_t a, uint8_t b, char out[6])
@@ -268,6 +392,11 @@ bool ObdService::activeQuery() const
     return activeQuery_;
 }
 
+void ObdService::setDiagnosticInfoEnabled(bool enabled)
+{
+    diagnosticInfoEnabled_ = enabled;
+}
+
 uint32_t ObdService::responsesWindow() const
 {
     return respWindow_;
@@ -311,6 +440,11 @@ uint32_t ObdService::keyQueryPerSec() const
 uint32_t ObdService::bgQueryPerSec() const
 {
     return bgQueryWindow_;
+}
+
+uint32_t ObdService::readGuardBlocked() const
+{
+    return readGuardBlocked_;
 }
 
 const ObdVehicleInfo &ObdService::vehicleInfo() const
@@ -378,6 +512,26 @@ const char *ObdService::routeName(Mode01Route route)
 
 void ObdService::sendRequestFrame(uint32_t id, bool extended, uint8_t lenByte, uint8_t service, uint8_t pid)
 {
+    ObdGuardRequest guardRequest{};
+    guardRequest.family = ObdCommandFamily::StandardObd;
+    guardRequest.service = service;
+    guardRequest.pidOrSubFunction = pid;
+    guardRequest.canId = id;
+    guardRequest.extended = extended;
+
+    ObdGuardDecision decision = ObdReadOnlyGuard::check(guardRequest);
+    if (!decision.allowed)
+    {
+        readGuardBlocked_++;
+        Serial.printf("[readOnlyGuard] BLOCK service=0x%02X pid=0x%02X id=0x%lX ext=%u reason=%s\n",
+                      (unsigned int)service,
+                      (unsigned int)pid,
+                      (unsigned long)id,
+                      extended ? 1U : 0U,
+                      decision.reason ? decision.reason : "blocked");
+        return;
+    }
+
     CAN_FRAME req;
     req.id = id;
     req.extended = extended ? 1 : 0;
@@ -395,6 +549,53 @@ void ObdService::sendRequestFrame(uint32_t id, bool extended, uint8_t lenByte, u
 
     CAN0.sendFrame(req);
     txWindow_++;
+}
+
+bool ObdService::sendIsoTpFlowControl(const CAN_FRAME &firstFrame)
+{
+    uint32_t flowControlId = 0;
+    bool extended = firstFrame.extended != 0;
+
+    if (!extended && firstFrame.id >= 0x7E8 && firstFrame.id <= 0x7EF)
+    {
+        flowControlId = firstFrame.id - 8;
+    }
+    else if (extended)
+    {
+        uint8_t source = (uint8_t)(firstFrame.id & 0xFF);
+        flowControlId = 0x18DA0000UL | ((uint32_t)source << 8) | 0xF1UL;
+    }
+    else
+    {
+        return false;
+    }
+
+    ObdGuardRequest guardRequest{};
+    guardRequest.family = ObdCommandFamily::IsoTpFlowControl;
+    guardRequest.canId = flowControlId;
+    guardRequest.extended = extended;
+    ObdGuardDecision decision = ObdReadOnlyGuard::check(guardRequest);
+    if (!decision.allowed)
+    {
+        isoTpFlowControlBlocked_++;
+        readGuardBlocked_++;
+        return false;
+    }
+
+    CAN_FRAME fc;
+    fc.id = flowControlId;
+    fc.extended = extended ? 1 : 0;
+    fc.rtr = 0;
+    fc.length = 8;
+    memset(fc.data.byte, 0, sizeof(fc.data.byte));
+    fc.data.byte[0] = 0x30; // Continue To Send, block size 0, STmin 0.
+
+    if (!CAN0.sendFrame(fc))
+    {
+        return false;
+    }
+    txWindow_++;
+    return true;
 }
 
 void ObdService::sendMode01Request(uint8_t pid, uint32_t nowMs)
@@ -416,6 +617,13 @@ void ObdService::sendMode01Request(uint8_t pid, uint32_t nowMs)
     }
 
     markMode01Request(pid, nowMs);
+}
+
+void ObdService::sendMode02Request(uint8_t pid)
+{
+    sendRequestFrame(0x7DF, false, 0x02, 0x02, pid);
+    sendRequestFrame(0x7E0, false, 0x02, 0x02, pid);
+    sendRequestFrame(0x18DB33F1, true, 0x02, 0x02, pid);
 }
 
 void ObdService::markMode01Request(uint8_t pid, uint32_t nowMs)
@@ -543,6 +751,27 @@ void ObdService::sendMode03Request()
     sendRequestFrame(0x18DB33F1, true, 0x01, 0x03, 0x00);
 }
 
+void ObdService::sendMode06Request(uint8_t tid)
+{
+    sendRequestFrame(0x7DF, false, 0x02, 0x06, tid);
+    sendRequestFrame(0x7E0, false, 0x02, 0x06, tid);
+    sendRequestFrame(0x18DB33F1, true, 0x02, 0x06, tid);
+}
+
+void ObdService::sendMode07Request()
+{
+    sendRequestFrame(0x7DF, false, 0x01, 0x07, 0x00);
+    sendRequestFrame(0x7E0, false, 0x01, 0x07, 0x00);
+    sendRequestFrame(0x18DB33F1, true, 0x01, 0x07, 0x00);
+}
+
+void ObdService::sendMode0ARequest()
+{
+    sendRequestFrame(0x7DF, false, 0x01, 0x0A, 0x00);
+    sendRequestFrame(0x7E0, false, 0x01, 0x0A, 0x00);
+    sendRequestFrame(0x18DB33F1, true, 0x01, 0x0A, 0x00);
+}
+
 void ObdService::sendMode09Request(uint8_t pid)
 {
     sendRequestFrame(0x7DF, false, 0x02, 0x09, pid);
@@ -596,10 +825,38 @@ void ObdService::tick(uint32_t nowMs, bool canReady)
         return;
     }
 
-    if (nowMs - scheduler_.lastMode03Ms >= kMode03IntervalMs)
+    if (diagnosticInfoEnabled_ && nowMs - scheduler_.lastMode02Ms >= kMode02IntervalMs)
+    {
+        sendMode02Request(0x02);
+        scheduler_.lastMode02Ms = nowMs;
+        return;
+    }
+
+    if (diagnosticInfoEnabled_ && nowMs - scheduler_.lastMode03Ms >= kMode03IntervalMs)
     {
         sendMode03Request();
         scheduler_.lastMode03Ms = nowMs;
+        return;
+    }
+
+    if (diagnosticInfoEnabled_ && nowMs - scheduler_.lastMode06Ms >= kMode06IntervalMs)
+    {
+        sendMode06Request(nextMode06Tid());
+        scheduler_.lastMode06Ms = nowMs;
+        return;
+    }
+
+    if (diagnosticInfoEnabled_ && nowMs - scheduler_.lastMode07Ms >= kMode07IntervalMs)
+    {
+        sendMode07Request();
+        scheduler_.lastMode07Ms = nowMs;
+        return;
+    }
+
+    if (diagnosticInfoEnabled_ && nowMs - scheduler_.lastMode0AMs >= kMode0AIntervalMs)
+    {
+        sendMode0ARequest();
+        scheduler_.lastMode0AMs = nowMs;
         return;
     }
 
@@ -610,7 +867,7 @@ void ObdService::tick(uint32_t nowMs, bool canReady)
 
     uint8_t pid = kMode09ProbePids[mode09Cursor_];
     mode09Cursor_ = (uint8_t)((mode09Cursor_ + 1) % (sizeof(kMode09ProbePids) / sizeof(kMode09ProbePids[0])));
-    if (pid == 0x00 || !mode09SupportKnown_ || mode09Supported_[pid])
+    if (pid == 0x00 || alwaysProbeMode09Pid(pid) || !mode09SupportKnown_ || mode09Supported_[pid])
     {
         sendMode09Request(pid);
     }
@@ -696,9 +953,29 @@ bool ObdService::isMode01Response(const CAN_FRAME &frame)
     return isObdResponseFrame(frame) && frame.length >= 3 && frame.data.byte[1] == 0x41;
 }
 
+bool ObdService::isMode02Response(const CAN_FRAME &frame)
+{
+    return isObdResponseFrame(frame) && frame.length >= 3 && frame.data.byte[1] == 0x42;
+}
+
 bool ObdService::isMode03Response(const CAN_FRAME &frame)
 {
     return isObdResponseFrame(frame) && frame.length >= 2 && frame.data.byte[1] == 0x43;
+}
+
+bool ObdService::isMode06Response(const CAN_FRAME &frame)
+{
+    return isObdResponseFrame(frame) && frame.length >= 3 && frame.data.byte[1] == 0x46;
+}
+
+bool ObdService::isMode07Response(const CAN_FRAME &frame)
+{
+    return isObdResponseFrame(frame) && frame.length >= 2 && frame.data.byte[1] == 0x47;
+}
+
+bool ObdService::isMode0AResponse(const CAN_FRAME &frame)
+{
+    return isObdResponseFrame(frame) && frame.length >= 2 && frame.data.byte[1] == 0x4A;
 }
 
 bool ObdService::isMode09Response(const CAN_FRAME &frame)
@@ -708,7 +985,19 @@ bool ObdService::isMode09Response(const CAN_FRAME &frame)
 
 bool ObdService::isSupportBitmapPid(uint8_t pid)
 {
-    return pid == 0x00 || (pid % 0x20) == 0;
+    return isSupportPidValue(pid);
+}
+
+uint8_t ObdService::singleFramePayloadLen(const CAN_FRAME &frame)
+{
+    if (frame.length < 2 || (frame.data.byte[0] & 0xF0) != 0x00)
+    {
+        return 0;
+    }
+
+    uint8_t declaredLen = frame.data.byte[0] & 0x0F;
+    uint8_t availableLen = frame.length - 1;
+    return boundedPayloadLen(declaredLen, availableLen);
 }
 
 void ObdService::resetDiscovery()
@@ -724,10 +1013,12 @@ void ObdService::resetDiscovery()
     memset(supported_, 0, sizeof(supported_));
     memset(rawSeen_, 0, sizeof(rawSeen_));
     memset(mode09Supported_, 0, sizeof(mode09Supported_));
+    memset(mode06Supported_, 0, sizeof(mode06Supported_));
     memset(pidHealth_, 0, sizeof(pidHealth_));
 
     memset(metrics_, 0, sizeof(metrics_));
     memset(&vehicle_, 0, sizeof(vehicle_));
+    snprintf(vehicle_.profile, sizeof(vehicle_.profile), "%s", "generic");
     memset(&compactSample_, 0, sizeof(compactSample_));
     memset(compactLastUpdateMs_, 0, sizeof(compactLastUpdateMs_));
 
@@ -737,9 +1028,13 @@ void ObdService::resetDiscovery()
     memset(calidChunks_, 0, sizeof(calidChunks_));
     memset(cvnChunkLen_, 0, sizeof(cvnChunkLen_));
     memset(cvnChunks_, 0, sizeof(cvnChunks_));
+    memset(mode09Chunks_, 0, sizeof(mode09Chunks_));
 
     mode09SupportKnown_ = false;
     mode09Cursor_ = 0;
+    mode06SupportCursor_ = 0;
+    mode06TidCursor_ = 1;
+    mode06DiscoveryComplete_ = false;
 
     lastSupportMs_ = 0;
     lastDiscoveryRefreshMs_ = millis();
@@ -751,7 +1046,10 @@ void ObdService::resetDiscovery()
     totalResponses_ = 0;
     keyQueryWindow_ = 0;
     bgQueryWindow_ = 0;
+    readGuardBlocked_ = 0;
+    isoTpFlowControlBlocked_ = 0;
     supportedCount_ = 0;
+    isoTpRx_ = {};
 
     mode01Route_ = Mode01Route::StdFunctional7DF;
     mode01ReprobeReturnRoute_ = Mode01Route::StdFunctional7DF;
@@ -822,11 +1120,6 @@ void ObdService::rebuildQueryPlan()
     bgQueryCount_ = 0;
     bgQueryCursor_ = 0;
 
-    for (uint8_t keyPid : kKeyPidList)
-    {
-        addKeyPid(keyPid);
-    }
-
     bool anySupported = false;
     for (uint16_t pid = 1; pid <= kMaxPid; pid++)
     {
@@ -843,6 +1136,7 @@ void ObdService::rebuildQueryPlan()
         pidHealth_[pid].active = true;
         if (isKeyPid((uint8_t)pid))
         {
+            addKeyPid((uint8_t)pid);
             continue;
         }
         if (!addBgPid((uint8_t)pid))
@@ -854,6 +1148,11 @@ void ObdService::rebuildQueryPlan()
     if (anySupported)
     {
         return;
+    }
+
+    for (uint8_t keyPid : kKeyPidList)
+    {
+        addKeyPid(keyPid);
     }
 
     for (uint8_t pid : kFallbackPids)
@@ -869,7 +1168,7 @@ void ObdService::rebuildQueryPlan()
     }
 }
 
-void ObdService::handleSupportedBitmap(uint8_t pid, const uint8_t *data, uint8_t dataLen)
+void ObdService::handleSupportedBitmap(uint8_t pid, const uint8_t *data, uint8_t dataLen, uint32_t nowMs)
 {
     if (dataLen < 4)
     {
@@ -912,6 +1211,10 @@ void ObdService::handleSupportedBitmap(uint8_t pid, const uint8_t *data, uint8_t
     }
 
     rebuildQueryPlan();
+
+    char key[20];
+    snprintf(key, sizeof(key), "support_%02X", (unsigned int)pid);
+    setMetricText(pid, key, metrics_[pid].raw, "", true, false, false, nowMs);
 }
 
 void ObdService::setMetricText(uint8_t pid,
@@ -924,19 +1227,24 @@ void ObdService::setMetricText(uint8_t pid,
                                uint32_t nowMs)
 {
     ObdMetric &m = metrics_[pid];
+    const Mode01PidMeta *meta = findMode01Meta(pid);
 
     bool valueChanged = (strncmp(m.value, value, sizeof(m.value)) != 0) ||
                         (strncmp(m.unit, unit, sizeof(m.unit)) != 0);
 
+    m.mode = 0x01;
     m.pid = pid;
     m.supported = supported_[pid];
     m.decoded = decoded;
     m.warn = warn;
     m.error = error;
 
-    snprintf(m.key, sizeof(m.key), "%s", key ? key : "");
+    snprintf(m.key, sizeof(m.key), "%s", key ? key : (meta ? meta->name : ""));
     snprintf(m.value, sizeof(m.value), "%s", value ? value : "");
-    snprintf(m.unit, sizeof(m.unit), "%s", unit ? unit : "");
+    snprintf(m.unit, sizeof(m.unit), "%s", unit ? unit : (meta ? meta->unit : ""));
+    snprintf(m.formula, sizeof(m.formula), "%s", meta ? meta->formula : "");
+    snprintf(m.category, sizeof(m.category), "%s", meta ? meta->category : defaultCategoryForPid(pid));
+    snprintf(m.notes, sizeof(m.notes), "%s", meta ? meta->notes : (supported_[pid] ? "supported" : "observed"));
 
     m.lastUpdateMs = nowMs;
     if (m.lastChangeMs == 0 || valueChanged)
@@ -953,6 +1261,33 @@ void ObdService::setRawMetric(uint8_t pid, const uint8_t *data, uint8_t dataLen,
     char key[20];
     snprintf(key, sizeof(key), "pid_%02X_raw", (unsigned int)pid);
     setMetricText(pid, key, rawHex, "", false, false, false, nowMs);
+}
+
+void ObdService::recordMetricRaw(uint8_t pid, const uint8_t *data, uint8_t dataLen, uint32_t nowMs)
+{
+    ObdMetric &m = metrics_[pid];
+    uint32_t prevUpdateMs = m.lastUpdateMs;
+    if (m.firstUpdateMs == 0)
+    {
+        m.firstUpdateMs = nowMs;
+    }
+    if (prevUpdateMs != 0 && nowMs > prevUpdateMs)
+    {
+        uint32_t delta = nowMs - prevUpdateMs;
+        if (m.avgIntervalMs == 0)
+        {
+            m.avgIntervalMs = delta;
+        }
+        else
+        {
+            m.avgIntervalMs = (m.avgIntervalMs * 7UL + delta) / 8UL;
+        }
+    }
+    if (m.updateCount < 0xFFFFFFFFUL)
+    {
+        m.updateCount++;
+    }
+    formatDataHex(data, dataLen, m.raw, sizeof(m.raw));
 }
 
 void ObdService::markCompactField(uint8_t fieldIndex, uint32_t nowMs)
@@ -1562,16 +1897,185 @@ void ObdService::parseMode09Support(const uint8_t *data, uint8_t dataLen)
     mode09SupportKnown_ = true;
 }
 
-void ObdService::updateMode09Ascii(char *target,
-                                   size_t targetSize,
-                                   uint8_t *chunkLens,
-                                   uint8_t frameIdx,
-                                   const uint8_t *payload,
-                                   uint8_t payloadLen,
-                                   uint32_t nowMs,
-                                   uint32_t *lastUpdateMs)
+void ObdService::parseMode06Support(uint8_t tid, const uint8_t *data, uint8_t dataLen)
 {
-    if (frameIdx >= 16)
+    if (dataLen < 4)
+    {
+        return;
+    }
+
+    uint32_t bits = ((uint32_t)data[0] << 24) |
+                    ((uint32_t)data[1] << 16) |
+                    ((uint32_t)data[2] << 8) |
+                    ((uint32_t)data[3]);
+
+    for (uint8_t i = 0; i < 32; i++)
+    {
+        if ((bits & (1UL << (31 - i))) == 0)
+        {
+            continue;
+        }
+
+        uint16_t discovered = (uint16_t)tid + 1 + i;
+        if (discovered >= 256)
+        {
+            continue;
+        }
+
+        if (!mode06Supported_[discovered])
+        {
+            mode06Supported_[discovered] = true;
+            if (vehicle_.mode06SupportedCount < 0xFF)
+            {
+                vehicle_.mode06SupportedCount++;
+            }
+        }
+    }
+}
+
+uint8_t ObdService::nextMode06Tid()
+{
+    if (!mode06DiscoveryComplete_)
+    {
+        uint8_t tid = kSupportProbePids[mode06SupportCursor_];
+        mode06SupportCursor_++;
+        if (mode06SupportCursor_ >= (sizeof(kSupportProbePids) / sizeof(kSupportProbePids[0])))
+        {
+            mode06SupportCursor_ = 0;
+            mode06DiscoveryComplete_ = true;
+        }
+        return tid;
+    }
+
+    for (uint16_t step = 0; step < 255; step++)
+    {
+        uint8_t tid = mode06TidCursor_;
+        mode06TidCursor_++;
+        if (mode06TidCursor_ == 0)
+        {
+            mode06TidCursor_ = 1;
+        }
+        if (isSupportPidValue(tid))
+        {
+            continue;
+        }
+        if (mode06Supported_[tid])
+        {
+            return tid;
+        }
+    }
+
+    mode06DiscoveryComplete_ = false;
+    mode06SupportCursor_ = 0;
+    return 0x00;
+}
+
+void ObdService::updateVehicleProfile()
+{
+    if (vehicle_.vin[0] == '\0')
+    {
+        snprintf(vehicle_.profile, sizeof(vehicle_.profile), "%s", "generic");
+        return;
+    }
+
+    if (strncmp(vehicle_.vin, "WVW", 3) == 0 ||
+        strncmp(vehicle_.vin, "3VW", 3) == 0 ||
+        strncmp(vehicle_.vin, "1VW", 3) == 0)
+    {
+        snprintf(vehicle_.profile, sizeof(vehicle_.profile), "%s", "vw-vag");
+        return;
+    }
+
+    snprintf(vehicle_.profile, sizeof(vehicle_.profile), "%s", "generic");
+}
+
+ObdMode09EcuInfo *ObdService::mode09EcuForResponse(uint32_t responseId, bool extended)
+{
+    for (uint8_t i = 0; i < vehicle_.mode09EcuCount && i < ObdVehicleInfo::kMaxMode09Ecus; i++)
+    {
+        ObdMode09EcuInfo &ecu = vehicle_.mode09Ecus[i];
+        if (ecu.responseId == responseId && ecu.extended == extended)
+        {
+            return &ecu;
+        }
+    }
+
+    uint8_t slot = vehicle_.mode09EcuCount;
+    if (slot >= ObdVehicleInfo::kMaxMode09Ecus)
+    {
+        return nullptr;
+    }
+
+    vehicle_.mode09EcuCount++;
+    memset(&vehicle_.mode09Ecus[slot], 0, sizeof(vehicle_.mode09Ecus[slot]));
+    vehicle_.mode09Ecus[slot].responseId = responseId;
+    vehicle_.mode09Ecus[slot].extended = extended;
+    resetMode09Chunks(slot);
+    return &vehicle_.mode09Ecus[slot];
+}
+
+void ObdService::resetMode09Chunks(uint8_t slot)
+{
+    if (slot >= ObdVehicleInfo::kMaxMode09Ecus)
+    {
+        return;
+    }
+
+    uint32_t responseId = vehicle_.mode09Ecus[slot].responseId;
+    bool extended = vehicle_.mode09Ecus[slot].extended;
+    memset(&mode09Chunks_[slot], 0, sizeof(mode09Chunks_[slot]));
+    mode09Chunks_[slot].responseId = responseId;
+    mode09Chunks_[slot].extended = extended;
+}
+
+void ObdService::mirrorPrimaryMode09(const ObdMode09EcuInfo &ecu)
+{
+    bool primary = (vehicle_.vin[0] == '\0') || (ecu.responseId == 0x7E8);
+    if (!primary)
+    {
+        return;
+    }
+
+    if (ecu.vin[0])
+    {
+        snprintf(vehicle_.vin, sizeof(vehicle_.vin), "%s", ecu.vin);
+        vehicle_.lastVinMs = ecu.lastVinMs;
+        updateVehicleProfile();
+    }
+    if (ecu.calid[0])
+    {
+        snprintf(vehicle_.calid, sizeof(vehicle_.calid), "%s", ecu.calid);
+        vehicle_.lastCalIdMs = ecu.lastCalIdMs;
+    }
+    if (ecu.cvn[0])
+    {
+        snprintf(vehicle_.cvn, sizeof(vehicle_.cvn), "%s", ecu.cvn);
+        vehicle_.lastCvnMs = ecu.lastCvnMs;
+    }
+    if (ecu.ecuName[0])
+    {
+        snprintf(vehicle_.ecuName, sizeof(vehicle_.ecuName), "%s", ecu.ecuName);
+        vehicle_.lastEcuNameMs = ecu.lastEcuNameMs;
+    }
+    if (ecu.iptRaw[0])
+    {
+        snprintf(vehicle_.iptRaw, sizeof(vehicle_.iptRaw), "%s", ecu.iptRaw);
+        vehicle_.lastIptMs = ecu.lastIptMs;
+    }
+}
+
+void ObdService::updateMode09AsciiChunks(char *target,
+                                         size_t targetSize,
+                                         uint8_t *chunkLens,
+                                         char chunks[16][5],
+                                         uint8_t frameIdx,
+                                         const uint8_t *payload,
+                                         uint8_t payloadLen,
+                                         uint32_t nowMs,
+                                         uint32_t *lastUpdateMs,
+                                         bool updateProfile)
+{
+    if (!target || targetSize == 0 || !chunkLens || !chunks || !lastUpdateMs || frameIdx >= 16)
     {
         return;
     }
@@ -1581,8 +2085,6 @@ void ObdService::updateMode09Ascii(char *target,
         payloadLen = 4;
     }
 
-    memset(&target[0], 0, targetSize);
-
     for (uint8_t i = 0; i < payloadLen; i++)
     {
         char c = (char)payload[i];
@@ -1590,38 +2092,18 @@ void ObdService::updateMode09Ascii(char *target,
         {
             c = ' ';
         }
-
-        if (target == vehicle_.vin)
-        {
-            vinChunks_[frameIdx][i] = c;
-        }
-        else
-        {
-            calidChunks_[frameIdx][i] = c;
-        }
+        chunks[frameIdx][i] = c;
     }
-    if (target == vehicle_.vin)
-    {
-        vinChunkLen_[frameIdx] = payloadLen;
-    }
-    else
-    {
-        calidChunkLen_[frameIdx] = payloadLen;
-    }
+    chunkLens[frameIdx] = payloadLen;
 
     size_t pos = 0;
+    target[0] = '\0';
     for (uint8_t f = 0; f < 16; f++)
     {
-        uint8_t len = (target == vehicle_.vin) ? vinChunkLen_[f] : calidChunkLen_[f];
-        if (len == 0)
-        {
-            continue;
-        }
-
-        const char *src = (target == vehicle_.vin) ? vinChunks_[f] : calidChunks_[f];
+        uint8_t len = chunkLens[f];
         for (uint8_t i = 0; i < len && pos + 1 < targetSize; i++)
         {
-            target[pos++] = src[i];
+            target[pos++] = chunks[f][i];
         }
     }
     target[pos] = '\0';
@@ -1632,6 +2114,112 @@ void ObdService::updateMode09Ascii(char *target,
     }
 
     *lastUpdateMs = nowMs;
+    if (updateProfile)
+    {
+        updateVehicleProfile();
+    }
+}
+
+void ObdService::updateMode09HexChunks(char *target,
+                                       size_t targetSize,
+                                       uint8_t *chunkLens,
+                                       uint8_t chunks[16][4],
+                                       uint8_t frameIdx,
+                                       const uint8_t *payload,
+                                       uint8_t payloadLen,
+                                       uint32_t nowMs,
+                                       uint32_t *lastUpdateMs)
+{
+    if (!target || targetSize == 0 || !chunkLens || !chunks || !lastUpdateMs || frameIdx >= 16)
+    {
+        return;
+    }
+
+    if (payloadLen > 4)
+    {
+        payloadLen = 4;
+    }
+
+    for (uint8_t i = 0; i < payloadLen; i++)
+    {
+        chunks[frameIdx][i] = payload[i];
+    }
+    chunkLens[frameIdx] = payloadLen;
+
+    size_t pos = 0;
+    target[0] = '\0';
+    for (uint8_t f = 0; f < 16; f++)
+    {
+        for (uint8_t i = 0; i < chunkLens[f]; i++)
+        {
+            if (pos + 3 >= targetSize)
+            {
+                target[pos] = '\0';
+                *lastUpdateMs = nowMs;
+                return;
+            }
+            int w = snprintf(target + pos, targetSize - pos, "%02X", chunks[f][i]);
+            if (w <= 0)
+            {
+                break;
+            }
+            pos += (size_t)w;
+        }
+    }
+    target[pos] = '\0';
+    *lastUpdateMs = nowMs;
+}
+
+void ObdService::updateMode09Ascii(char *target,
+                                   size_t targetSize,
+                                   uint8_t *chunkLens,
+                                   uint8_t frameIdx,
+                                   const uint8_t *payload,
+                                   uint8_t payloadLen,
+                                   uint32_t nowMs,
+                                   uint32_t *lastUpdateMs)
+{
+    if (target == vehicle_.vin)
+    {
+        updateMode09AsciiChunks(target, targetSize, chunkLens, vinChunks_, frameIdx, payload, payloadLen, nowMs, lastUpdateMs, true);
+        return;
+    }
+    updateMode09AsciiChunks(target, targetSize, chunkLens, calidChunks_, frameIdx, payload, payloadLen, nowMs, lastUpdateMs, false);
+}
+
+void ObdService::updateMode09FullAscii(char *target,
+                                       size_t targetSize,
+                                       const uint8_t *payload,
+                                       uint8_t payloadLen,
+                                       uint32_t nowMs,
+                                       uint32_t *lastUpdateMs)
+{
+    if (!target || targetSize == 0 || !payload || !lastUpdateMs)
+    {
+        return;
+    }
+
+    size_t pos = 0;
+    for (uint8_t i = 0; i < payloadLen && pos + 1 < targetSize; i++)
+    {
+        char c = (char)payload[i];
+        if (c < 0x20 || c > 0x7E)
+        {
+            continue;
+        }
+        target[pos++] = c;
+    }
+    target[pos] = '\0';
+    while (pos > 0 && target[pos - 1] == ' ')
+    {
+        target[--pos] = '\0';
+    }
+
+    *lastUpdateMs = nowMs;
+    if (target == vehicle_.vin)
+    {
+        updateVehicleProfile();
+    }
 }
 
 void ObdService::updateMode09Hex(char *target,
@@ -1643,45 +2231,22 @@ void ObdService::updateMode09Hex(char *target,
                                  uint32_t nowMs,
                                  uint32_t *lastUpdateMs)
 {
-    if (frameIdx >= 16)
+    updateMode09HexChunks(target, targetSize, chunkLens, cvnChunks_, frameIdx, payload, payloadLen, nowMs, lastUpdateMs);
+}
+
+void ObdService::updateMode09FullHex(char *target,
+                                     size_t targetSize,
+                                     const uint8_t *payload,
+                                     uint8_t payloadLen,
+                                     uint32_t nowMs,
+                                     uint32_t *lastUpdateMs)
+{
+    if (!target || targetSize == 0 || !payload || !lastUpdateMs)
     {
         return;
     }
-    if (payloadLen > 4)
-    {
-        payloadLen = 4;
-    }
 
-    for (uint8_t i = 0; i < payloadLen; i++)
-    {
-        cvnChunks_[frameIdx][i] = payload[i];
-    }
-    chunkLens[frameIdx] = payloadLen;
-
-    size_t pos = 0;
-    target[0] = '\0';
-    for (uint8_t f = 0; f < 16; f++)
-    {
-        if (chunkLens[f] == 0)
-        {
-            continue;
-        }
-        for (uint8_t i = 0; i < chunkLens[f]; i++)
-        {
-            if (pos + 3 >= targetSize)
-            {
-                break;
-            }
-            int w = snprintf(target + pos, targetSize - pos, "%02X", cvnChunks_[f][i]);
-            if (w <= 0)
-            {
-                break;
-            }
-            pos += (size_t)w;
-        }
-    }
-    target[pos] = '\0';
-
+    formatDataHex(payload, payloadLen, target, targetSize);
     *lastUpdateMs = nowMs;
 }
 
@@ -1692,54 +2257,255 @@ bool ObdService::parseMode09(const CAN_FRAME &frame, uint32_t nowMs)
         return false;
     }
 
-    uint8_t pid = frame.data.byte[2];
-    uint8_t dataLen = frame.length > 4 ? (uint8_t)(frame.length - 4) : 0;
-    uint8_t frameIdx = frame.length > 3 ? frame.data.byte[3] : 0;
-    const uint8_t *payload = frame.length > 4 ? &frame.data.byte[4] : nullptr;
+    uint8_t payloadLen = singleFramePayloadLen(frame);
+    if (payloadLen == 0 || payloadLen > frame.length - 1)
+    {
+        return false;
+    }
 
+    return parseMode09Payload(frame.id, frame.extended != 0, &frame.data.byte[1], payloadLen, false, nowMs);
+}
+
+bool ObdService::parseMode06(const CAN_FRAME &frame, uint32_t nowMs)
+{
+    if (!isMode06Response(frame))
+    {
+        return false;
+    }
+
+    uint8_t payloadLen = singleFramePayloadLen(frame);
+    if (payloadLen == 0 || payloadLen > frame.length - 1)
+    {
+        return false;
+    }
+
+    return parseMode06Payload(&frame.data.byte[1], payloadLen, nowMs);
+}
+
+bool ObdService::parseMode06Payload(const uint8_t *payload, uint16_t payloadLen, uint32_t nowMs)
+{
+    if (!payload || payloadLen < 2 || payload[0] != 0x46)
+    {
+        return false;
+    }
+
+    uint8_t tid = payload[1];
+    vehicle_.mode06LastTid = tid;
+    formatDataHex(payload, payloadLen > 255 ? 255 : (uint8_t)payloadLen, vehicle_.mode06Raw, sizeof(vehicle_.mode06Raw));
+
+    if (payloadLen >= 6 && isSupportPidValue(tid))
+    {
+        parseMode06Support(tid, &payload[2], 4);
+        snprintf(vehicle_.mode06Summary,
+                 sizeof(vehicle_.mode06Summary),
+                 "sup%02X n=%u raw=%s",
+                 (unsigned int)tid,
+                 (unsigned int)vehicle_.mode06SupportedCount,
+                 vehicle_.mode06Raw);
+        vehicle_.lastMode06Ms = nowMs;
+        return true;
+    }
+
+    if (payloadLen >= 8)
+    {
+        uint8_t testId = payload[2];
+        uint8_t unit = payload[3];
+        uint16_t value = be16(&payload[4]);
+        uint16_t minValue = payloadLen >= 8 ? be16(&payload[6]) : 0;
+        snprintf(vehicle_.mode06Summary,
+                 sizeof(vehicle_.mode06Summary),
+                 "tid=%02X test=%02X unit=%02X val=%u min=%u raw=%s",
+                 (unsigned int)tid,
+                 (unsigned int)testId,
+                 (unsigned int)unit,
+                 (unsigned int)value,
+                 (unsigned int)minValue,
+                 vehicle_.mode06Raw);
+    }
+    else
+    {
+        snprintf(vehicle_.mode06Summary,
+                 sizeof(vehicle_.mode06Summary),
+                 "tid=%02X raw=%s",
+                 (unsigned int)tid,
+                 vehicle_.mode06Raw);
+    }
+
+    vehicle_.lastMode06Ms = nowMs;
+    return true;
+}
+
+bool ObdService::parseMode09Payload(uint32_t responseId, bool extended, const uint8_t *payload, uint16_t payloadLen, bool fullPayload, uint32_t nowMs)
+{
+    if (!payload || payloadLen < 2 || payload[0] != 0x49)
+    {
+        return false;
+    }
+
+    uint8_t pid = payload[1];
     if (pid == 0x00)
     {
-        parseMode09Support(payload, dataLen);
+        if (payloadLen >= 6)
+        {
+            parseMode09Support(&payload[2], 4);
+        }
         return true;
     }
 
-    if (!payload)
+    if (payloadLen < 3)
     {
         return true;
     }
+
+    uint8_t frameIdx = payload[2];
+    const uint8_t *data = &payload[3];
+    uint8_t dataLen = payloadLen > 3 ? (uint8_t)(payloadLen - 3) : 0;
+    ObdMode09EcuInfo *ecu = mode09EcuForResponse(responseId, extended);
+    if (!ecu)
+    {
+        return true;
+    }
+
+    uint8_t slot = (uint8_t)(ecu - vehicle_.mode09Ecus);
+    Mode09ChunkState &chunks = mode09Chunks_[slot];
+    ecu->lastUpdateMs = nowMs;
 
     if (pid == 0x02)
     {
-        updateMode09Ascii(vehicle_.vin, sizeof(vehicle_.vin), vinChunkLen_, frameIdx, payload, dataLen, nowMs, &vehicle_.lastVinMs);
+        if (fullPayload || dataLen > 4)
+        {
+            updateMode09FullAscii(ecu->vin, sizeof(ecu->vin), data, dataLen, nowMs, &ecu->lastVinMs);
+        }
+        else
+        {
+            updateMode09AsciiChunks(ecu->vin,
+                                    sizeof(ecu->vin),
+                                    chunks.vinChunkLen,
+                                    chunks.vinChunks,
+                                    frameIdx,
+                                    data,
+                                    dataLen,
+                                    nowMs,
+                                    &ecu->lastVinMs,
+                                    false);
+        }
+        mirrorPrimaryMode09(*ecu);
         return true;
     }
 
     if (pid == 0x04)
     {
-        updateMode09Ascii(vehicle_.calid, sizeof(vehicle_.calid), calidChunkLen_, frameIdx, payload, dataLen, nowMs, &vehicle_.lastCalIdMs);
+        if (fullPayload || dataLen > 4)
+        {
+            updateMode09FullAscii(ecu->calid, sizeof(ecu->calid), data, dataLen, nowMs, &ecu->lastCalIdMs);
+        }
+        else
+        {
+            updateMode09AsciiChunks(ecu->calid,
+                                    sizeof(ecu->calid),
+                                    chunks.calidChunkLen,
+                                    chunks.calidChunks,
+                                    frameIdx,
+                                    data,
+                                    dataLen,
+                                    nowMs,
+                                    &ecu->lastCalIdMs,
+                                    false);
+        }
+        mirrorPrimaryMode09(*ecu);
         return true;
     }
 
     if (pid == 0x06)
     {
-        updateMode09Hex(vehicle_.cvn, sizeof(vehicle_.cvn), cvnChunkLen_, frameIdx, payload, dataLen, nowMs, &vehicle_.lastCvnMs);
+        updateMode09HexChunks(ecu->cvn,
+                              sizeof(ecu->cvn),
+                              chunks.cvnChunkLen,
+                              chunks.cvnChunks,
+                              frameIdx,
+                              data,
+                              dataLen,
+                              nowMs,
+                              &ecu->lastCvnMs);
+        mirrorPrimaryMode09(*ecu);
+        return true;
+    }
+
+    if (pid == 0x08 || pid == 0x0B || pid == 0x0C)
+    {
+        updateMode09FullHex(ecu->iptRaw, sizeof(ecu->iptRaw), data, dataLen, nowMs, &ecu->lastIptMs);
+        mirrorPrimaryMode09(*ecu);
+        return true;
+    }
+
+    if (pid == 0x0A)
+    {
+        updateMode09FullAscii(ecu->ecuName, sizeof(ecu->ecuName), data, dataLen, nowMs, &ecu->lastEcuNameMs);
+        mirrorPrimaryMode09(*ecu);
         return true;
     }
 
     return true;
 }
 
-bool ObdService::parseMode03(const CAN_FRAME &frame, uint32_t nowMs)
+bool ObdService::parseRawServiceResponse(const CAN_FRAME &frame,
+                                         uint8_t positiveService,
+                                         char *raw,
+                                         size_t rawSize,
+                                         uint32_t *lastUpdateMs,
+                                         uint32_t nowMs)
 {
-    if (!isMode03Response(frame))
+    uint8_t payloadLen = singleFramePayloadLen(frame);
+    if (!raw || rawSize == 0 || !lastUpdateMs || payloadLen < 1 || frame.length < 2 || frame.data.byte[1] != positiveService)
     {
         return false;
     }
 
-    vehicle_.dtcCount = 0;
-    memset(vehicle_.dtcs, 0, sizeof(vehicle_.dtcs));
+    uint8_t rawLen = (uint8_t)(payloadLen + 1);
+    if (rawLen > frame.length)
+    {
+        rawLen = frame.length;
+    }
+    formatDataHex(&frame.data.byte[0], rawLen, raw, rawSize);
+    *lastUpdateMs = nowMs;
+    return true;
+}
 
-    for (uint8_t i = 2; i + 1 < frame.length && vehicle_.dtcCount < 8; i += 2)
+bool ObdService::parseDtcResponse(const CAN_FRAME &frame,
+                                  uint8_t positiveService,
+                                  uint8_t *count,
+                                  char dtcs[8][6],
+                                  char *raw,
+                                  size_t rawSize,
+                                  uint32_t *lastUpdateMs,
+                                  uint32_t nowMs)
+{
+    uint8_t payloadLen = singleFramePayloadLen(frame);
+    if (!count || !dtcs || !lastUpdateMs || payloadLen < 1 || frame.length < 2 || frame.data.byte[1] != positiveService)
+    {
+        return false;
+    }
+
+    *count = 0;
+    memset(dtcs, 0, sizeof(char) * 8U * 6U);
+
+    if (raw && rawSize > 0)
+    {
+        raw[0] = '\0';
+        uint8_t rawLen = (uint8_t)(payloadLen + 1);
+        if (rawLen > frame.length)
+        {
+            rawLen = frame.length;
+        }
+        formatDataHex(&frame.data.byte[0], rawLen, raw, rawSize);
+    }
+
+    uint8_t end = (uint8_t)(1U + payloadLen);
+    if (end > frame.length)
+    {
+        end = frame.length;
+    }
+    for (uint8_t i = 2; i + 1 < end && *count < 8; i += 2)
     {
         uint8_t a = frame.data.byte[i];
         uint8_t b = frame.data.byte[i + 1];
@@ -1748,11 +2514,113 @@ bool ObdService::parseMode03(const CAN_FRAME &frame, uint32_t nowMs)
             continue;
         }
 
-        decodeDtcWord(a, b, vehicle_.dtcs[vehicle_.dtcCount]);
-        vehicle_.dtcCount++;
+        decodeDtcWord(a, b, dtcs[*count]);
+        (*count)++;
     }
 
-    vehicle_.lastDtcMs = nowMs;
+    *lastUpdateMs = nowMs;
+    return true;
+}
+
+bool ObdService::handleIsoTpPayload(uint32_t responseId, const uint8_t *payload, uint16_t payloadLen, uint32_t nowMs)
+{
+    if (!payload || payloadLen == 0)
+    {
+        return false;
+    }
+
+    if (payload[0] == 0x49)
+    {
+        bool ok = parseMode09Payload(responseId, false, payload, payloadLen, true, nowMs);
+        if (ok)
+        {
+            decodedWindow_++;
+        }
+        return ok;
+    }
+
+    if (payload[0] == 0x46)
+    {
+        bool ok = parseMode06Payload(payload, payloadLen, nowMs);
+        if (ok)
+        {
+            decodedWindow_++;
+        }
+        return ok;
+    }
+
+    return false;
+}
+
+bool ObdService::handleIsoTpFrame(const CAN_FRAME &frame, uint32_t nowMs)
+{
+    if (!isObdResponseFrame(frame) || frame.length < 2)
+    {
+        return false;
+    }
+
+    uint8_t pci = frame.data.byte[0];
+    uint8_t type = pci & 0xF0;
+
+    if (type == 0x10 && frame.length >= 3)
+    {
+        uint16_t expectedLen = (uint16_t)(((uint16_t)(pci & 0x0F) << 8) | frame.data.byte[1]);
+        if (expectedLen == 0)
+        {
+            return false;
+        }
+        if (expectedLen > sizeof(isoTpRx_.payload))
+        {
+            expectedLen = sizeof(isoTpRx_.payload);
+        }
+
+        isoTpRx_ = {};
+        isoTpRx_.active = true;
+        isoTpRx_.extended = frame.extended != 0;
+        isoTpRx_.responseId = frame.id;
+        isoTpRx_.expectedLen = expectedLen;
+        isoTpRx_.nextSeq = 1;
+        isoTpRx_.len = boundedPayloadLen(frame.length - 2, expectedLen);
+        memcpy(isoTpRx_.payload, &frame.data.byte[2], isoTpRx_.len);
+        sendIsoTpFlowControl(frame);
+
+        if (isoTpRx_.len >= isoTpRx_.expectedLen)
+        {
+            bool ok = handleIsoTpPayload(frame.id, isoTpRx_.payload, isoTpRx_.len, nowMs);
+            isoTpRx_.active = false;
+            return ok;
+        }
+        return true;
+    }
+
+    if (type != 0x20 || !isoTpRx_.active || frame.id != isoTpRx_.responseId || (frame.extended != 0) != isoTpRx_.extended)
+    {
+        return false;
+    }
+
+    uint8_t seq = pci & 0x0F;
+    if (seq != isoTpRx_.nextSeq)
+    {
+        isoTpRx_.active = false;
+        return true;
+    }
+    isoTpRx_.nextSeq = (uint8_t)((isoTpRx_.nextSeq + 1) & 0x0F);
+
+    uint16_t remaining = isoTpRx_.expectedLen > isoTpRx_.len ? (isoTpRx_.expectedLen - isoTpRx_.len) : 0;
+    uint8_t copyLen = boundedPayloadLen(frame.length - 1, remaining);
+    if (copyLen > 0)
+    {
+        memcpy(&isoTpRx_.payload[isoTpRx_.len], &frame.data.byte[1], copyLen);
+        isoTpRx_.len += copyLen;
+    }
+
+    if (isoTpRx_.len >= isoTpRx_.expectedLen)
+    {
+        bool ok = handleIsoTpPayload(frame.id, isoTpRx_.payload, isoTpRx_.len, nowMs);
+        isoTpRx_.active = false;
+        return ok;
+    }
+
     return true;
 }
 
@@ -1763,8 +2631,30 @@ bool ObdService::handleFrame(const CAN_FRAME &frame, uint32_t nowMs)
         return false;
     }
 
+    if (handleIsoTpFrame(frame, nowMs))
+    {
+        totalResponses_++;
+        respWindow_++;
+        return true;
+    }
+
     totalResponses_++;
     respWindow_++;
+
+    if (isMode02Response(frame))
+    {
+        bool ok = parseRawServiceResponse(frame,
+                                          0x42,
+                                          vehicle_.freezeFrameRaw,
+                                          sizeof(vehicle_.freezeFrameRaw),
+                                          &vehicle_.lastFreezeFrameMs,
+                                          nowMs);
+        if (ok)
+        {
+            decodedWindow_++;
+        }
+        return ok;
+    }
 
     if (isMode09Response(frame))
     {
@@ -1778,7 +2668,60 @@ bool ObdService::handleFrame(const CAN_FRAME &frame, uint32_t nowMs)
 
     if (isMode03Response(frame))
     {
-        bool ok = parseMode03(frame, nowMs);
+        bool ok = parseDtcResponse(frame,
+                                   0x43,
+                                   &vehicle_.storedDtcCount,
+                                   vehicle_.storedDtcs,
+                                   vehicle_.storedDtcRaw,
+                                   sizeof(vehicle_.storedDtcRaw),
+                                   &vehicle_.lastDtcMs,
+                                   nowMs);
+        if (ok)
+        {
+            vehicle_.dtcCount = vehicle_.storedDtcCount;
+            memcpy(vehicle_.dtcs, vehicle_.storedDtcs, sizeof(vehicle_.dtcs));
+            decodedWindow_++;
+        }
+        return ok;
+    }
+
+    if (isMode06Response(frame))
+    {
+        bool ok = parseMode06(frame, nowMs);
+        if (ok)
+        {
+            decodedWindow_++;
+        }
+        return ok;
+    }
+
+    if (isMode07Response(frame))
+    {
+        bool ok = parseDtcResponse(frame,
+                                   0x47,
+                                   &vehicle_.pendingDtcCount,
+                                   vehicle_.pendingDtcs,
+                                   vehicle_.pendingDtcRaw,
+                                   sizeof(vehicle_.pendingDtcRaw),
+                                   &vehicle_.lastPendingDtcMs,
+                                   nowMs);
+        if (ok)
+        {
+            decodedWindow_++;
+        }
+        return ok;
+    }
+
+    if (isMode0AResponse(frame))
+    {
+        bool ok = parseDtcResponse(frame,
+                                   0x4A,
+                                   &vehicle_.permanentDtcCount,
+                                   vehicle_.permanentDtcs,
+                                   vehicle_.permanentDtcRaw,
+                                   sizeof(vehicle_.permanentDtcRaw),
+                                   &vehicle_.lastPermanentDtcMs,
+                                   nowMs);
         if (ok)
         {
             decodedWindow_++;
@@ -1791,9 +2734,16 @@ bool ObdService::handleFrame(const CAN_FRAME &frame, uint32_t nowMs)
         return false;
     }
 
+    uint8_t payloadLen = singleFramePayloadLen(frame);
+    if (payloadLen < 2)
+    {
+        return false;
+    }
+
     uint8_t pid = frame.data.byte[2];
-    uint8_t dataLen = frame.length > 3 ? (uint8_t)(frame.length - 3) : 0;
+    uint8_t dataLen = boundedPayloadLen((uint8_t)(payloadLen - 2), frame.length > 3 ? (uint8_t)(frame.length - 3) : 0);
     const uint8_t *data = &frame.data.byte[3];
+    recordMetricRaw(pid, data, dataLen, nowMs);
     markMode01Response(pid, nowMs);
 
     if (!isSupportBitmapPid(pid) && !supported_[pid])
@@ -1805,7 +2755,7 @@ bool ObdService::handleFrame(const CAN_FRAME &frame, uint32_t nowMs)
 
     if (isSupportBitmapPid(pid))
     {
-        handleSupportedBitmap(pid, data, dataLen);
+        handleSupportedBitmap(pid, data, dataLen, nowMs);
         decodedWindow_++;
         return true;
     }
@@ -1842,11 +2792,21 @@ uint16_t ObdService::collectMetrics(ObdMetric *out, uint16_t maxOut) const
         if (supported_[pid])
         {
             ObdMetric tmp{};
+            const Mode01PidMeta *meta = findMode01Meta((uint8_t)pid);
+            tmp.mode = 0x01;
             tmp.pid = (uint8_t)pid;
             tmp.supported = true;
             tmp.decoded = false;
-            snprintf(tmp.key, sizeof(tmp.key), "pid_%02X", (unsigned int)pid);
+            snprintf(tmp.key, sizeof(tmp.key), "%s", meta ? meta->name : "");
+            if (tmp.key[0] == '\0')
+            {
+                snprintf(tmp.key, sizeof(tmp.key), "pid_%02X", (unsigned int)pid);
+            }
             snprintf(tmp.value, sizeof(tmp.value), "--");
+            snprintf(tmp.unit, sizeof(tmp.unit), "%s", meta ? meta->unit : "");
+            snprintf(tmp.formula, sizeof(tmp.formula), "%s", meta ? meta->formula : "");
+            snprintf(tmp.category, sizeof(tmp.category), "%s", meta ? meta->category : defaultCategoryForPid((uint8_t)pid));
+            snprintf(tmp.notes, sizeof(tmp.notes), "%s", "supported");
             out[count++] = tmp;
         }
     }

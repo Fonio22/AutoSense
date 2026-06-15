@@ -5,6 +5,7 @@
 
 struct ObdMetric
 {
+    uint8_t mode{1};
     uint8_t pid{0};
     bool supported{false};
     bool decoded{false};
@@ -12,22 +13,73 @@ struct ObdMetric
     bool error{false};
     uint32_t lastUpdateMs{0};
     uint32_t lastChangeMs{0};
+    uint32_t firstUpdateMs{0};
+    uint32_t updateCount{0};
+    uint32_t avgIntervalMs{0};
     char key[20]{0};
     char value[24]{0};
     char unit[12]{0};
+    char formula[28]{0};
+    char raw[24]{0};
+    char category[14]{0};
+    char notes[28]{0};
+};
+
+struct ObdMode09EcuInfo
+{
+    uint32_t responseId{0};
+    bool extended{false};
+    char vin[24]{0};
+    char calid[40]{0};
+    char cvn[24]{0};
+    char ecuName[40]{0};
+    char iptRaw[40]{0};
+    uint32_t lastUpdateMs{0};
+    uint32_t lastVinMs{0};
+    uint32_t lastCalIdMs{0};
+    uint32_t lastCvnMs{0};
+    uint32_t lastEcuNameMs{0};
+    uint32_t lastIptMs{0};
 };
 
 struct ObdVehicleInfo
 {
+    static constexpr uint8_t kMaxMode09Ecus = 4;
+
     char vin[24]{0};
     char calid[40]{0};
     char cvn[24]{0};
+    char ecuName[40]{0};
+    char iptRaw[40]{0};
+    char profile[20]{"generic"};
     uint8_t dtcCount{0};
     char dtcs[8][6]{{0}};
+    uint8_t storedDtcCount{0};
+    char storedDtcs[8][6]{{0}};
+    uint8_t pendingDtcCount{0};
+    char pendingDtcs[8][6]{{0}};
+    uint8_t permanentDtcCount{0};
+    char permanentDtcs[8][6]{{0}};
+    char storedDtcRaw[40]{0};
+    char pendingDtcRaw[40]{0};
+    char permanentDtcRaw[40]{0};
+    char freezeFrameRaw[40]{0};
+    char mode06Raw[40]{0};
+    char mode06Summary[56]{0};
+    uint8_t mode06LastTid{0};
+    uint8_t mode06SupportedCount{0};
+    uint8_t mode09EcuCount{0};
+    ObdMode09EcuInfo mode09Ecus[kMaxMode09Ecus]{};
     uint32_t lastVinMs{0};
     uint32_t lastCalIdMs{0};
     uint32_t lastCvnMs{0};
+    uint32_t lastEcuNameMs{0};
+    uint32_t lastIptMs{0};
+    uint32_t lastFreezeFrameMs{0};
+    uint32_t lastMode06Ms{0};
     uint32_t lastDtcMs{0};
+    uint32_t lastPendingDtcMs{0};
+    uint32_t lastPermanentDtcMs{0};
 };
 
 enum ObdCompactField : uint16_t
@@ -62,6 +114,7 @@ class ObdService
 public:
     void begin();
     void setActiveQuery(bool enabled);
+    void setDiagnosticInfoEnabled(bool enabled);
     bool activeQuery() const;
 
     void tick(uint32_t nowMs, bool canReady);
@@ -76,6 +129,7 @@ public:
     const char *mode01RouteName() const;
     uint32_t keyQueryPerSec() const;
     uint32_t bgQueryPerSec() const;
+    uint32_t readGuardBlocked() const;
 
     uint16_t collectMetrics(ObdMetric *out, uint16_t maxOut) const;
     bool collectCompactSample(uint32_t nowMs, uint32_t maxAgeMs, ObdCompactSample *out) const;
@@ -84,8 +138,8 @@ public:
     void clearWindowCounters();
 
 private:
-    static constexpr uint8_t kMaxPid = 0xC0;
-    static constexpr uint8_t kMaxQueryPids = 192;
+    static constexpr uint8_t kMaxPid = 0xE0;
+    static constexpr uint8_t kMaxQueryPids = 224;
     static constexpr uint8_t kMaxKeyPids = 16;
 
     enum class Mode01Route : uint8_t
@@ -99,7 +153,11 @@ private:
     {
         uint32_t lastKeyMs{0};
         uint32_t lastBgMs{0};
+        uint32_t lastMode02Ms{0};
+        uint32_t lastMode06Ms{0};
         uint32_t lastMode03Ms{0};
+        uint32_t lastMode07Ms{0};
+        uint32_t lastMode0AMs{0};
         uint32_t lastMode09Ms{0};
     };
 
@@ -111,18 +169,70 @@ private:
         bool active{false};
     };
 
+    struct IsoTpRxState
+    {
+        bool active{false};
+        bool extended{false};
+        uint32_t responseId{0};
+        uint32_t flowControlId{0};
+        uint16_t expectedLen{0};
+        uint16_t len{0};
+        uint8_t nextSeq{1};
+        uint8_t payload[96]{0};
+    };
+
+    struct Mode09ChunkState
+    {
+        uint32_t responseId{0};
+        bool extended{false};
+        uint8_t vinChunkLen[16]{0};
+        char vinChunks[16][5]{{0}};
+        uint8_t calidChunkLen[16]{0};
+        char calidChunks[16][5]{{0}};
+        uint8_t cvnChunkLen[16]{0};
+        uint8_t cvnChunks[16][4]{{0}};
+    };
+
     void sendMode01Request(uint8_t pid, uint32_t nowMs);
+    void sendMode02Request(uint8_t pid);
     void sendMode03Request();
+    void sendMode06Request(uint8_t tid);
+    void sendMode07Request();
+    void sendMode0ARequest();
     void sendMode09Request(uint8_t pid);
     void sendRequestFrame(uint32_t id, bool extended, uint8_t lenByte, uint8_t service, uint8_t pid);
 
     bool decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataLen, uint32_t nowMs);
-    bool parseMode03(const CAN_FRAME &frame, uint32_t nowMs);
+    bool parseDtcResponse(const CAN_FRAME &frame,
+                          uint8_t positiveService,
+                          uint8_t *count,
+                          char dtcs[8][6],
+                          char *raw,
+                          size_t rawSize,
+                          uint32_t *lastUpdateMs,
+                          uint32_t nowMs);
+    bool parseRawServiceResponse(const CAN_FRAME &frame,
+                                 uint8_t positiveService,
+                                 char *raw,
+                                 size_t rawSize,
+                                 uint32_t *lastUpdateMs,
+                                 uint32_t nowMs);
+    bool parseMode06(const CAN_FRAME &frame, uint32_t nowMs);
+    bool parseMode06Payload(const uint8_t *payload, uint16_t payloadLen, uint32_t nowMs);
     bool parseMode09(const CAN_FRAME &frame, uint32_t nowMs);
+    bool parseMode09Payload(uint32_t responseId, bool extended, const uint8_t *payload, uint16_t payloadLen, bool fullPayload, uint32_t nowMs);
+    bool handleIsoTpFrame(const CAN_FRAME &frame, uint32_t nowMs);
+    bool handleIsoTpPayload(uint32_t responseId, const uint8_t *payload, uint16_t payloadLen, uint32_t nowMs);
+    bool sendIsoTpFlowControl(const CAN_FRAME &firstFrame);
+    static uint8_t singleFramePayloadLen(const CAN_FRAME &frame);
 
     static bool isObdResponseFrame(const CAN_FRAME &frame);
     static bool isMode01Response(const CAN_FRAME &frame);
+    static bool isMode02Response(const CAN_FRAME &frame);
     static bool isMode03Response(const CAN_FRAME &frame);
+    static bool isMode06Response(const CAN_FRAME &frame);
+    static bool isMode07Response(const CAN_FRAME &frame);
+    static bool isMode0AResponse(const CAN_FRAME &frame);
     static bool isMode09Response(const CAN_FRAME &frame);
     static bool isSupportBitmapPid(uint8_t pid);
 
@@ -130,7 +240,7 @@ private:
     void rebuildQueryPlan();
     bool addKeyPid(uint8_t pid);
     bool addBgPid(uint8_t pid);
-    void handleSupportedBitmap(uint8_t pid, const uint8_t *data, uint8_t dataLen);
+    void handleSupportedBitmap(uint8_t pid, const uint8_t *data, uint8_t dataLen, uint32_t nowMs);
     bool isKeyPid(uint8_t pid) const;
     bool scheduleKeyLane(uint32_t nowMs);
     bool scheduleBgLane(uint32_t nowMs);
@@ -150,9 +260,35 @@ private:
                        bool error,
                        uint32_t nowMs);
     void setRawMetric(uint8_t pid, const uint8_t *data, uint8_t dataLen, uint32_t nowMs);
+    void recordMetricRaw(uint8_t pid, const uint8_t *data, uint8_t dataLen, uint32_t nowMs);
     void markCompactField(uint8_t fieldIndex, uint32_t nowMs);
 
     void parseMode09Support(const uint8_t *data, uint8_t dataLen);
+    void parseMode06Support(uint8_t tid, const uint8_t *data, uint8_t dataLen);
+    uint8_t nextMode06Tid();
+    void updateVehicleProfile();
+    ObdMode09EcuInfo *mode09EcuForResponse(uint32_t responseId, bool extended);
+    void resetMode09Chunks(uint8_t slot);
+    void mirrorPrimaryMode09(const ObdMode09EcuInfo &ecu);
+    void updateMode09AsciiChunks(char *target,
+                                 size_t targetSize,
+                                 uint8_t *chunkLens,
+                                 char chunks[16][5],
+                                 uint8_t frameIdx,
+                                 const uint8_t *payload,
+                                 uint8_t payloadLen,
+                                 uint32_t nowMs,
+                                 uint32_t *lastUpdateMs,
+                                 bool updateProfile);
+    void updateMode09HexChunks(char *target,
+                               size_t targetSize,
+                               uint8_t *chunkLens,
+                               uint8_t chunks[16][4],
+                               uint8_t frameIdx,
+                               const uint8_t *payload,
+                               uint8_t payloadLen,
+                               uint32_t nowMs,
+                               uint32_t *lastUpdateMs);
     void updateMode09Ascii(char *target,
                            size_t targetSize,
                            uint8_t *chunkLens,
@@ -161,6 +297,12 @@ private:
                            uint8_t payloadLen,
                            uint32_t nowMs,
                            uint32_t *lastUpdateMs);
+    void updateMode09FullAscii(char *target,
+                               size_t targetSize,
+                               const uint8_t *payload,
+                               uint8_t payloadLen,
+                               uint32_t nowMs,
+                               uint32_t *lastUpdateMs);
     void updateMode09Hex(char *target,
                          size_t targetSize,
                          uint8_t *chunkLens,
@@ -169,9 +311,16 @@ private:
                          uint8_t payloadLen,
                          uint32_t nowMs,
                          uint32_t *lastUpdateMs);
+    void updateMode09FullHex(char *target,
+                             size_t targetSize,
+                             const uint8_t *payload,
+                             uint8_t payloadLen,
+                             uint32_t nowMs,
+                             uint32_t *lastUpdateMs);
 
     bool activeQuery_{false};
     bool discoveryComplete_{false};
+    bool diagnosticInfoEnabled_{true};
 
     bool supportAnswered_[7] = {false, false, false, false, false, false, false};
     bool supported_[256] = {false};
@@ -179,6 +328,7 @@ private:
 
     bool mode09Supported_[256] = {false};
     bool mode09SupportKnown_{false};
+    bool mode06Supported_[256] = {false};
 
     uint8_t supportCursor_{0};
     uint8_t keyQueryPids_[kMaxKeyPids] = {0};
@@ -190,6 +340,9 @@ private:
     ObdPidHealth pidHealth_[256];
 
     uint8_t mode09Cursor_{0};
+    uint8_t mode06SupportCursor_{0};
+    uint8_t mode06TidCursor_{1};
+    bool mode06DiscoveryComplete_{false};
 
     uint32_t lastSupportMs_{0};
     uint32_t lastDiscoveryRefreshMs_{0};
@@ -201,6 +354,8 @@ private:
     uint32_t totalResponses_{0};
     uint32_t keyQueryWindow_{0};
     uint32_t bgQueryWindow_{0};
+    uint32_t readGuardBlocked_{0};
+    uint32_t isoTpFlowControlBlocked_{0};
 
     Mode01Route mode01Route_{Mode01Route::StdFunctional7DF};
     Mode01Route mode01ReprobeReturnRoute_{Mode01Route::StdFunctional7DF};
@@ -219,6 +374,7 @@ private:
     ObdVehicleInfo vehicle_{};
     ObdCompactSample compactSample_{};
     uint32_t compactLastUpdateMs_[9] = {0};
+    IsoTpRxState isoTpRx_{};
 
     // Indexed by frame number (1..15) for simple ISO-TP style chunk assembly.
     uint8_t vinChunkLen_[16] = {0};
@@ -227,4 +383,5 @@ private:
     char calidChunks_[16][5] = {{0}};
     uint8_t cvnChunkLen_[16] = {0};
     uint8_t cvnChunks_[16][4] = {{0}};
+    Mode09ChunkState mode09Chunks_[ObdVehicleInfo::kMaxMode09Ecus]{};
 };

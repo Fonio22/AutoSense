@@ -10,6 +10,9 @@ struct AppRuntimeConfig
     bool dashboardEnabled{true};
     bool dashboardEbookMode{true};
     uint32_t dashboardIntervalMs{1000};
+    bool obdDiagnosticInfoEnabled{true};
+    bool vagExtendedEnabled{false};
+    bool vagForceProfile{false};
 };
 
 bool loadAppRuntimeConfig(AppRuntimeConfig &config);

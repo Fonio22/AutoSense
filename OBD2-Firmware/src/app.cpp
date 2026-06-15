@@ -7,7 +7,9 @@
 #include "app_config.h"
 #include "obd_binary_logger.h"
 #include "obd_dashboard.h"
+#include "obd_read_only_guard.h"
 #include "obd_service.h"
+#include "uds_vag_scanner.h"
 
 namespace
 {
@@ -31,6 +33,7 @@ struct CanConfig
 ObdService OBD;
 ObdDashboard DASH;
 ObdBinaryLogger LOGGER;
+UdsVagScanner VAG;
 AppRuntimeConfig RUNTIME_CONFIG;
 
 bool can_ok = false;
@@ -94,6 +97,7 @@ void processCanFrames(uint32_t nowMs)
     while (CAN0.read(frame))
     {
         OBD.handleFrame(frame, nowMs);
+        VAG.handleFrame(frame, nowMs);
         can_window++;
     }
 }
@@ -140,20 +144,26 @@ void appSetup()
     digitalWrite(CAN_LBK_PIN, LOW);
 
     OBD.begin();
+    VAG.begin();
     config_loaded = loadAppRuntimeConfig(RUNTIME_CONFIG);
+    OBD.setDiagnosticInfoEnabled(RUNTIME_CONFIG.obdDiagnosticInfoEnabled);
+    ObdReadOnlyGuard::printPolicy(Serial);
     DASH.setIntervalMs(RUNTIME_CONFIG.dashboardIntervalMs);
     DASH.begin();
     LOGGER.configure(RUNTIME_CONFIG.loggingEnabled, RUNTIME_CONFIG.loggingIntervalSeconds);
     bool logReady = LOGGER.begin();
 
-    Serial.printf("[boot] config=%s log=%s log_capacity=%lu interval=%lus dashboard=%s/%lums ebook=%s transport=USB-CDC\n",
+    Serial.printf("[boot] config=%s log=%s log_capacity=%lu interval=%lus dashboard=%s/%lums ebook=%s obd_diag=%s vag_ext=%s vag_force=%s transport=USB-CDC\n",
                   config_loaded ? "ini" : "defaults",
                   logReady ? "ready" : "down",
                   (unsigned long)LOGGER.stats().capacityRecords,
                   (unsigned long)LOGGER.stats().intervalSeconds,
                   RUNTIME_CONFIG.dashboardEnabled ? "on" : "off",
                   (unsigned long)RUNTIME_CONFIG.dashboardIntervalMs,
-                  RUNTIME_CONFIG.dashboardEbookMode ? "on" : "off");
+                  RUNTIME_CONFIG.dashboardEbookMode ? "on" : "off",
+                  RUNTIME_CONFIG.obdDiagnosticInfoEnabled ? "on" : "off",
+                  RUNTIME_CONFIG.vagExtendedEnabled ? "on" : "off",
+                  RUNTIME_CONFIG.vagForceProfile ? "on" : "off");
 
     initCan();
     pulseLed(LED_OK, 180);
@@ -164,6 +174,9 @@ void appLoop()
     uint32_t nowMs = millis();
 
     OBD.tick(nowMs, can_ok);
+    const ObdVehicleInfo &vehicleInfo = OBD.vehicleInfo();
+    const bool vagProfileAllowed = strcmp(vehicleInfo.profile, "vw-vag") == 0 || RUNTIME_CONFIG.vagForceProfile;
+    VAG.tick(nowMs, can_ok, RUNTIME_CONFIG.vagExtendedEnabled && vagProfileAllowed);
     processCanFrames(nowMs);
     refreshSecondStats(nowMs);
 
@@ -183,6 +196,10 @@ void appLoop()
     dashState.obdDecPerSec = stats_dec_fps;
     dashState.keyQueryPerSec = stats_key_qps;
     dashState.bgQueryPerSec = stats_bg_qps;
+    dashState.readGuardBlocked = OBD.readGuardBlocked();
+    dashState.vagEnabled = VAG.enabled();
+    dashState.vagActive = VAG.active();
+    dashState.vagGuardBlocked = VAG.blockedCount();
     dashState.uptimeMs = nowMs;
     const ObdLogStats &logStats = LOGGER.stats();
     dashState.logReady = logStats.ready;
@@ -198,7 +215,7 @@ void appLoop()
 
     if (RUNTIME_CONFIG.dashboardEnabled)
     {
-        DASH.tick(nowMs, dashState, OBD, OBD.vehicleInfo());
+        DASH.tick(nowMs, dashState, OBD, vehicleInfo, VAG);
     }
 
     delay(1);
