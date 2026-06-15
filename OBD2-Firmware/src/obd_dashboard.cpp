@@ -15,7 +15,6 @@ constexpr const char *C_GRY = "\x1b[90m";
 
 constexpr uint32_t kPageRotateMs = 2000;
 constexpr uint16_t kPageRowsPerFrame = 6;
-constexpr uint16_t kDashboardLocalUdpPort = 3334;
 
 const uint8_t kKeyPidOrder[] = {
     0x0C, 0x0D, 0x05, 0x11, 0x2F, 0x10, 0x0B, 0x0F, 0x42, 0x5C, 0x5E,
@@ -27,29 +26,14 @@ const char *statusText(bool ok)
 }
 } // namespace
 
-void ObdDashboard::begin(IPAddress host, uint16_t port)
+void ObdDashboard::begin()
 {
-    host_ = host;
-    port_ = port;
-    // Keep a stable UDP source port so listeners like `nc -ulk` keep receiving frames.
-    udp_.begin(kDashboardLocalUdpPort);
     started_ = true;
 }
 
 void ObdDashboard::setIntervalMs(uint32_t intervalMs)
 {
     frameIntervalMs_ = intervalMs < 50 ? 50 : intervalMs;
-}
-
-void ObdDashboard::setTarget(IPAddress host, uint16_t port)
-{
-    host_ = host;
-    port_ = port;
-}
-
-IPAddress ObdDashboard::target() const
-{
-    return host_;
 }
 
 uint32_t ObdDashboard::txPackets() const
@@ -196,9 +180,9 @@ void ObdDashboard::renderFrame(ObdFrameBuffer *frame,
            (unsigned long)(state.uptimeMs / 1000UL));
 
     append(frame->data, cap, &pos,
-           "wifi=%s%s%s  can=%s%s%s  query=%s%s%s  route=%s  key_pids=%u  bg_pids=%u  q_pids=%u  sup_pids=%u  rssi=%ld\n",
-           state.wifiUp ? C_GRN : C_RED,
-           statusText(state.wifiUp),
+           "link=%s%s%s  can=%s%s%s  query=%s%s%s  mode=%s%s%s  route=%s  key_pids=%u  bg_pids=%u  q_pids=%u  sup_pids=%u\n",
+           C_GRN,
+           state.transport,
            C_RST,
            state.canOk ? C_GRN : C_RED,
            statusText(state.canOk),
@@ -206,12 +190,14 @@ void ObdDashboard::renderFrame(ObdFrameBuffer *frame,
            state.queryMode ? C_GRN : C_GRY,
            state.queryMode ? "ACTIVE" : "PASSIVE",
            C_RST,
-           state.mode01Route,
+           state.ebookMode ? C_GRN : C_YEL,
+           state.ebookMode ? "EBOOK" : "BASIC",
+           C_RST,
+           state.route,
            (unsigned int)state.keyPidCount,
            (unsigned int)state.bgPidCount,
            (unsigned int)state.queryPidCount,
-           (unsigned int)state.supportedPidCount,
-           (long)state.rssi);
+           (unsigned int)state.supportedPidCount);
 
     append(frame->data, cap, &pos,
            "fps: can=%lu rsp/s=%lu decoded/s=%lu key_q/s=%lu bg_q/s=%lu\n\n",
@@ -299,23 +285,17 @@ void ObdDashboard::renderFrame(ObdFrameBuffer *frame,
     frame->len = pos;
 }
 
-bool ObdDashboard::sendFrameTo(IPAddress host)
+bool ObdDashboard::sendFrameTo()
 {
-    if (udp_.beginPacket(host, port_) != 1)
+    size_t written = Serial.write((const uint8_t *)frame_.data, frame_.len);
+    if (written != frame_.len)
     {
         txErrors_++;
         return false;
     }
 
-    udp_.write((const uint8_t *)frame_.data, frame_.len);
-    if (udp_.endPacket() == 1)
-    {
-        txPackets_++;
-        return true;
-    }
-
-    txErrors_++;
-    return false;
+    txPackets_++;
+    return true;
 }
 
 void ObdDashboard::tick(uint32_t nowMs,
@@ -336,5 +316,5 @@ void ObdDashboard::tick(uint32_t nowMs,
     lastFrameMs_ = nowMs;
 
     renderFrame(&frame_, nowMs, state, obdService, vehicleInfo);
-    sendFrameTo(host_);
+    sendFrameTo();
 }

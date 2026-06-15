@@ -100,16 +100,13 @@ void applySetting(AppRuntimeConfig &config, const char *section, const char *key
         {
             config.dashboardEnabled = parseBool(value, config.dashboardEnabled);
         }
+        else if (strcmp(key, "ebook_mode") == 0)
+        {
+            config.dashboardEbookMode = parseBool(value, config.dashboardEbookMode);
+        }
         else if (strcmp(key, "interval_ms") == 0)
         {
             config.dashboardIntervalMs = parseU32(value, config.dashboardIntervalMs, 50, 10000);
-        }
-    }
-    else if (strcmp(section, "serial") == 0)
-    {
-        if (strcmp(key, "diag_interval_ms") == 0)
-        {
-            config.serialDiagIntervalMs = parseU32(value, config.serialDiagIntervalMs, 0, 60000);
         }
     }
 }

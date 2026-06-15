@@ -1,13 +1,11 @@
 #pragma once
 
 #include <Arduino.h>
-#include <WiFiUdp.h>
 
 #include "obd_service.h"
 
 struct ObdDashboardState
 {
-    bool wifiUp{false};
     bool canOk{false};
     bool queryMode{false};
     uint16_t queryPidCount{0};
@@ -20,7 +18,6 @@ struct ObdDashboardState
     uint32_t keyQueryPerSec{0};
     uint32_t bgQueryPerSec{0};
     uint32_t uptimeMs{0};
-    int32_t rssi{0};
     bool logReady{false};
     bool logEnabled{false};
     uint32_t logSequence{0};
@@ -28,7 +25,9 @@ struct ObdDashboardState
     uint32_t logCapacity{0};
     uint32_t logErrors{0};
     uint32_t logIntervalSeconds{0};
-    char mode01Route[8]{"7DF"};
+    bool ebookMode{true};
+    char route[8]{"7DF"};
+    char transport[12]{"USB-CDC"};
 };
 
 struct ObdFrameBuffer
@@ -44,10 +43,8 @@ class ObdDashboard
 public:
     static constexpr uint16_t kMaxMetrics = 256;
 
-    void begin(IPAddress host, uint16_t port);
+    void begin();
     void setIntervalMs(uint32_t intervalMs);
-    void setTarget(IPAddress host, uint16_t port);
-    IPAddress target() const;
     uint32_t txPackets() const;
     uint32_t txErrors() const;
 
@@ -65,7 +62,7 @@ private:
                      const ObdDashboardState &state,
                      const ObdService &obdService,
                      const ObdVehicleInfo &vehicleInfo);
-    bool sendFrameTo(IPAddress host);
+    bool sendFrameTo();
 
     void renderKeyMetrics(char *dst,
                           size_t cap,
@@ -76,11 +73,8 @@ private:
 
     const ObdMetric *findMetricByPid(const ObdMetric *metrics, uint16_t count, uint8_t pid) const;
 
-    WiFiUDP udp_;
-    IPAddress host_;
-    uint16_t port_{0};
     bool started_{false};
-    uint32_t frameIntervalMs_{200};
+    uint32_t frameIntervalMs_{1000};
 
     uint32_t lastFrameMs_{0};
     uint32_t lastPageSwitchMs_{0};

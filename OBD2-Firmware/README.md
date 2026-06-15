@@ -1,22 +1,23 @@
 # OBD2-Firmware
 
-Firmware para ESP32-S3 que consulta datos OBD2 por CAN, muestra un dashboard ANSI por UDP y guarda un historial binario compacto en la flash interna.
+Firmware para ESP32-S3 que consulta datos OBD2 por CAN, muestra un dashboard ANSI por USB-CDC y guarda un historial binario compacto en la flash interna.
 
 Flujo actual:
 
 ```text
-Simulador OBD2 -> CAN -> ESP32-S3 -> WiFi UDP :3333 -> terminal en la Mac
-                                      -> flash interna -> log binario circular
+Simulador OBD2 -> CAN -> ESP32-S3 -> USB-CDC -> monitor serial en la Mac
+                                    -> flash interna -> log binario circular
 ```
 
 ## Que hace
 
-- Inicializa WiFi y CAN en el ESP32-S3.
+- Inicializa CAN y el dashboard por cable en el ESP32-S3.
 - Consulta PIDs OBD2 importantes en tiempo real.
 - Decodifica metricas como RPM, velocidad, temperatura, throttle, combustible, MAF, MAP, voltaje ECU, DTCs y Mode 09.
-- Envia un dashboard por UDP, configurable desde `data/config.ini`.
-- Guarda una muestra binaria compacta cada N segundos, tambien configurable.
-- Usa una particion raw circular para guardar alrededor de un mes a 10 segundos por muestra.
+- Muestra un dashboard ANSI por USB-CDC.
+- Guarda una muestra binaria compacta cada N segundos en una particion raw.
+- Evita JSON, CSV y texto dentro del ESP32 para el historial.
+- Usa `dashboard.interval_ms` para la vista en vivo y `logging.interval_seconds` para el guardado historico.
 
 ## Optimizacion de almacenamiento
 
@@ -52,22 +53,6 @@ La particion usa sectores de 4096 bytes, 170 registros por sector y 274,720 regi
 
 ## Configuracion
 
-Las credenciales WiFi siguen en `src/config.h`, que no se sube a GitHub:
-
-```bash
-cp src/config.example.h src/config.h
-```
-
-Edita `src/config.h`:
-
-```cpp
-#define OBD_WIFI_SSID "TU_WIFI"
-#define OBD_WIFI_PASS "TU_PASSWORD"
-
-#define OBD_DASH_HOST_FIXED_OCTETS 192, 168, 31, 239
-#define OBD_DASH_USE_BROADCAST true
-```
-
 Los parametros operativos estan en `data/config.ini`:
 
 ```ini
@@ -78,11 +63,15 @@ max_sample_age_seconds=15
 
 [dashboard]
 enabled=true
-interval_ms=200
-
-[serial]
-diag_interval_ms=2000
+ebook_mode=true
+interval_ms=1000
 ```
+
+Interpretacion:
+
+- `logging.interval_seconds=10` guarda una muestra historica cada 10 segundos.
+- `dashboard.interval_ms=1000` refresca la vista en vivo una vez por segundo.
+- `dashboard.ebook_mode=true` activa la salida ANSI completa por cable.
 
 Sube el `config.ini` al LittleFS:
 
@@ -111,39 +100,21 @@ Con puerto explicito:
 pio run -t upload -e esp32-s3-devkitm-1 --upload-port /dev/cu.usbmodem1101
 ```
 
-Ver diagnostico serial:
+## Ver dashboard en vivo
+
+El dashboard ya no usa UDP. Se ve directo por USB-CDC con el monitor serial:
 
 ```bash
 pio device monitor -p /dev/cu.usbmodem1101 -b 115200
 ```
 
-Linea esperada:
+Linea esperada al arrancar:
 
 ```text
-[diag] wifi=UP ... can=OK ... rsp/s=... decoded/s=... log=ON log_seq=...
+[boot] config=ini log=ready log_capacity=... interval=10s dashboard=on/1000ms ebook=on transport=USB-CDC
 ```
 
-`log_seq` debe subir cada `logging.interval_seconds` si hay datos OBD frescos.
-
-## Ver dashboard UDP
-
-Recomendado:
-
-```bash
-python3 tools/udp_terminal_client.py --port 3333
-```
-
-En esta Mac tambien puedes usar el Python del sistema si tu `python3` del PATH no muestra salida:
-
-```bash
-/usr/bin/python3 tools/udp_terminal_client.py --port 3333
-```
-
-Tambien puede funcionar:
-
-```bash
-nc -luk 3333
-```
+En pantalla deberias ver `link=USB-CDC`, `mode=EBOOK`, `can=OK`, `rsp/s > 0`, `decoded/s > 0` y `log_seq` subiendo cada 10 segundos.
 
 ## Exportar el log
 
@@ -181,8 +152,7 @@ python3 tools/dump_obd_log.py --port /dev/cu.usbmodem1101 --out output/obdlog.cs
   - RX: `GPIO12`
   - TX: `GPIO13`
   - LBK/loopback transceiver: `GPIO14` en LOW
-- Puerto dashboard UDP: `3333`
-- Puerto local UDP del ESP32: `3334`
+- Transporte en vivo: USB-CDC por `Serial`
 
 ## Estructura relevante
 
@@ -193,23 +163,20 @@ data/config.ini
 src/
   app.cpp
   app_config.cpp
-  config.example.h
-  main.cpp
   obd_binary_logger.cpp
   obd_dashboard.cpp
   obd_service.cpp
 tools/
   dump_obd_log.py
-  udp_terminal_client.py
 ```
 
 ## Troubleshooting
 
-Si no aparece dashboard:
+Si no aparece el dashboard:
 
-- Confirma que la Mac y el ESP32 estan en la misma red WiFi.
-- Usa `python3 tools/udp_terminal_client.py --port 3333`.
-- Revisa serial y confirma `wifi=UP`, `udp_tx` subiendo y `udp_err=0`.
+- Confirma que el monitor serial esta abierto en el puerto USB correcto.
+- Revisa que el ESP32-S3 este flasheado con `ARDUINO_USB_CDC_ON_BOOT=1`.
+- Confirma que `dashboard.enabled=true`.
 
 Si no hay datos OBD:
 
@@ -221,13 +188,11 @@ Si no se guardan logs:
 
 - Confirma `log=ON`.
 - Confirma que `decoded/s > 0`.
-- Revisa que `max_sample_age_seconds` no sea menor al tiempo real entre respuestas OBD.
+- Revisa que `max_sample_age_seconds` no sea menor que el tiempo real entre respuestas OBD.
 - `log_seq` solo sube cuando hay al menos una metrica compacta fresca.
 
 ## Archivos que no se suben
 
 - `.pio/`
-- `src/config.h`
-- `sdkconfig.*`
 - `output/`
 - logs y caches locales
