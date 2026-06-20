@@ -33,7 +33,12 @@ export default function RegisterEmailScreen() {
           />
         }
         onSecondaryPress={() => backOrFallback("/")}
-        onPrimaryPress={() => router.push("/register/data")}
+        onPrimaryPress={() =>
+          router.push({
+            pathname: "/register/data",
+            params: { email: email.trim() },
+          })
+        }
         primaryIcon={
           <ArrowRight color={accentForeground} size={18} strokeWidth={2.2} />
         }

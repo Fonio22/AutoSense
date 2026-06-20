@@ -34,6 +34,14 @@ export const PENCIL = {
   white: "#FFFFFF",
 };
 
+const ABSOLUTE_FILL = {
+  bottom: 0,
+  left: 0,
+  position: "absolute" as const,
+  right: 0,
+  top: 0,
+};
+
 export function AppScreen({
   header,
   children,
@@ -75,6 +83,7 @@ export function AppScreen({
         <View
           style={[
             styles.container,
+            styles.containerFill,
             {
               paddingTop: contentTopPadding,
               paddingBottom: insets.bottom + contentBottomPadding,
@@ -494,6 +503,7 @@ export function ListRow({
   valueColor = PENCIL.text,
   onPress,
   subtle = false,
+  borderless = false,
 }: {
   icon?: ReactNode;
   title: string;
@@ -502,10 +512,12 @@ export function ListRow({
   valueColor?: string;
   onPress?: () => void;
   subtle?: boolean;
+  borderless?: boolean;
 }) {
   const rowStyle = [
     styles.listRow,
     subtle ? styles.listRowSubtle : styles.listRowDefault,
+    borderless ? styles.listRowBorderless : null,
   ];
 
   const content = (
@@ -554,23 +566,30 @@ export function ProfileAvatar({
   initials,
   label,
   subtitle,
+  photoURL,
+  borderless = false,
 }: {
   initials: string;
   label: string;
   subtitle: string;
+  photoURL?: string | null;
+  borderless?: boolean;
 }) {
   return (
-    <View style={styles.profileSummary}>
+    <View style={[styles.profileSummary, borderless ? styles.profileSummaryBorderless : null]}>
       <Avatar size="lg" color="accent" variant="soft">
+        {photoURL ? <Avatar.Image source={{ uri: photoURL }} /> : null}
         <Avatar.Fallback>{initials}</Avatar.Fallback>
       </Avatar>
-      <View style={{ flex: 1 }}>
+      <View style={styles.profileCopy}>
         <Text style={styles.profileName}>{label}</Text>
         <Text style={styles.profileSubtitle}>{subtitle}</Text>
       </View>
-      <Chip variant="soft" color="accent" size="sm">
-        <Chip.Label>Activo</Chip.Label>
-      </Chip>
+      <View style={styles.profileChipWrap}>
+        <Chip variant="soft" color="accent" size="sm">
+          <Chip.Label>Activo</Chip.Label>
+        </Chip>
+      </View>
     </View>
   );
 }
@@ -587,6 +606,9 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 390,
     alignSelf: "center",
+  },
+  containerFill: {
+    flex: 1,
   },
   pageHeader: {
     flexDirection: "row",
@@ -656,18 +678,18 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.96 }],
   },
   headerBackButtonGlass: {
-    ...StyleSheet.absoluteFillObject,
+    ...ABSOLUTE_FILL,
     borderRadius: 21,
   },
   headerBackButtonGlassChrome: {
-    ...StyleSheet.absoluteFillObject,
+    ...ABSOLUTE_FILL,
     borderRadius: 21,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.72)",
     backgroundColor: "rgba(255, 255, 255, 0.18)",
   },
   headerBackButtonFallback: {
-    ...StyleSheet.absoluteFillObject,
+    ...ABSOLUTE_FILL,
     borderRadius: 21,
     backgroundColor: "rgba(248, 250, 252, 0.60)",
   },
@@ -862,19 +884,27 @@ const styles = StyleSheet.create({
     backgroundColor: PENCIL.surface,
     borderColor: PENCIL.border,
   },
+  listRowBorderless: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 0,
+  },
   listRowPressed: {
     opacity: 0.9,
   },
   listRowLeading: {
     flex: 1,
+    minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
   listRowTrailing: {
+    maxWidth: "44%",
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 1,
     gap: 6,
+    minWidth: 0,
   },
   listRowTitle: {
     color: PENCIL.text,
@@ -893,16 +923,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     fontWeight: "800",
+    flexShrink: 1,
+    textAlign: "right",
   },
   profileSummary: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 12,
     borderRadius: 18,
     backgroundColor: PENCIL.surfaceAlt,
     borderWidth: 1,
     borderColor: PENCIL.border,
     padding: 12,
+  },
+  profileSummaryBorderless: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 0,
+  },
+  profileCopy: {
+    flex: 1,
+    minWidth: 0,
+    paddingTop: 2,
+  },
+  profileChipWrap: {
+    paddingTop: 2,
   },
   profileName: {
     color: PENCIL.text,

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useSession } from '@/components/providers/session-provider';
 import {
   AppScreen,
   IconBubble,
@@ -15,100 +16,98 @@ import {
   ScreenTitle,
   SurfaceCard,
 } from '@/components/pencil-ui';
+import { type AutoSenseTripDoc, useUserTrips } from '@/lib/autosense-data';
 
-const tripStats = [
-  {
-    title: 'Total',
-    value: '109.3',
-    subtitle: 'Kilómetros',
-    icon: <Route color={PENCIL.accent} size={16} strokeWidth={2.1} />,
-    iconBackground: PENCIL.accentSoft,
-    iconColor: PENCIL.accent,
-  },
-  {
-    title: 'Tiempo',
-    value: '2h 07m',
-    subtitle: 'Conducción',
-    icon: <TimerReset color={PENCIL.success} size={16} strokeWidth={2.1} />,
-    iconBackground: PENCIL.successSoft,
-    iconColor: PENCIL.success,
-  },
-  {
-    title: 'Score',
-    value: '90',
-    subtitle: 'Promedio',
-    icon: <Gauge color={PENCIL.warning} size={16} strokeWidth={2.1} />,
-    iconBackground: PENCIL.warningSoft,
-    iconColor: PENCIL.warning,
-  },
-  {
-    title: 'Combustible',
-    value: '17.2L',
-    subtitle: 'Estimado',
-    icon: <Fuel color={PENCIL.accent} size={16} strokeWidth={2.1} />,
-    iconBackground: PENCIL.accentSoft,
-    iconColor: PENCIL.accent,
-  },
-] as const;
+function getTripColors(category: AutoSenseTripDoc['category']) {
+  switch (category) {
+    case 'city':
+      return {
+        iconBackground: '#F1ECFF',
+        iconColor: '#6D5EF9',
+        statusBackground: PENCIL.successSoft,
+        statusColor: PENCIL.success,
+      };
+    case 'north':
+      return {
+        iconBackground: '#EAF6FF',
+        iconColor: '#0EA5E9',
+        statusBackground: '#EEF2FF',
+        statusColor: PENCIL.accent,
+      };
+    case 'home':
+      return {
+        iconBackground: PENCIL.successSoft,
+        iconColor: PENCIL.success,
+        statusBackground: PENCIL.successSoft,
+        statusColor: PENCIL.success,
+      };
+    default:
+      return {
+        iconBackground: '#EEF2FF',
+        iconColor: PENCIL.accent,
+        statusBackground: PENCIL.successSoft,
+        statusColor: PENCIL.success,
+      };
+  }
+}
 
-const trips = [
-  {
-    id: 'today',
-    period: 'Hoy',
-    route: 'Universidad',
-    summary: '32 min · 18.4 km · 1.6 L',
-    score: '91',
-    iconBackground: '#EEF2FF',
-    iconColor: PENCIL.accent,
-    timeLabel: '32 min',
-    fuelLabel: '1.6 L',
-    statusLabel: 'Alta',
-    statusBackground: PENCIL.successSoft,
-    statusColor: PENCIL.success,
-  },
-  {
-    id: 'yesterday',
-    period: 'Ayer',
-    route: 'Centro',
-    summary: '48 min · 24.1 km · 2.4 L',
-    score: '88',
-    iconBackground: '#F1ECFF',
-    iconColor: '#6D5EF9',
-    timeLabel: '48 min',
-    fuelLabel: '2.4 L',
-    statusLabel: 'Media',
-    statusBackground: PENCIL.successSoft,
-    statusColor: PENCIL.success,
-  },
-  {
-    id: 'north',
-    period: '28 may',
-    route: 'Ruta norte',
-    summary: '1h 12 min · 54.8 km · 4.9 L',
-    score: '95',
-    iconBackground: '#EAF6FF',
-    iconColor: '#0EA5E9',
-    timeLabel: '1h 12m',
-    fuelLabel: '4.9 L',
-    statusLabel: 'Norte',
-    statusBackground: '#EEF2FF',
-    statusColor: PENCIL.accent,
-  },
-  {
-    id: 'home',
-    period: '26 may',
-    route: 'Casa',
-    summary: '21 min · 11.2 km · 0.9 L',
-    score: '94',
-    iconBackground: PENCIL.successSoft,
-    iconColor: PENCIL.success,
-    timeLabel: '21 min',
-    fuelLabel: '0.9 L',
-    statusLabel: 'Óptima',
-    statusBackground: PENCIL.successSoft,
-    statusColor: PENCIL.success,
-  },
-] as const;
+function formatMinutes(totalMinutes: number) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (!hours) {
+    return `${minutes}m`;
+  }
+
+  return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+}
+
+function buildTripStats(trips: AutoSenseTripDoc[]) {
+  const totalDistance = trips.reduce(
+    (sum, trip) => sum + Number.parseFloat(trip.distanceLabel),
+    0,
+  );
+  const totalFuel = trips.reduce((sum, trip) => sum + trip.fuelLiters, 0);
+  const totalMinutes = trips.reduce((sum, trip) => sum + trip.durationMinutes, 0);
+  const averageScore = trips.length
+    ? Math.round(trips.reduce((sum, trip) => sum + trip.score, 0) / trips.length)
+    : 0;
+
+  return [
+    {
+      title: 'Total',
+      value: totalDistance.toFixed(1),
+      subtitle: 'Kilometros',
+      icon: <Route color={PENCIL.accent} size={16} strokeWidth={2.1} />,
+      iconBackground: PENCIL.accentSoft,
+      iconColor: PENCIL.accent,
+    },
+    {
+      title: 'Tiempo',
+      value: formatMinutes(totalMinutes),
+      subtitle: 'Conduccion',
+      icon: <TimerReset color={PENCIL.success} size={16} strokeWidth={2.1} />,
+      iconBackground: PENCIL.successSoft,
+      iconColor: PENCIL.success,
+    },
+    {
+      title: 'Score',
+      value: String(averageScore || 0),
+      subtitle: 'Promedio',
+      icon: <Gauge color={PENCIL.warning} size={16} strokeWidth={2.1} />,
+      iconBackground: PENCIL.warningSoft,
+      iconColor: PENCIL.warning,
+    },
+    {
+      title: 'Combustible',
+      value: `${totalFuel.toFixed(1)}L`,
+      subtitle: 'Estimado',
+      icon: <Fuel color={PENCIL.accent} size={16} strokeWidth={2.1} />,
+      iconBackground: PENCIL.accentSoft,
+      iconColor: PENCIL.accent,
+    },
+  ] as const;
+}
 
 function TripStatCard({
   title,
@@ -161,23 +160,30 @@ function TripTag({
   );
 }
 
-function TripCard({
-  trip,
-}: {
-  trip: (typeof trips)[number];
-}) {
+function TripCard({ trip }: { trip: AutoSenseTripDoc }) {
+  const colors = getTripColors(trip.category);
+
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => router.push(`/trips/${trip.id}`)}
+      onPress={() =>
+        router.push({
+          pathname: '/trips/[tripId]',
+          params: { tripId: trip.id },
+        })
+      }
       style={({ pressed }) => [styles.tripPressable, pressed ? styles.tripPressed : null]}
     >
       <SurfaceCard padding={12}>
         <View style={styles.tripCard}>
           <View style={styles.tripTopRow}>
             <View style={styles.tripLeading}>
-              <IconBubble backgroundColor={trip.iconBackground} borderColor={PENCIL.border} size={40}>
-                <Route color={trip.iconColor} size={18} strokeWidth={2.2} />
+              <IconBubble
+                backgroundColor={colors.iconBackground}
+                borderColor={PENCIL.border}
+                size={40}
+              >
+                <Route color={colors.iconColor} size={18} strokeWidth={2.2} />
               </IconBubble>
 
               <View style={styles.tripCopy}>
@@ -189,7 +195,9 @@ function TripCard({
             </View>
 
             <View style={[styles.tripScorePill, { borderColor: '#86EFAC' }]}>
-              <Text style={[styles.tripScoreValue, { color: '#16A34A' }]}>{trip.score}</Text>
+              <Text style={[styles.tripScoreValue, { color: '#16A34A' }]}>
+                {trip.score}
+              </Text>
               <Text style={[styles.tripScoreLabel, { color: '#16A34A' }]}>score</Text>
             </View>
           </View>
@@ -208,10 +216,10 @@ function TripCard({
               textColor={PENCIL.warning}
             />
             <TripTag
-              icon={<Leaf color={trip.statusColor} size={14} strokeWidth={2.1} />}
+              icon={<Leaf color={colors.statusColor} size={14} strokeWidth={2.1} />}
               label={trip.statusLabel}
-              backgroundColor={trip.statusBackground}
-              textColor={trip.statusColor}
+              backgroundColor={colors.statusBackground}
+              textColor={colors.statusColor}
             />
           </View>
         </View>
@@ -221,6 +229,10 @@ function TripCard({
 }
 
 export default function TripsScreen() {
+  const { firebaseUser } = useSession();
+  const { trips } = useUserTrips(firebaseUser?.uid);
+  const tripStats = buildTripStats(trips);
+
   return (
     <AppScreen contentTopPadding={14}>
       <View style={styles.page}>

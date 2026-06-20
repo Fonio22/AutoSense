@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "985890980686",
+    "project_id": "autosense-1178d",
+    "storage_bucket": "autosense-1178d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:985890980686:android:c354d1989e1be8783b141f",
+        "android_client_info": {
+          "package_name": "com.antoniozhong.autosense"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "985890980686-l37k3m1ian0qdaruhulapkqdaekl5mtf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.antoniozhong.autosense",
+            "certificate_hash": "ddb89d06985f136f330061178211fa651c894211"
+          }
+        },
+        {
+          "client_id": "985890980686-fobo39bqp5dgcajgeus4s891sm189vnh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDc2Ef0B-ZpQ3GtFY44_Xjyck-R_ZhjD-w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "985890980686-fobo39bqp5dgcajgeus4s891sm189vnh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

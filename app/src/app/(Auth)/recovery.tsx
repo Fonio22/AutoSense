@@ -23,7 +23,6 @@ export default function RecoveryRoute() {
             ? undefined
             : () => <HeaderBackButton onPress={() => backOrFallback("/")} />,
           headerRight: isIOS ? undefined : () => null,
-          headerLeftContainerStyle: { paddingLeft: 16 },
         }}
       />
       {isIOS ? <RecoveryTopBar onBack={() => backOrFallback("/")} /> : null}

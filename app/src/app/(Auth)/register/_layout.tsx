@@ -73,8 +73,6 @@ export default function RegisterLayout() {
         headerStyle: { backgroundColor: "#FFFFFF" },
         headerTitle: () => null,
         headerShown: Platform.OS !== "ios",
-        headerLeftContainerStyle: { paddingLeft: 16 },
-        headerRightContainerStyle: { paddingRight: 16 },
         title: "",
       }}
     >

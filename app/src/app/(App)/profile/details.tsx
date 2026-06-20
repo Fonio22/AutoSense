@@ -2,13 +2,11 @@ import { router } from 'expo-router';
 import {
   KeyRound,
   Mail,
-  Phone,
-  ShieldCheck,
   UserRound,
 } from 'lucide-react-native';
-import { Button } from 'heroui-native';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { useSession } from '@/components/providers/session-provider';
 import {
   AppScreen,
   DetailHeader,
@@ -17,77 +15,79 @@ import {
   ProfileAvatar,
   SurfaceCard,
 } from '@/components/pencil-ui';
+import { getInitials } from '@/lib/autosense-data';
 import { backOrFallback } from '@/lib/navigation';
 
 export default function ProfileDetailsScreen() {
+  const { profile } = useSession();
+
+  if (!profile) {
+    return null;
+  }
+
+  const providerLabel =
+    profile.provider === 'password' ? 'Email y contrasena' : 'Google';
+
   return (
     <AppScreen
       contentTopPadding={8}
       header={(
         <DetailHeader
           onBack={() => backOrFallback('/profile')}
-          title="Mi perfil"
+          title="Editar cuenta"
         />
       )}
     >
       <View style={styles.page}>
-        <SurfaceCard>
-          <ProfileAvatar initials="AZ" label="Antonio Zhong" subtitle="antonio@autosense.ai" />
+        <SurfaceCard padding={0}>
+          <ProfileAvatar
+            borderless
+            initials={getInitials(profile.displayName)}
+            label={profile.displayName}
+            photoURL={profile.photoURL}
+            subtitle={profile.email}
+          />
         </SurfaceCard>
 
-        <SurfaceCard>
-          <View style={{ gap: 10 }}>
-            <ListRow
-              icon={<Mail color={PENCIL.accent} size={18} strokeWidth={2.1} />}
-              subtitle="Correo principal"
-              title="Email"
-              value="antonio@autosense.ai"
-              valueColor={PENCIL.text}
-            />
-            <ListRow
-              icon={<Phone color={PENCIL.success} size={18} strokeWidth={2.1} />}
-              subtitle="Para alertas y soporte"
-              title="Teléfono"
-              value="+507 6000 0000"
-              valueColor={PENCIL.text}
-            />
-            <ListRow
-              icon={<UserRound color={PENCIL.warning} size={18} strokeWidth={2.1} />}
-              subtitle="Usuario administrador"
-              title="Rol"
-              value="Admin"
-              valueColor={PENCIL.warning}
-            />
-          </View>
+        <SurfaceCard padding={0}>
+          <ListRow
+            borderless
+            icon={<UserRound color={PENCIL.accent} size={18} strokeWidth={2.1} />}
+            subtitle={profile.phoneNumber || 'Foto, nombre y telefono'}
+            title="Perfil"
+            value="Abrir"
+            valueColor={PENCIL.accent}
+            onPress={() => router.push('/profile/personal')}
+          />
         </SurfaceCard>
 
-        <SurfaceCard>
-          <View style={{ gap: 10 }}>
-            <ListRow
-              icon={<KeyRound color={PENCIL.accent} size={18} strokeWidth={2.1} />}
-              subtitle="Actualiza cada cierto tiempo"
-              title="Contraseña"
-              value="Cambiar"
-              valueColor={PENCIL.accent}
-            />
-            <ListRow
-              icon={<ShieldCheck color={PENCIL.success} size={18} strokeWidth={2.1} />}
-              subtitle="Protege la cuenta con un segundo paso"
-              title="Verificación"
-              value="Activa"
-              valueColor={PENCIL.success}
-            />
-          </View>
+        <SurfaceCard padding={0}>
+          <ListRow
+            borderless
+            icon={<Mail color={PENCIL.success} size={18} strokeWidth={2.1} />}
+            subtitle={`${profile.email} · ${providerLabel}`}
+            title="Correo"
+            value="Abrir"
+            valueColor={PENCIL.success}
+            onPress={() => router.push('/profile/email')}
+          />
         </SurfaceCard>
 
-        <Button
-          className="w-full"
-          onPress={() => router.push('/profile/settings')}
-          size="lg"
-          variant="primary"
-        >
-          <Button.Label>Editar perfil</Button.Label>
-        </Button>
+        <SurfaceCard padding={0}>
+          <ListRow
+            borderless
+            icon={<KeyRound color={PENCIL.warning} size={18} strokeWidth={2.1} />}
+            subtitle={
+              profile.provider === 'password'
+                ? 'Tu contrasena actual y la nueva.'
+                : 'Google la gestiona fuera de la app.'
+            }
+            title="Contrasena"
+            value="Abrir"
+            valueColor={PENCIL.warning}
+            onPress={() => router.push('/profile/password')}
+          />
+        </SurfaceCard>
       </View>
     </AppScreen>
   );

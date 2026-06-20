@@ -9,10 +9,20 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/autosense-logo.png",
-      "bundleIdentifier": "com.antoniozhong.autosense"
+      "bundleIdentifier": "com.antoniozhong.autosense",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "AutoSense usa tu ubicación para registrar rutas activas.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "AutoSense usa tu ubicación para registrar rutas cuando el OBD2 está activo.",
+        "NSLocationAlwaysUsageDescription": "AutoSense usa tu ubicación en segundo plano para seguir tus viajes cuando el OBD2 está activo.",
+        "UIBackgroundModes": [
+          "location"
+        ]
+      }
     },
     "android": {
       "package": "com.antoniozhong.autosense",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/autosense-logo.png",
@@ -48,7 +58,25 @@
       ],
       "expo-secure-store",
       "expo-asset",
-      "expo-maps"
+      "expo-maps",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "AutoSense necesita acceso a tus fotos para actualizar tu imagen de perfil."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "AutoSense usa tu ubicación para registrar rutas cuando el OBD2 está activo.",
+          "locationAlwaysPermission": "AutoSense usa tu ubicación en segundo plano para seguir tus viajes cuando el OBD2 está activo.",
+          "locationWhenInUsePermission": "AutoSense usa tu ubicación para registrar rutas activas.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      "expo-image"
     ],
     "developmentClient": {
       "silentLaunch": true

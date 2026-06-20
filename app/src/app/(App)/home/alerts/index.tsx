@@ -9,58 +9,61 @@ import {
 } from 'lucide-react-native';
 import { Pressable, View, StyleSheet, Text } from 'react-native';
 
+import { useSession } from '@/components/providers/session-provider';
 import {
   AppScreen,
   DetailHeader,
   PENCIL,
   SurfaceCard,
 } from '@/components/pencil-ui';
+import { type AlertId } from '@/lib/autosense-data';
 import { backOrFallback } from '@/lib/navigation';
 
-const alerts = [
-  {
-    id: 'battery',
-    title: 'Batería',
-    subtitle: 'Voltaje bajo detectado',
-    value: 'Crítica',
-    valueColor: PENCIL.danger,
-    icon: <BatteryCharging color={PENCIL.warning} size={18} strokeWidth={2.1} />,
-  },
-  {
-    id: 'brakes',
-    title: 'Frenos',
-    subtitle: 'Revisión recomendada',
-    value: 'Media',
-    valueColor: PENCIL.warning,
-    icon: <Wrench color={PENCIL.warning} size={18} strokeWidth={2.1} />,
-  },
-  {
-    id: 'oil',
-    title: 'Aceite',
-    subtitle: 'Servicio próximo',
-    value: 'Media',
-    valueColor: PENCIL.warning,
-    icon: <CarFront color={PENCIL.warning} size={18} strokeWidth={2.1} />,
-  },
-  {
-    id: 'tire',
-    title: 'Llantas',
-    subtitle: 'Presión irregular',
-    value: 'Baja',
-    valueColor: PENCIL.accent,
-    icon: <CircleAlert color={PENCIL.accent} size={18} strokeWidth={2.1} />,
-  },
-  {
-    id: 'efficiency',
-    title: 'Consumo',
-    subtitle: 'El uso subió esta semana',
-    value: 'Ver',
-    valueColor: PENCIL.success,
-    icon: <Fuel color={PENCIL.success} size={18} strokeWidth={2.1} />,
-  },
-];
+const FALLBACK_ALERTS: AlertId[] = ['battery', 'brakes', 'oil', 'tire', 'efficiency'];
+
+function getAlertIcon(id: AlertId) {
+  switch (id) {
+    case 'battery':
+      return <BatteryCharging color={PENCIL.warning} size={18} strokeWidth={2.1} />;
+    case 'brakes':
+      return <Wrench color={PENCIL.warning} size={18} strokeWidth={2.1} />;
+    case 'oil':
+      return <CarFront color={PENCIL.warning} size={18} strokeWidth={2.1} />;
+    case 'tire':
+      return <CircleAlert color={PENCIL.accent} size={18} strokeWidth={2.1} />;
+    case 'efficiency':
+      return <Fuel color={PENCIL.success} size={18} strokeWidth={2.1} />;
+  }
+}
+
+function getAlertValueColor(value: string) {
+  switch (value) {
+    case 'Crítica':
+      return PENCIL.danger;
+    case 'Media':
+      return PENCIL.warning;
+    case 'Baja':
+      return PENCIL.accent;
+    default:
+      return PENCIL.success;
+  }
+}
 
 export default function AlertsScreen() {
+  const { profile } = useSession();
+  const alerts = FALLBACK_ALERTS.map((id) => {
+    const alert = profile?.alerts?.[id];
+
+    return {
+      id,
+      icon: getAlertIcon(id),
+      subtitle: alert?.subtitle ?? 'Sin novedades',
+      title: alert?.title ?? id,
+      value: alert?.value ?? 'OK',
+      valueColor: getAlertValueColor(alert?.value ?? 'OK'),
+    };
+  });
+
   return (
     <AppScreen
       contentTopPadding={8}
@@ -85,7 +88,10 @@ export default function AlertsScreen() {
                   router.push(
                     alert.id === 'efficiency'
                       ? '/home/efficiency'
-                      : `/home/alerts/${alert.id}`,
+                      : {
+                          pathname: '/home/alerts/[slug]',
+                          params: { slug: alert.id },
+                        },
                   )
                 }
                 style={({ pressed }) => [

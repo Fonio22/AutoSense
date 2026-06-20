@@ -12,6 +12,7 @@ import {
 } from 'lucide-react-native';
 import { View, Text, StyleSheet } from 'react-native';
 
+import { useSession } from '@/components/providers/session-provider';
 import {
   AppScreen,
   CompactMetricCard,
@@ -45,6 +46,14 @@ const behaviorInsights = [
 ] as const;
 
 export default function EfficiencyScreen() {
+  const { profile } = useSession();
+  const efficiency = profile?.efficiency;
+  const score = efficiency?.score ?? 82;
+  const accelerationPercent = efficiency?.accelerationPercent ?? 87;
+  const brakingPercent = efficiency?.brakingPercent ?? 91;
+  const idleMinutes = efficiency?.idleMinutes ?? 14;
+  const economyValue = efficiency?.economyValue ?? 8.6;
+
   return (
     <AppScreen
       contentTopPadding={8}
@@ -61,7 +70,7 @@ export default function EfficiencyScreen() {
             <View style={styles.scoreHeader}>
               <View style={styles.scoreCopy}>
                 <View style={styles.scoreValueRow}>
-                  <Text style={styles.scoreValue}>82</Text>
+                  <Text style={styles.scoreValue}>{score}</Text>
                   <Text style={styles.scoreScale}>de 100</Text>
                 </View>
                 <Text style={styles.scoreDescription}>Puntaje general de eficiencia</Text>
@@ -71,7 +80,7 @@ export default function EfficiencyScreen() {
               </View>
             </View>
 
-            <ProgressBars values={[1, 1, 1, 1, 0]} activeColor={PENCIL.accent} inactiveColor="#DCEAE7" />
+            <ProgressBars values={[1, 1, 1, score >= 80 ? 1 : 0, score >= 90 ? 1 : 0]} activeColor={PENCIL.accent} inactiveColor="#DCEAE7" />
           </View>
         </SurfaceCard>
 
@@ -82,7 +91,7 @@ export default function EfficiencyScreen() {
             iconColor={PENCIL.accent}
             subtitle="Suavidad"
             title="Aceleración"
-            value="87%"
+            value={`${accelerationPercent}%`}
           />
           <CompactMetricCard
             icon={<Gauge color={PENCIL.success} size={16} strokeWidth={2.2} />}
@@ -90,7 +99,7 @@ export default function EfficiencyScreen() {
             iconColor={PENCIL.success}
             subtitle="Control"
             title="Frenado"
-            value="91%"
+            value={`${brakingPercent}%`}
           />
           <CompactMetricCard
             icon={<TimerReset color={PENCIL.warning} size={16} strokeWidth={2.2} />}
@@ -98,7 +107,7 @@ export default function EfficiencyScreen() {
             iconColor={PENCIL.warning}
             subtitle="Tiempo"
             title="Ralenti"
-            value="14m"
+            value={`${idleMinutes}m`}
           />
           <CompactMetricCard
             icon={<Leaf color={PENCIL.success} size={16} strokeWidth={2.2} />}
@@ -106,7 +115,7 @@ export default function EfficiencyScreen() {
             iconColor={PENCIL.success}
             subtitle="Consumo"
             title="Eficiencia"
-            value="8.6"
+            value={economyValue.toFixed(1)}
           />
         </View>
 

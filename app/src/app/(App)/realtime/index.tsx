@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
 import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
 import { Button } from 'heroui-native';
@@ -24,13 +24,25 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { useSession } from '@/components/providers/session-provider';
 import { AppScreen, PENCIL } from '@/components/pencil-ui';
+import { setRealtimeConnectionState } from '@/lib/autosense-data';
+
+const ABSOLUTE_FILL = {
+  bottom: 0,
+  left: 0,
+  position: 'absolute' as const,
+  right: 0,
+  top: 0,
+};
 
 export default function RealtimePairScreen() {
   const useGlassEffect = isGlassEffectAPIAvailable();
+  const { firebaseUser, profile } = useSession();
   const pulse = useSharedValue(0);
   const drift = useSharedValue(0);
   const spin = useSharedValue(0);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
     pulse.value = withRepeat(
@@ -112,6 +124,22 @@ export default function RealtimePairScreen() {
     })();
   };
 
+  async function handleConnect() {
+    if (!firebaseUser?.uid || isConnecting) {
+      router.push('/realtime/live');
+      return;
+    }
+
+    setIsConnecting(true);
+
+    try {
+      await setRealtimeConnectionState(firebaseUser.uid, true);
+      router.push('/realtime/live');
+    } finally {
+      setIsConnecting(false);
+    }
+  }
+
   return (
     <AppScreen contentPaddingHorizontal={16} contentTopPadding={12}>
       <View style={styles.page}>
@@ -131,7 +159,9 @@ export default function RealtimePairScreen() {
             <View style={styles.heroTopRow}>
               <View style={styles.statusPill}>
                 <View style={styles.statusDot} />
-                <Text style={styles.statusText}>Listo para emparejar</Text>
+                <Text style={styles.statusText}>
+                  {profile?.realtime?.statusLabel ?? 'Listo para emparejar'}
+                </Text>
               </View>
 
               <Button
@@ -175,7 +205,9 @@ export default function RealtimePairScreen() {
             <View style={styles.chipRow}>
               <View style={styles.chip}>
                 <CircleCheck color="#4ADE80" size={14} strokeWidth={2.2} />
-                <Text style={styles.chipText}>Señal estable</Text>
+                <Text style={styles.chipText}>
+                  {profile?.realtime?.signalLabel ?? 'Señal estable'}
+                </Text>
               </View>
 
               <View style={styles.chip}>
@@ -185,17 +217,23 @@ export default function RealtimePairScreen() {
 
               <View style={styles.chip}>
                 <Bluetooth color="#C4B5FD" size={14} strokeWidth={2.2} />
-                <Text style={styles.chipText}>Listo</Text>
+                <Text style={styles.chipText}>
+                  {profile?.realtime?.deviceLabel ?? 'Listo'}
+                </Text>
               </View>
             </View>
 
             <Button
               className="w-full"
-              onPress={() => router.push('/realtime/live')}
+              onPress={() => {
+                void handleConnect();
+              }}
               size="lg"
               variant="primary"
             >
-              <Button.Label>Conectar ahora</Button.Label>
+              <Button.Label>
+                {isConnecting ? 'Conectando...' : 'Conectar ahora'}
+              </Button.Label>
             </Button>
           </View>
         </View>
@@ -321,11 +359,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   coreGlass: {
-    ...StyleSheet.absoluteFillObject,
+    ...ABSOLUTE_FILL,
     borderRadius: 36,
   },
   coreFallback: {
-    ...StyleSheet.absoluteFillObject,
+    ...ABSOLUTE_FILL,
     borderRadius: 36,
     backgroundColor: 'rgba(255, 255, 255, 0.78)',
     borderWidth: 1,

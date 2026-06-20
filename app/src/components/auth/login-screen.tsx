@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Image,
   Pressable,
@@ -9,18 +9,29 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
+import * as Google from "expo-auth-session/providers/google";
+import * as WebBrowser from "expo-web-browser";
 import {
   Button,
-  Checkbox,
   InputGroup,
   Label,
   LinkButton,
   TextField,
 } from "heroui-native";
-import { Eye, EyeOff, Lock, LogIn, Mail } from "lucide-react-native";
+import { Eye, EyeOff, Lock, LogIn, Mail, UserRound } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PENCIL, useNativeButtonColors } from "@/components/pencil-ui";
+import {
+  firebaseAuthErrorMessage,
+  GOOGLE_ANDROID_CLIENT_ID,
+  GOOGLE_IOS_CLIENT_ID,
+  GOOGLE_WEB_CLIENT_ID,
+  signInWithEmail,
+  signInWithGoogleIdToken,
+} from "@/lib/auth-client";
+
+WebBrowser.maybeCompleteAuthSession();
 
 const TEXT = "#111827";
 const MUTED = "#667085";
@@ -32,8 +43,82 @@ export default function LoginScreen() {
   const { accent, accentForeground } = useNativeButtonColors();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [googleRequest, googleResponse, promptGoogle] =
+    Google.useIdTokenAuthRequest({
+      androidClientId: GOOGLE_ANDROID_CLIENT_ID,
+      iosClientId: GOOGLE_IOS_CLIENT_ID,
+      webClientId: GOOGLE_WEB_CLIENT_ID,
+      selectAccount: true,
+    });
+
+  useEffect(() => {
+    if (googleResponse?.type !== "success") {
+      return;
+    }
+
+    const authParams = (googleResponse as { params?: Record<string, string> }).params;
+    let isActive = true;
+
+    async function finishGoogleSignIn() {
+      const idToken = authParams?.id_token;
+
+      if (!idToken) {
+        setErrorMessage("Google no devolvió un token válido.");
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      try {
+        await signInWithGoogleIdToken(idToken);
+        router.replace("/home");
+      } catch (error) {
+        if (isActive) {
+          setErrorMessage(firebaseAuthErrorMessage(error));
+        }
+      } finally {
+        if (isActive) {
+          setIsSubmitting(false);
+        }
+      }
+    }
+
+    void finishGoogleSignIn();
+
+    return () => {
+      isActive = false;
+    };
+  }, [googleResponse, router]);
+
+  async function handleEmailSignIn() {
+    if (isSubmitting) {
+      return;
+    }
+
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      await signInWithEmail(email, password);
+      router.replace("/home");
+    } catch (error) {
+      setErrorMessage(firebaseAuthErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    if (isSubmitting || !googleRequest) {
+      return;
+    }
+
+    setErrorMessage("");
+    await promptGoogle();
+  }
 
   return (
     <View style={styles.screen}>
@@ -134,17 +219,6 @@ export default function LoginScreen() {
             </TextField>
 
             <View style={styles.rememberRow}>
-              <View style={styles.rememberLeft}>
-                <Checkbox
-                  accessibilityLabel="Recordarme"
-                  isSelected={rememberMe}
-                  onSelectedChange={setRememberMe}
-                >
-                  <Checkbox.Indicator />
-                </Checkbox>
-                <Text style={styles.rememberLabel}>Recordarme</Text>
-              </View>
-
               <LinkButton
                 className="px-0"
                 onPress={() => router.push("/recovery")}
@@ -160,14 +234,34 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.actionsBlock}>
+            {errorMessage ? (
+              <Text accessibilityRole="alert" style={styles.errorText}>
+                {errorMessage}
+              </Text>
+            ) : null}
+
             <Button
               className="w-full"
-              onPress={() => router.push("/home")}
+              isDisabled={isSubmitting}
+              onPress={handleEmailSignIn}
               size="lg"
               variant="primary"
             >
               <LogIn color={accentForeground} size={17} strokeWidth={2.2} />
-              <Button.Label>Iniciar sesión</Button.Label>
+              <Button.Label>
+                {isSubmitting ? "Entrando..." : "Iniciar sesión"}
+              </Button.Label>
+            </Button>
+
+            <Button
+              className="w-full"
+              isDisabled={isSubmitting || !googleRequest}
+              onPress={handleGoogleSignIn}
+              size="lg"
+              variant="outline"
+            >
+              <UserRound color={PENCIL.accent} size={17} strokeWidth={2.2} />
+              <Button.Label>Continuar con Google</Button.Label>
             </Button>
           </View>
 
@@ -250,28 +344,24 @@ const styles = StyleSheet.create({
   rememberRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     gap: 12,
     paddingVertical: 12,
     marginTop: 2,
     marginBottom: 4,
   },
-  rememberLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    minWidth: 0,
-  },
-  rememberLabel: {
-    color: "#4B5563",
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: "700",
-  },
   actionsBlock: {
     gap: 13,
     marginTop: 12,
     alignItems: "center",
+  },
+  errorText: {
+    width: "100%",
+    color: "#B42318",
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "700",
+    textAlign: "center",
   },
   forgotPassword: {
     fontSize: 13,

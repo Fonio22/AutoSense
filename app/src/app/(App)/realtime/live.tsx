@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import {
   Activity,
   BatteryCharging,
@@ -18,66 +19,114 @@ import {
   PENCIL,
   SurfaceCard,
 } from '@/components/pencil-ui';
+import { useSession } from '@/components/providers/session-provider';
+import { setRealtimeConnectionState, useMockObdTelemetry } from '@/lib/autosense-data';
 import { backOrFallback } from '@/lib/navigation';
-
-const METRICS = [
-  {
-    title: 'Temp motor',
-    value: '91°C',
-    subtitle: 'Estable',
-    icon: <Thermometer color={PENCIL.warning} size={16} strokeWidth={2.2} />,
-    iconBackground: PENCIL.warningSoft,
-    iconColor: PENCIL.warning,
-  },
-  {
-    title: 'Combustible',
-    value: '58 L',
-    subtitle: 'Estimado',
-    icon: <Fuel color={PENCIL.success} size={16} strokeWidth={2.2} />,
-    iconBackground: PENCIL.successSoft,
-    iconColor: PENCIL.success,
-  },
-  {
-    title: 'Carga motor',
-    value: '36%',
-    subtitle: 'Normal',
-    icon: <Activity color={PENCIL.accent} size={16} strokeWidth={2.2} />,
-    iconBackground: PENCIL.accentSoft,
-    iconColor: PENCIL.accent,
-  },
-  {
-    title: 'Voltaje ECU',
-    value: '13.8V',
-    subtitle: 'Correcto',
-    icon: <BatteryCharging color={PENCIL.success} size={16} strokeWidth={2.2} />,
-    iconBackground: PENCIL.successSoft,
-    iconColor: PENCIL.success,
-  },
-  {
-    title: 'Acelerador',
-    value: '18%',
-    subtitle: 'Suave',
-    icon: <Gauge color={PENCIL.warning} size={16} strokeWidth={2.2} />,
-    iconBackground: PENCIL.warningSoft,
-    iconColor: PENCIL.warning,
-  },
-  {
-    title: 'Aire admisión',
-    value: '24°C',
-    subtitle: 'Estable',
-    icon: <Wind color={PENCIL.accent} size={16} strokeWidth={2.2} />,
-    iconBackground: PENCIL.accentSoft,
-    iconColor: PENCIL.accent,
-  },
-] as const;
+import { stopTripTracking, syncTripTracking } from '@/lib/trip-tracking';
 
 export default function RealtimeLiveScreen() {
+  const { firebaseUser, profile } = useSession();
+  const isConnected = profile?.realtime?.isConnected ?? false;
+  const telemetry = useMockObdTelemetry(isConnected);
+  const isSyncing = useRef(false);
+  const isImperial = profile?.settings?.speedUnit === 'mph';
+  const useFahrenheit = profile?.settings?.temperatureUnit === '°F';
+  const speedValue = isImperial
+    ? Math.round(telemetry.speed * 0.621371)
+    : telemetry.speed;
+  const speedUnit = isImperial ? 'mph' : 'km/h';
+  const engineTempValue = useFahrenheit
+    ? Math.round((telemetry.engineTemp * 9) / 5 + 32)
+    : telemetry.engineTemp;
+  const intakeTempValue = useFahrenheit
+    ? Math.round((telemetry.intakeTemp * 9) / 5 + 32)
+    : telemetry.intakeTemp;
+  const temperatureUnit = useFahrenheit ? '°F' : '°C';
+  const metrics = [
+    {
+      title: 'Temp motor',
+      value: `${engineTempValue}${temperatureUnit}`,
+      subtitle: 'Estable',
+      icon: <Thermometer color={PENCIL.warning} size={16} strokeWidth={2.2} />,
+      iconBackground: PENCIL.warningSoft,
+      iconColor: PENCIL.warning,
+    },
+    {
+      title: 'Combustible',
+      value: `${telemetry.fuelLiters.toFixed(1)} L`,
+      subtitle: 'Estimado',
+      icon: <Fuel color={PENCIL.success} size={16} strokeWidth={2.2} />,
+      iconBackground: PENCIL.successSoft,
+      iconColor: PENCIL.success,
+    },
+    {
+      title: 'Carga motor',
+      value: `${telemetry.engineLoad}%`,
+      subtitle: 'Normal',
+      icon: <Activity color={PENCIL.accent} size={16} strokeWidth={2.2} />,
+      iconBackground: PENCIL.accentSoft,
+      iconColor: PENCIL.accent,
+    },
+    {
+      title: 'Voltaje ECU',
+      value: `${telemetry.voltage}V`,
+      subtitle: 'Correcto',
+      icon: <BatteryCharging color={PENCIL.success} size={16} strokeWidth={2.2} />,
+      iconBackground: PENCIL.successSoft,
+      iconColor: PENCIL.success,
+    },
+    {
+      title: 'Acelerador',
+      value: `${telemetry.throttle}%`,
+      subtitle: 'Suave',
+      icon: <Gauge color={PENCIL.warning} size={16} strokeWidth={2.2} />,
+      iconBackground: PENCIL.warningSoft,
+      iconColor: PENCIL.warning,
+    },
+    {
+      title: 'Aire admisión',
+      value: `${intakeTempValue}${temperatureUnit}`,
+      subtitle: 'Estable',
+      icon: <Wind color={PENCIL.accent} size={16} strokeWidth={2.2} />,
+      iconBackground: PENCIL.accentSoft,
+      iconColor: PENCIL.accent,
+    },
+  ] as const;
+
+  useEffect(() => {
+    if (!firebaseUser?.uid || isSyncing.current) {
+      return;
+    }
+
+    isSyncing.current = true;
+
+    void syncTripTracking(firebaseUser.uid, isConnected, telemetry)
+      .finally(() => {
+        isSyncing.current = false;
+      });
+  }, [
+    firebaseUser?.uid,
+    isConnected,
+    telemetry,
+  ]);
+
+  async function handleBack() {
+    if (firebaseUser?.uid) {
+      await stopTripTracking(firebaseUser.uid);
+      await setRealtimeConnectionState(firebaseUser.uid, false);
+    }
+
+    backOrFallback('/realtime');
+  }
+
   return (
     <AppScreen
       contentTopPadding={8}
       header={(
         <DetailHeader
-          onBack={() => backOrFallback('/realtime')}
+          onBack={() => {
+            void handleBack();
+          }}
           title="OBD2 en vivo"
         />
       )}
@@ -88,26 +137,28 @@ export default function RealtimeLiveScreen() {
             <View style={styles.heroTop}>
               <View style={{ flex: 1, gap: 3 }}>
                 <Text style={styles.metricLabel}>Velocidad</Text>
-                <Text style={styles.speedValue}>88</Text>
-                <Text style={styles.metricSubtitle}>km/h</Text>
+                <Text style={styles.speedValue}>{speedValue}</Text>
+                <Text style={styles.metricSubtitle}>{speedUnit}</Text>
               </View>
 
               <View style={styles.rpmCard}>
                 <Text style={styles.metricLabel}>RPM</Text>
-                <Text style={styles.rpmValue}>2350</Text>
+                <Text style={styles.rpmValue}>{telemetry.rpm}</Text>
                 <Text style={styles.metricSubtitle}>Revoluciones</Text>
               </View>
             </View>
 
             <View style={styles.heroStatus}>
               <CircleCheck color={PENCIL.success} size={16} strokeWidth={2.2} />
-              <Text style={styles.heroStatusText}>Sensores conectados y transmitiendo</Text>
+              <Text style={styles.heroStatusText}>
+                {profile?.realtime?.statusLabel ?? 'Sensores conectados y transmitiendo'}
+              </Text>
             </View>
           </View>
         </SurfaceCard>
 
         <View style={styles.metricGrid}>
-          {METRICS.map((metric) => (
+          {metrics.map((metric) => (
             <CompactMetricCard
               key={metric.title}
               icon={metric.icon}
@@ -126,21 +177,21 @@ export default function RealtimeLiveScreen() {
             <View style={{ gap: 8 }}>
               <ListRow
                 icon={<Zap color={PENCIL.success} size={18} strokeWidth={2.1} />}
-                subtitle="Lectura estable · sin errores"
+                subtitle={`${profile?.realtime?.deviceLabel ?? 'OBD2 Bluetooth'} · sin errores`}
                 title="Motor"
                 value="OK"
                 valueColor={PENCIL.success}
               />
               <ListRow
                 icon={<Thermometer color={PENCIL.warning} size={18} strokeWidth={2.1} />}
-                subtitle="Temperatura dentro de rango"
+                subtitle={`Motor ${engineTempValue}${temperatureUnit} dentro de rango`}
                 title="Refrigeración"
                 value="OK"
                 valueColor={PENCIL.success}
               />
               <ListRow
                 icon={<Activity color={PENCIL.accent} size={18} strokeWidth={2.1} />}
-                subtitle="Sin cambios bruscos"
+                subtitle={`Carga ${telemetry.engineLoad}% y acelerador ${telemetry.throttle}%`}
                 title="ECU"
                 value="OK"
                 valueColor={PENCIL.success}

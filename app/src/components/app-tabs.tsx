@@ -6,7 +6,6 @@ export default function AppTabs() {
   return (
     <NativeTabs
       backgroundColor="#FFFFFF"
-      contentStyle={{ backgroundColor: '#FFFFFF' }}
       indicatorColor="#E5E7EB"
       iconColor={{ default: '#9CA3AF', selected: '#2563EB' }}
       screenListeners={({ route }) => ({
@@ -37,7 +36,7 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="realtime">
         <NativeTabs.Trigger.Label>Tiempo real</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          md="speedometer"
+          md="dashboard"
           sf={Platform.OS === 'ios' ? 'gauge' : undefined}
         />
       </NativeTabs.Trigger>

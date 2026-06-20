@@ -22,7 +22,13 @@ import {
 } from 'lucide-react-native';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
+import { useSession } from '@/components/providers/session-provider';
 import { PENCIL } from '@/components/pencil-ui';
+import {
+  getAlertCount,
+  getPriorityAlert,
+  useUserTrips,
+} from '@/lib/autosense-data';
 
 const heroCarSource = require('../../../../assets/images/home-car-hero.png');
 const HERO_HEIGHT = 430;
@@ -32,6 +38,13 @@ const HERO_CONTENT_TOP = 378;
 const HERO_EDGE_FILL_TOP = '#B4B4BA';
 const HERO_EDGE_FILL_MID = '#B9B9BF';
 const HERO_EDGE_FILL_BOTTOM = '#BBBBC0';
+const ABSOLUTE_FILL = {
+  bottom: 0,
+  left: 0,
+  position: 'absolute' as const,
+  right: 0,
+  top: 0,
+};
 
 function HeroBackfill() {
   return (
@@ -229,7 +242,26 @@ function HomeMetricCard({
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { firebaseUser, profile } = useSession();
+  const { trips } = useUserTrips(firebaseUser?.uid);
   const [heroBlurProgress, setHeroBlurProgress] = useState(0);
+  const latestTrip = trips[0] ?? null;
+  const dashboard = profile?.dashboard;
+  const alertCount = profile ? getAlertCount(profile.alerts) : 1;
+  const priorityAlert = profile ? getPriorityAlert(profile.alerts) : null;
+  const heroTitle = profile?.vehicle?.name ?? 'Honda Civic 1.5T';
+  const fuelPercent = dashboard?.fuelPercent ?? 48;
+  const remainingRangeKm = dashboard?.remainingRangeKm ?? 318;
+  const drivingStyle = dashboard?.drivingStyle ?? 'Suave';
+  const drivingStyleNote = dashboard?.drivingStyleNote ?? 'Aceleraciones estables';
+  const efficiencyScore = dashboard?.efficiencyScore ?? 82;
+  const efficiencyNote = dashboard?.efficiencyNote ?? 'Buen ahorro esta semana';
+  const currentTripDistance = dashboard?.currentTripDistanceKm ?? 28.4;
+  const currentTripConsumption =
+    dashboard?.currentTripConsumptionLabel ?? 'Promedio 8.1 L/100 km';
+  const savingsTip =
+    dashboard?.savingsTip
+    ?? 'Mantén velocidades constantes; podrías ahorrar 9% de gasolina en rutas urbanas.';
 
   function handleHomeScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
     const offsetY = Math.max(0, event.nativeEvent.contentOffset.y);
@@ -273,7 +305,7 @@ export default function HomeScreen() {
         />
         <HeroBottomFade />
         <HeroGradient />
-        <Text style={[styles.heroTitle, { top: insets.top + 6 }]}>Honda Civic 1.5T</Text>
+        <Text style={[styles.heroTitle, { top: insets.top + 6 }]}>{heroTitle}</Text>
       </View>
 
       <ScrollView
@@ -300,7 +332,7 @@ export default function HomeScreen() {
 
                 <View style={styles.fuelCopy}>
                   <View style={styles.fuelPercentRow}>
-                    <Text style={styles.fuelPercent}>48%</Text>
+                    <Text style={styles.fuelPercent}>{fuelPercent}%</Text>
                     <HomeBadge
                       backgroundColor="#F3F4F6"
                       borderColor="#E5E7EB"
@@ -310,11 +342,13 @@ export default function HomeScreen() {
                       <GasPumpIcon color={PENCIL.accent} size={22} />
                     </HomeBadge>
                   </View>
-                  <Text style={styles.fuelMeta}>Aprox. 318 km antes de repostar</Text>
+                  <Text style={styles.fuelMeta}>
+                    Aprox. {remainingRangeKm} km antes de repostar
+                  </Text>
                 </View>
 
                 <View style={styles.fuelTrack}>
-                  <View style={[styles.fuelFill, { width: '48%' }]} />
+                  <View style={[styles.fuelFill, { width: `${fuelPercent}%` }]} />
                 </View>
               </View>
             </Card.Body>
@@ -326,9 +360,9 @@ export default function HomeScreen() {
               iconBackground={PENCIL.successSoft}
               iconColor={PENCIL.success}
               onPress={() => router.push('/home/efficiency')}
-              subtitle="Aceleraciones estables"
+              subtitle={drivingStyleNote}
               title="Mi forma de manejo"
-              value="Suave"
+              value={drivingStyle}
             />
 
             <HomeMetricCard
@@ -336,19 +370,27 @@ export default function HomeScreen() {
               iconBackground="#F1ECFF"
               iconColor="#6D5EF9"
               onPress={() => router.push('/home/efficiency')}
-              subtitle="Buen ahorro esta semana"
+              subtitle={efficiencyNote}
               title="Eficiencia"
-              value="82%"
+              value={`${efficiencyScore}%`}
             />
 
             <HomeMetricCard
               icon={<Route color={PENCIL.accent} size={16} strokeWidth={2.2} />}
               iconBackground="#EEF2FF"
               iconColor={PENCIL.accent}
-              onPress={() => router.push('/trips/today?origin=home')}
-              subtitle="Promedio 7.4 L/100 km"
+              onPress={() =>
+                router.push({
+                  pathname: '/trips/[tripId]',
+                  params: {
+                    origin: 'home',
+                    tripId: latestTrip?.id ?? 'today',
+                  },
+                })
+              }
+              subtitle={currentTripConsumption}
               title="Viaje actual"
-              value="24 km"
+              value={`${Math.round(currentTripDistance)} km`}
             />
 
             <HomeMetricCard
@@ -356,9 +398,9 @@ export default function HomeScreen() {
               iconBackground={PENCIL.warningSoft}
               iconColor={PENCIL.warning}
               onPress={() => router.push('/home/alerts')}
-              subtitle="Revisar mezcla pobre"
+              subtitle={priorityAlert?.subtitle ?? 'Sin alertas prioritarias'}
               title="Prioridad"
-              value="1 aviso"
+              value={`${alertCount} ${alertCount === 1 ? 'aviso' : 'avisos'}`}
             />
           </View>
 
@@ -380,9 +422,7 @@ export default function HomeScreen() {
 
                 <View style={{ flex: 1, gap: 4 }}>
                   <Text style={styles.insightTitle}>Sugerencia de ahorro</Text>
-                  <Text style={styles.insightText}>
-                    Mantén velocidades constantes; podrías ahorrar 9% de gasolina en rutas urbanas.
-                  </Text>
+                  <Text style={styles.insightText}>{savingsTip}</Text>
                 </View>
               </Pressable>
             </Card.Body>
@@ -407,7 +447,7 @@ const styles = StyleSheet.create({
     top: 0,
   },
   heroBackfill: {
-    ...StyleSheet.absoluteFillObject,
+    ...ABSOLUTE_FILL,
     zIndex: 0,
   },
   heroArt: {
@@ -429,11 +469,11 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   heroBlurLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...ABSOLUTE_FILL,
     zIndex: 3,
   },
   heroFrostLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...ABSOLUTE_FILL,
     backgroundColor: '#020617',
     zIndex: 4,
   },

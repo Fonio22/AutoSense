@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { View } from "react-native";
-import { router } from "expo-router";
+import { Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
 import { KeyRound, Lock, UserPlus } from "lucide-react-native";
 
 import {
@@ -11,6 +11,10 @@ import {
   RegisterStepper,
 } from "@/components/auth/register-flow";
 import { useNativeButtonColors } from "@/components/pencil-ui";
+import {
+  firebaseAuthErrorMessage,
+  registerWithEmail,
+} from "@/lib/auth-client";
 import { backOrFallback } from "@/lib/navigation";
 
 const SUCCESS = "#137C6B";
@@ -19,10 +23,44 @@ const MINT_BORDER = "#DCEAE7";
 
 export default function RegisterPasswordScreen() {
   const { accentForeground } = useNativeButtonColors();
+  const { email, fullName } = useLocalSearchParams<{
+    email?: string;
+    fullName?: string;
+  }>();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleCreateAccount() {
+    if (isSubmitting) {
+      return;
+    }
+
+    if (!email) {
+      setErrorMessage("Ingresa tu correo para crear la cuenta.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage("Las contraseñas no coinciden.");
+      return;
+    }
+
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      await registerWithEmail(email, password, fullName);
+      router.replace("/home");
+    } catch (error) {
+      setErrorMessage(firebaseAuthErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <>
@@ -50,11 +88,11 @@ export default function RegisterPasswordScreen() {
           </View>
         }
         onSecondaryPress={() => backOrFallback("/register")}
-        onPrimaryPress={() => router.push("/home")}
+        onPrimaryPress={handleCreateAccount}
         primaryIcon={
           <UserPlus color={accentForeground} size={18} strokeWidth={2.2} />
         }
-        primaryLabel="Crear cuenta"
+        primaryLabel={isSubmitting ? "Creando..." : "Crear cuenta"}
         progress={<RegisterStepper step={2} />}
         title="Crea tu contraseña"
       >
@@ -83,6 +121,21 @@ export default function RegisterPasswordScreen() {
           textContentType="newPassword"
           value={confirmPassword}
         />
+
+        {errorMessage ? (
+          <Text
+            accessibilityRole="alert"
+            style={{
+              color: "#B42318",
+              fontSize: 13,
+              fontWeight: "700",
+              lineHeight: 18,
+              textAlign: "center",
+            }}
+          >
+            {errorMessage}
+          </Text>
+        ) : null}
       </RegisterScreenFrame>
     </>
   );

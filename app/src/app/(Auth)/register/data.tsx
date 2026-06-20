@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   ArrowRight,
   CalendarDays,
@@ -20,6 +20,7 @@ import { backOrFallback } from "@/lib/navigation";
 
 export default function RegisterDataScreen() {
   const { accent, accentForeground } = useNativeButtonColors();
+  const { email } = useLocalSearchParams<{ email?: string }>();
   const [fullName, setFullName] = useState("");
   const [personalId, setPersonalId] = useState("");
   const [phone, setPhone] = useState("");
@@ -50,7 +51,15 @@ export default function RegisterDataScreen() {
           </View>
         }
         onSecondaryPress={() => backOrFallback("/register")}
-        onPrimaryPress={() => router.push("/register/password")}
+        onPrimaryPress={() =>
+          router.push({
+            pathname: "/register/password",
+            params: {
+              email: email ?? "",
+              fullName: fullName.trim(),
+            },
+          })
+        }
         primaryIcon={
           <ArrowRight color={accentForeground} size={18} strokeWidth={2.2} />
         }

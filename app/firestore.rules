@@ -1,0 +1,357 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidString(value, maxLength) {
+      return value is string && value.size() > 0 && value.size() <= maxLength;
+    }
+
+    function isOptionalString(value, maxLength) {
+      return value == null || (value is string && value.size() <= maxLength);
+    }
+
+    function isValidEmail(email) {
+      return email is string
+        && email.size() >= 3
+        && email.size() <= 254
+        && email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$');
+    }
+
+    function isRecent(time) {
+      return time is timestamp
+        && time > request.time - duration.value(5, 'm')
+        && time <= request.time;
+    }
+
+    function isValidVehicle(vehicle) {
+      return vehicle is map
+        && vehicle.keys().hasOnly(['name', 'summary', 'statusLabel', 'fuelTankLiters'])
+        && vehicle.keys().hasAll(['name', 'summary', 'statusLabel', 'fuelTankLiters'])
+        && isValidString(vehicle.name, 80)
+        && isValidString(vehicle.summary, 120)
+        && isValidString(vehicle.statusLabel, 32)
+        && vehicle.fuelTankLiters is number
+        && vehicle.fuelTankLiters >= 1
+        && vehicle.fuelTankLiters <= 150;
+    }
+
+    function isValidDashboard(dashboard) {
+      return dashboard is map
+        && dashboard.keys().hasOnly([
+          'fuelPercent',
+          'remainingRangeKm',
+          'drivingStyle',
+          'drivingStyleNote',
+          'efficiencyScore',
+          'efficiencyNote',
+          'currentTripDistanceKm',
+          'currentTripConsumptionLabel',
+          'savingsTip',
+          'savingsPercent'
+        ])
+        && dashboard.keys().hasAll([
+          'fuelPercent',
+          'remainingRangeKm',
+          'drivingStyle',
+          'drivingStyleNote',
+          'efficiencyScore',
+          'efficiencyNote',
+          'currentTripDistanceKm',
+          'currentTripConsumptionLabel',
+          'savingsTip',
+          'savingsPercent'
+        ])
+        && dashboard.fuelPercent is number
+        && dashboard.fuelPercent >= 0
+        && dashboard.fuelPercent <= 100
+        && dashboard.remainingRangeKm is number
+        && dashboard.remainingRangeKm >= 0
+        && dashboard.remainingRangeKm <= 2000
+        && isValidString(dashboard.drivingStyle, 40)
+        && isValidString(dashboard.drivingStyleNote, 120)
+        && dashboard.efficiencyScore is number
+        && dashboard.efficiencyScore >= 0
+        && dashboard.efficiencyScore <= 100
+        && isValidString(dashboard.efficiencyNote, 120)
+        && dashboard.currentTripDistanceKm is number
+        && dashboard.currentTripDistanceKm >= 0
+        && dashboard.currentTripDistanceKm <= 2000
+        && isValidString(dashboard.currentTripConsumptionLabel, 60)
+        && isValidString(dashboard.savingsTip, 200)
+        && dashboard.savingsPercent is number
+        && dashboard.savingsPercent >= 0
+        && dashboard.savingsPercent <= 100;
+    }
+
+    function isValidSettings(settings) {
+      return settings is map
+        && settings.keys().hasOnly([
+          'speedUnit',
+          'temperatureUnit',
+          'consumptionUnit',
+          'alertsMode',
+          'dataMode',
+          'privacyMode'
+        ])
+        && settings.keys().hasAll([
+          'speedUnit',
+          'temperatureUnit',
+          'consumptionUnit',
+          'alertsMode',
+          'dataMode',
+          'privacyMode'
+        ])
+        && settings.speedUnit in ['km/h', 'mph']
+        && settings.temperatureUnit in ['°C', '°F']
+        && settings.consumptionUnit in ['L/100 km', 'km/L']
+        && settings.alertsMode in ['Activado', 'Solo críticas']
+        && settings.dataMode in ['Cloud sync', 'Solo local']
+        && settings.privacyMode in ['Rutas privadas', 'Compartir'];
+    }
+
+    function isValidEfficiency(efficiency) {
+      return efficiency is map
+        && efficiency.keys().hasOnly([
+          'score',
+          'accelerationPercent',
+          'brakingPercent',
+          'idleMinutes',
+          'economyValue'
+        ])
+        && efficiency.keys().hasAll([
+          'score',
+          'accelerationPercent',
+          'brakingPercent',
+          'idleMinutes',
+          'economyValue'
+        ])
+        && efficiency.score is number
+        && efficiency.score >= 0
+        && efficiency.score <= 100
+        && efficiency.accelerationPercent is number
+        && efficiency.accelerationPercent >= 0
+        && efficiency.accelerationPercent <= 100
+        && efficiency.brakingPercent is number
+        && efficiency.brakingPercent >= 0
+        && efficiency.brakingPercent <= 100
+        && efficiency.idleMinutes is number
+        && efficiency.idleMinutes >= 0
+        && efficiency.idleMinutes <= 1440
+        && efficiency.economyValue is number
+        && efficiency.economyValue >= 0
+        && efficiency.economyValue <= 100;
+    }
+
+    function isValidRealtime(realtime) {
+      return realtime is map
+        && realtime.keys().hasOnly([
+          'isConnected',
+          'statusLabel',
+          'signalLabel',
+          'deviceLabel',
+          'lastConnectedAt'
+        ])
+        && realtime.keys().hasAll([
+          'isConnected',
+          'statusLabel',
+          'signalLabel',
+          'deviceLabel'
+        ])
+        && realtime.isConnected is bool
+        && isValidString(realtime.statusLabel, 60)
+        && isValidString(realtime.signalLabel, 60)
+        && isValidString(realtime.deviceLabel, 60)
+        && (!('lastConnectedAt' in realtime)
+          || realtime.lastConnectedAt == null
+          || realtime.lastConnectedAt is timestamp);
+    }
+
+    function hasValidUserShape(data, userId) {
+        return data.keys().hasOnly([
+          'uid',
+          'email',
+          'displayName',
+          'photoURL',
+          'provider',
+          'phoneNumber',
+          'roleLabel',
+          'vehicle',
+          'dashboard',
+          'settings',
+          'efficiency',
+          'alerts',
+          'realtime',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasAll(['uid', 'email', 'provider', 'createdAt', 'updatedAt'])
+        && data.uid == userId
+        && data.uid == request.auth.uid
+        && isValidEmail(data.email)
+        && (!('email' in request.auth.token) || data.email == request.auth.token.email)
+        && (!('displayName' in data) || isOptionalString(data.displayName, 80))
+        && (!('photoURL' in data) || isOptionalString(data.photoURL, 500))
+        && data.provider in ['password', 'google.com']
+        && (!('phoneNumber' in data) || isOptionalString(data.phoneNumber, 32))
+        && (!('roleLabel' in data) || isOptionalString(data.roleLabel, 40))
+        && (!('vehicle' in data) || isValidVehicle(data.vehicle))
+        && (!('dashboard' in data) || isValidDashboard(data.dashboard))
+        && (!('settings' in data) || isValidSettings(data.settings))
+        && (!('efficiency' in data) || isValidEfficiency(data.efficiency))
+        && (!('alerts' in data)
+          || (data.alerts is map
+            && data.alerts.keys().hasOnly([
+              'battery',
+              'brakes',
+              'oil',
+              'tire',
+              'efficiency'
+            ])))
+        && (!('realtime' in data) || isValidRealtime(data.realtime))
+        && data.createdAt is timestamp
+        && isRecent(data.updatedAt);
+    }
+
+    function immutableUserFieldsUnchanged() {
+      return request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function isValidTripPoint(point) {
+      return point is map
+        && point.keys().hasOnly(['latitude', 'longitude'])
+        && point.keys().hasAll(['latitude', 'longitude'])
+        && point.latitude is number
+        && point.latitude >= -90
+        && point.latitude <= 90
+        && point.longitude is number
+        && point.longitude >= -180
+        && point.longitude <= 180;
+    }
+
+    function isValidTripShape(data) {
+      return data.keys().hasOnly([
+          'id',
+          'title',
+          'subtitle',
+          'period',
+          'route',
+          'summary',
+          'score',
+          'scoreDescription',
+          'distanceLabel',
+          'distanceKm',
+          'durationLabel',
+          'durationMinutes',
+          'fuelLabel',
+          'fuelLiters',
+          'efficiencyLabel',
+          'routeTitle',
+          'routeSummary',
+          'category',
+          'statusLabel',
+          'timeLabel',
+          'cameraCenter',
+          'routePath',
+          'startPoint',
+          'endPoint',
+          'events',
+          'startedAt',
+          'endedAt'
+        ])
+        && data.keys().hasAll([
+          'id',
+          'title',
+          'subtitle',
+          'period',
+          'route',
+          'summary',
+          'score',
+          'scoreDescription',
+          'distanceLabel',
+          'durationLabel',
+          'durationMinutes',
+          'fuelLabel',
+          'fuelLiters',
+          'efficiencyLabel',
+          'routeTitle',
+          'routeSummary',
+          'category',
+          'statusLabel',
+          'timeLabel',
+          'cameraCenter',
+          'routePath',
+          'startPoint',
+          'endPoint',
+          'events',
+          'startedAt'
+        ])
+        && isValidString(data.id, 48)
+        && isValidString(data.title, 80)
+        && isValidString(data.subtitle, 80)
+        && isValidString(data.period, 40)
+        && isValidString(data.route, 80)
+        && isValidString(data.summary, 80)
+        && data.score is number
+        && data.score >= 0
+        && data.score <= 100
+        && isValidString(data.scoreDescription, 160)
+        && isValidString(data.distanceLabel, 32)
+        && (!('distanceKm' in data) || (data.distanceKm is number && data.distanceKm >= 0 && data.distanceKm <= 5000))
+        && isValidString(data.durationLabel, 32)
+        && data.durationMinutes is number
+        && data.durationMinutes >= 0
+        && data.durationMinutes <= 10000
+        && isValidString(data.fuelLabel, 32)
+        && data.fuelLiters is number
+        && data.fuelLiters >= 0
+        && data.fuelLiters <= 200
+        && isValidString(data.efficiencyLabel, 32)
+        && isValidString(data.routeTitle, 80)
+        && isValidString(data.routeSummary, 120)
+        && data.category in ['university', 'city', 'north', 'home']
+        && isValidString(data.statusLabel, 40)
+        && isValidString(data.timeLabel, 32)
+        && isValidTripPoint(data.cameraCenter)
+        && isValidTripPoint(data.startPoint)
+        && isValidTripPoint(data.endPoint)
+        && data.routePath is list
+        && data.routePath.size() >= 2
+        && data.routePath.size() <= 200
+        && data.events is list
+        && data.events.size() <= 20
+        && data.startedAt is timestamp
+        && (!('endedAt' in data) || data.endedAt == null || data.endedAt is timestamp);
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && hasValidUserShape(request.resource.data, userId)
+        && isRecent(request.resource.data.createdAt);
+      allow update: if isOwner(userId)
+        && hasValidUserShape(request.resource.data, userId)
+        && immutableUserFieldsUnchanged();
+      allow delete: if false;
+
+      match /trips/{tripId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && isValidTripShape(request.resource.data);
+        allow delete: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

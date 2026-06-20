@@ -1,4 +1,4 @@
-import { type ComponentType, type ReactNode, useEffect, useState } from 'react';
+import { type ComponentType, useEffect, useState } from 'react';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Card } from 'heroui-native';
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react-native';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 
+import { useSession } from '@/components/providers/session-provider';
 import {
   AppScreen,
   CompactMetricCard,
@@ -23,228 +24,84 @@ import {
   ProgressBars,
   SurfaceCard,
 } from '@/components/pencil-ui';
+import { type AutoSenseTripDoc, useTrip } from '@/lib/autosense-data';
 import { backOrFallback } from '@/lib/navigation';
 
-type TripPoint = {
-  latitude: number;
-  longitude: number;
-};
-
-type TripEvent = {
-  title: string;
-  subtitle: string;
-  icon: ReactNode;
-  iconBackground: string;
-};
-
-type TripRecord = {
-  title: string;
-  subtitle: string;
-  score: string;
-  scoreDescription: string;
-  distance: string;
-  duration: string;
-  fuel: string;
-  efficiency: string;
-  routeTitle: string;
-  routeSummary: string;
-  cameraCenter: TripPoint;
-  routePath: TripPoint[];
-  startPoint: TripPoint;
-  endPoint: TripPoint;
-  events: TripEvent[];
-};
-
-const TRIPS: Record<string, TripRecord> = {
-  today: {
-    title: 'Universidad',
-    subtitle: 'Hoy · 8:10 AM',
-    score: '91',
-    scoreDescription: 'Recorrido estable con buen control de aceleración.',
-    distance: '28.4 km',
-    duration: '34m',
-    fuel: '4.8 L',
-    efficiency: '8.1',
-    routeTitle: 'Ruta Universidad',
-    routeSummary: 'Campus central · 3 semáforos · tráfico ligero',
-    cameraCenter: { latitude: 8.9974, longitude: -79.5168 },
-    routePath: [
-      { latitude: 8.9848, longitude: -79.5349 },
-      { latitude: 8.9886, longitude: -79.5297 },
-      { latitude: 8.9928, longitude: -79.5244 },
-      { latitude: 8.9981, longitude: -79.5185 },
-      { latitude: 9.0036, longitude: -79.5107 },
-    ],
-    startPoint: { latitude: 8.9848, longitude: -79.5349 },
-    endPoint: { latitude: 9.0036, longitude: -79.5107 },
-    events: [
-      {
-        title: 'Salida limpia',
-        subtitle: 'Arranque progresivo sin pico brusco de aceleración.',
-        icon: <Sparkles color={PENCIL.accent} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.accentSoft,
-      },
-      {
-        title: 'Tráfico moderado',
-        subtitle: 'Hubo una zona lenta, pero mantuviste el consumo controlado.',
-        icon: <TimerReset color={PENCIL.warning} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.warningSoft,
-      },
-      {
-        title: 'Llegada eficiente',
-        subtitle: 'Cierre del trayecto con frenado estable y buen score.',
-        icon: <Route color={PENCIL.success} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.successSoft,
-      },
-    ],
-  },
-  yesterday: {
-    title: 'Centro',
-    subtitle: 'Ayer · 6:40 PM',
-    score: '88',
-    scoreDescription: 'Ruta urbana con algo de frenado en tráfico denso.',
-    distance: '19.1 km',
-    duration: '26m',
-    fuel: '3.6 L',
-    efficiency: '7.6',
-    routeTitle: 'Ruta Centro',
-    routeSummary: 'Zona comercial · hora pico · semáforos densos',
-    cameraCenter: { latitude: 8.9828, longitude: -79.5214 },
-    routePath: [
-      { latitude: 8.9725, longitude: -79.5358 },
-      { latitude: 8.9764, longitude: -79.5311 },
-      { latitude: 8.9803, longitude: -79.5258 },
-      { latitude: 8.9857, longitude: -79.5197 },
-      { latitude: 8.9901, longitude: -79.5129 },
-    ],
-    startPoint: { latitude: 8.9725, longitude: -79.5358 },
-    endPoint: { latitude: 8.9901, longitude: -79.5129 },
-    events: [
-      {
-        title: 'Cruce con carga',
-        subtitle: 'Se detectó reducción fuerte por tráfico pesado.',
-        icon: <Zap color={PENCIL.warning} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.warningSoft,
-      },
-      {
-        title: 'Tramo contenido',
-        subtitle: 'Recuperaste estabilidad en el segundo segmento.',
-        icon: <Sparkles color={PENCIL.accent} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.accentSoft,
-      },
-      {
-        title: 'Cierre correcto',
-        subtitle: 'Parada final sin exceso de ralentí.',
-        icon: <Route color={PENCIL.success} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.successSoft,
-      },
-    ],
-  },
-  north: {
-    title: 'Ruta norte',
-    subtitle: '28 may · 5:22 PM',
-    score: '95',
-    scoreDescription: 'Trayecto largo con conducción muy constante.',
-    distance: '41.0 km',
-    duration: '49m',
-    fuel: '6.1 L',
-    efficiency: '8.9',
-    routeTitle: 'Ruta norte',
-    routeSummary: 'Corredor norte · flujo estable · ahorro alto',
-    cameraCenter: { latitude: 9.0415, longitude: -79.4981 },
-    routePath: [
-      { latitude: 9.0122, longitude: -79.5318 },
-      { latitude: 9.0196, longitude: -79.5244 },
-      { latitude: 9.0293, longitude: -79.5156 },
-      { latitude: 9.0438, longitude: -79.5008 },
-      { latitude: 9.0577, longitude: -79.4871 },
-    ],
-    startPoint: { latitude: 9.0122, longitude: -79.5318 },
-    endPoint: { latitude: 9.0577, longitude: -79.4871 },
-    events: [
-      {
-        title: 'Aceleración óptima',
-        subtitle: 'Mantienes buena inercia en tramos de velocidad media.',
-        icon: <Sparkles color={PENCIL.accent} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.accentSoft,
-      },
-      {
-        title: 'Crucero estable',
-        subtitle: 'Poca variación de velocidad durante el corredor.',
-        icon: <Gauge color={PENCIL.success} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.successSoft,
-      },
-      {
-        title: 'Llegada limpia',
-        subtitle: 'Cierre sin frenadas agresivas en la salida norte.',
-        icon: <Route color={PENCIL.success} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.successSoft,
-      },
-    ],
-  },
-  home: {
-    title: 'Casa',
-    subtitle: '26 may · 7:15 PM',
-    score: '86',
-    scoreDescription: 'Ruta corta con un par de frenadas urbanas.',
-    distance: '12.8 km',
-    duration: '21m',
-    fuel: '0.9 L',
-    efficiency: '7.2',
-    routeTitle: 'Ruta Casa',
-    routeSummary: 'Barrio residencial · pendientes suaves · poco tráfico',
-    cameraCenter: { latitude: 8.9691, longitude: -79.5475 },
-    routePath: [
-      { latitude: 8.9612, longitude: -79.5561 },
-      { latitude: 8.9643, longitude: -79.5524 },
-      { latitude: 8.9676, longitude: -79.5489 },
-      { latitude: 8.9704, longitude: -79.5453 },
-      { latitude: 8.9731, longitude: -79.5414 },
-    ],
-    startPoint: { latitude: 8.9612, longitude: -79.5561 },
-    endPoint: { latitude: 8.9731, longitude: -79.5414 },
-    events: [
-      {
-        title: 'Inicio suave',
-        subtitle: 'La salida residencial mantiene buen control.',
-        icon: <Sparkles color={PENCIL.accent} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.accentSoft,
-      },
-      {
-        title: 'Pendiente corta',
-        subtitle: 'Hubo un tramo con mayor demanda de combustible.',
-        icon: <Zap color={PENCIL.warning} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.warningSoft,
-      },
-      {
-        title: 'Entrada estable',
-        subtitle: 'Llegada final sin exceso de consumo.',
-        icon: <Route color={PENCIL.success} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.successSoft,
-      },
-    ],
-  },
-};
-
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-const canRenderNativeAppleMap = Platform.OS === 'ios' && !isExpoGo;
+const canRenderNativeMap = !isExpoGo && (Platform.OS === 'ios' || Platform.OS === 'android');
 
-function TripRouteMap({ trip }: { trip: TripRecord }) {
-  const [appleMapsModule, setAppleMapsModule] = useState<any | null>(null);
+function getTripBadgeIcon(trip: AutoSenseTripDoc) {
+  if (trip.category === 'university') {
+    return <GraduationCap color={PENCIL.accent} size={19} strokeWidth={2.1} />;
+  }
+
+  return <MapPinned color={PENCIL.accent} size={19} strokeWidth={2.1} />;
+}
+
+function getEventToneColors(tone: AutoSenseTripDoc['events'][number]['tone']) {
+  switch (tone) {
+    case 'warning':
+      return {
+        backgroundColor: PENCIL.warningSoft,
+        iconColor: PENCIL.warning,
+      };
+    case 'success':
+      return {
+        backgroundColor: PENCIL.successSoft,
+        iconColor: PENCIL.success,
+      };
+    default:
+      return {
+        backgroundColor: PENCIL.accentSoft,
+        iconColor: PENCIL.accent,
+      };
+  }
+}
+
+function getEventIcon(
+  icon: AutoSenseTripDoc['events'][number]['icon'],
+  color: string,
+) {
+  switch (icon) {
+    case 'timer':
+      return <TimerReset color={color} size={18} strokeWidth={2.1} />;
+    case 'route':
+      return <Route color={color} size={18} strokeWidth={2.1} />;
+    case 'zap':
+      return <Zap color={color} size={18} strokeWidth={2.1} />;
+    case 'gauge':
+      return <Gauge color={color} size={18} strokeWidth={2.1} />;
+    default:
+      return <Sparkles color={color} size={18} strokeWidth={2.1} />;
+  }
+}
+
+function TripRouteMap({ trip }: { trip: AutoSenseTripDoc }) {
+  const [mapNamespace, setMapNamespace] = useState<{
+    kind: 'apple' | 'google';
+    module: any;
+  } | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
-    if (!canRenderNativeAppleMap) {
+    if (!canRenderNativeMap) {
       return () => {
         isMounted = false;
       };
     }
 
     import('expo-maps').then((module) => {
-      if (isMounted) {
-        setAppleMapsModule(module.AppleMaps);
+      if (!isMounted) {
+        return;
       }
+
+      if (Platform.OS === 'ios') {
+        setMapNamespace({ kind: 'apple', module: module.AppleMaps });
+        return;
+      }
+
+      setMapNamespace({ kind: 'google', module: module.GoogleMaps });
     });
 
     return () => {
@@ -252,9 +109,7 @@ function TripRouteMap({ trip }: { trip: TripRecord }) {
     };
   }, []);
 
-  const MapView = appleMapsModule?.View as ComponentType<any> | undefined;
-
-  if (!MapView) {
+  if (!mapNamespace) {
     return (
       <View style={styles.mapFallback}>
         <IconBubble
@@ -268,34 +123,84 @@ function TripRouteMap({ trip }: { trip: TripRecord }) {
         <View style={styles.mapFallbackCopy}>
           <Text style={styles.mapFallbackTitle}>Mapa real disponible en dev build</Text>
           <Text style={styles.mapFallbackText}>
-            Expo Go no incluye `expo-maps`. En el development build iOS esta tarjeta muestra Apple Maps con la ruta dibujada.
+            Expo Go no incluye expo-maps. En el development build esta tarjeta
+            muestra la ruta nativa.
           </Text>
         </View>
       </View>
     );
   }
 
+  if (mapNamespace.kind === 'apple') {
+    const AppleMapView = mapNamespace.module.View as ComponentType<any>;
+
+    return (
+      <AppleMapView
+        cameraPosition={{
+          coordinates: trip.cameraCenter,
+          zoom: 12.6,
+        }}
+        colorScheme={mapNamespace.module.MapColorScheme.LIGHT}
+        markers={[
+          {
+            id: 'start',
+            coordinates: trip.startPoint,
+            title: 'Inicio',
+            systemImage: 'car.fill',
+            tintColor: '#2563EB',
+          },
+          {
+            id: 'end',
+            coordinates: trip.endPoint,
+            title: trip.title,
+            systemImage: trip.category === 'university' ? 'graduationcap.fill' : 'flag.fill',
+            tintColor: '#137C6B',
+          },
+        ]}
+        polylines={[
+          {
+            id: 'route',
+            color: '#2563EB',
+            coordinates: trip.routePath,
+            width: 6,
+          },
+        ]}
+        properties={{
+          elevation: mapNamespace.module.MapStyleElevation.REALISTIC,
+          emphasis: 'MUTED',
+          isTrafficEnabled: false,
+          mapType: mapNamespace.module.MapType.STANDARD,
+          selectionEnabled: false,
+        }}
+        style={styles.mapView}
+        uiSettings={{
+          compassEnabled: false,
+          scaleBarEnabled: false,
+          togglePitchEnabled: false,
+        }}
+      />
+    );
+  }
+
+  const GoogleMapView = mapNamespace.module.View as ComponentType<any>;
+
   return (
-    <MapView
+    <GoogleMapView
       cameraPosition={{
         coordinates: trip.cameraCenter,
         zoom: 12.6,
       }}
-      colorScheme={appleMapsModule.MapColorScheme.LIGHT}
+      colorScheme={mapNamespace.module.MapColorScheme.LIGHT}
       markers={[
         {
           id: 'start',
           coordinates: trip.startPoint,
           title: 'Inicio',
-          systemImage: 'car.fill',
-          tintColor: '#2563EB',
         },
         {
           id: 'end',
           coordinates: trip.endPoint,
           title: trip.title,
-          systemImage: trip.title === 'Universidad' ? 'graduationcap.fill' : 'flag.fill',
-          tintColor: '#137C6B',
         },
       ]}
       polylines={[
@@ -307,27 +212,33 @@ function TripRouteMap({ trip }: { trip: TripRecord }) {
         },
       ]}
       properties={{
-        elevation: appleMapsModule.MapStyleElevation.REALISTIC,
-        emphasis: 'MUTED',
         isTrafficEnabled: false,
-        mapType: appleMapsModule.MapType.STANDARD,
+        mapType: mapNamespace.module.MapType.NORMAL,
         selectionEnabled: false,
       }}
       style={styles.mapView}
       uiSettings={{
         compassEnabled: false,
+        mapToolbarEnabled: false,
+        rotateGesturesEnabled: false,
         scaleBarEnabled: false,
-        togglePitchEnabled: false,
+        tiltGesturesEnabled: false,
+        zoomControlsEnabled: false,
       }}
     />
   );
 }
 
 export default function TripDetailScreen() {
+  const { firebaseUser } = useSession();
   const params = useLocalSearchParams<{ origin?: string; tripId?: string }>();
   const tripId = typeof params.tripId === 'string' ? params.tripId : 'today';
   const origin = typeof params.origin === 'string' ? params.origin : undefined;
-  const trip = TRIPS[tripId] ?? TRIPS.today;
+  const { trip } = useTrip(firebaseUser?.uid, tripId);
+
+  if (!trip) {
+    return null;
+  }
 
   const handleBack = () => {
     if (origin === 'home') {
@@ -363,7 +274,13 @@ export default function TripDetailScreen() {
             <ProgressBars
               activeColor={PENCIL.accent}
               inactiveColor="#DCEAE7"
-              values={[1, 1, 1, Number(trip.score) >= 90 ? 1 : 0.6, Number(trip.score) >= 95 ? 1 : 0]}
+              values={[
+                1,
+                1,
+                1,
+                trip.score >= 90 ? 1 : 0.6,
+                trip.score >= 95 ? 1 : 0,
+              ]}
             />
           </View>
         </SurfaceCard>
@@ -383,11 +300,7 @@ export default function TripDetailScreen() {
                   borderColor={PENCIL.accentSoft}
                   size={42}
                 >
-                  {trip.title === 'Universidad' ? (
-                    <GraduationCap color={PENCIL.accent} size={19} strokeWidth={2.1} />
-                  ) : (
-                    <MapPinned color={PENCIL.accent} size={19} strokeWidth={2.1} />
-                  )}
+                  {getTripBadgeIcon(trip)}
                 </IconBubble>
               </View>
 
@@ -405,7 +318,7 @@ export default function TripDetailScreen() {
             iconColor={PENCIL.accent}
             subtitle="Recorrido"
             title="Distancia"
-            value={trip.distance}
+            value={trip.distanceLabel}
           />
           <CompactMetricCard
             icon={<TimerReset color={PENCIL.success} size={16} strokeWidth={2.1} />}
@@ -413,7 +326,7 @@ export default function TripDetailScreen() {
             iconColor={PENCIL.success}
             subtitle="Total"
             title="Tiempo"
-            value={trip.duration}
+            value={trip.durationLabel}
           />
           <CompactMetricCard
             icon={<Fuel color={PENCIL.warning} size={16} strokeWidth={2.1} />}
@@ -421,7 +334,7 @@ export default function TripDetailScreen() {
             iconColor={PENCIL.warning}
             subtitle="Estimado"
             title="Combustible"
-            value={trip.fuel}
+            value={trip.fuelLabel}
           />
           <CompactMetricCard
             icon={<Gauge color={PENCIL.accent} size={16} strokeWidth={2.1} />}
@@ -429,7 +342,7 @@ export default function TripDetailScreen() {
             iconColor={PENCIL.accent}
             subtitle="Promedio"
             title="Eficiencia"
-            value={trip.efficiency}
+            value={trip.efficiencyLabel}
           />
         </View>
 
@@ -437,26 +350,30 @@ export default function TripDetailScreen() {
           <Text style={styles.sectionTitle}>Eventos del recorrido</Text>
 
           <View style={styles.eventStack}>
-            {trip.events.map((event) => (
-              <Card key={event.title} className="p-0" style={styles.eventCardSurface}>
-                <Card.Body className="p-0">
-                  <View style={styles.eventCard}>
-                    <IconBubble
-                      backgroundColor={event.iconBackground}
-                      borderColor={event.iconBackground}
-                      size={40}
-                    >
-                      {event.icon}
-                    </IconBubble>
+            {trip.events.map((event) => {
+              const colors = getEventToneColors(event.tone);
 
-                    <View style={styles.eventCopy}>
-                      <Text style={styles.eventTitle}>{event.title}</Text>
-                      <Text style={styles.eventSubtitle}>{event.subtitle}</Text>
+              return (
+                <Card key={event.title} className="p-0" style={styles.eventCardSurface}>
+                  <Card.Body className="p-0">
+                    <View style={styles.eventCard}>
+                      <IconBubble
+                        backgroundColor={colors.backgroundColor}
+                        borderColor={colors.backgroundColor}
+                        size={40}
+                      >
+                        {getEventIcon(event.icon, colors.iconColor)}
+                      </IconBubble>
+
+                      <View style={styles.eventCopy}>
+                        <Text style={styles.eventTitle}>{event.title}</Text>
+                        <Text style={styles.eventSubtitle}>{event.subtitle}</Text>
+                      </View>
                     </View>
-                  </View>
-                </Card.Body>
-              </Card>
-            ))}
+                  </Card.Body>
+                </Card>
+              );
+            })}
           </View>
         </View>
       </View>
@@ -519,10 +436,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderCurve: 'continuous',
     borderRadius: 24,
-    boxShadow: '0 12px 28px rgba(15, 23, 42, 0.10), 0 2px 8px rgba(15, 23, 42, 0.06)',
+    boxShadow: '0 10px 24px rgba(15, 23, 42, 0.10), 0 2px 8px rgba(15, 23, 42, 0.05)',
   },
   mapCard: {
-    gap: 12,
+    gap: 14,
     padding: 14,
   },
   mapHeader: {
@@ -533,7 +450,7 @@ const styles = StyleSheet.create({
   },
   mapHeaderCopy: {
     flex: 1,
-    gap: 3,
+    gap: 2,
   },
   mapLabel: {
     color: PENCIL.muted,
@@ -544,7 +461,7 @@ const styles = StyleSheet.create({
   mapTitle: {
     color: PENCIL.text,
     fontSize: 18,
-    lineHeight: 23,
+    lineHeight: 22,
     fontWeight: '800',
   },
   mapSummary: {
@@ -554,24 +471,28 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   mapFrame: {
-    height: 220,
     overflow: 'hidden',
     borderRadius: 20,
-    backgroundColor: '#EEF6FF',
+    borderWidth: 1,
+    borderColor: PENCIL.border,
+    backgroundColor: '#F8FAFC',
+    minHeight: 260,
   },
   mapView: {
-    flex: 1,
+    width: '100%',
+    height: 260,
   },
   mapFallback: {
     flex: 1,
+    minHeight: 260,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 14,
     paddingHorizontal: 18,
-    backgroundColor: '#EEF6FF',
   },
   mapFallbackCopy: {
     gap: 4,
+    alignItems: 'center',
   },
   mapFallbackTitle: {
     color: PENCIL.text,
@@ -595,14 +516,14 @@ const styles = StyleSheet.create({
   eventSection: {
     gap: 10,
   },
-  eventStack: {
-    gap: 10,
-  },
   sectionTitle: {
     color: PENCIL.text,
     fontSize: 15,
     lineHeight: 20,
     fontWeight: '800',
+  },
+  eventStack: {
+    gap: 10,
   },
   eventCardSurface: {
     backgroundColor: '#FFFFFF',

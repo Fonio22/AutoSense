@@ -1,4 +1,5 @@
 appId: com.antoniozhong.autosense
+name: "autosense firebase smoke"
 
 ---
 - launchApp:
@@ -7,16 +8,9 @@ appId: com.antoniozhong.autosense
 
 - runFlow:
     when:
-      visible: "http://192.168.31.239:8082"
+      visible: ".*8083.*"
     commands:
-      - tapOn: "http://192.168.31.239:8082"
-
-- runFlow:
-    when:
-      visible: "http://192.168.31.239:8081"
-      notVisible: "http://192.168.31.239:8082"
-    commands:
-      - tapOn: "http://192.168.31.239:8081"
+      - tapOn: ".*8083.*"
 
 - runFlow:
     when:
@@ -27,40 +21,99 @@ appId: com.antoniozhong.autosense
 
 - runFlow:
     when:
-      visible: "Reload"
+      visible: "Close"
     commands:
-      - tapOn:
-          point: "90%, 47%"
+      - tapOn: "Close"
+      - waitForAnimationToEnd
 
-- assertVisible: "Tu correo"
-- tapOn: "Iniciar sesión"
+- assertVisible: "Crear cuenta"
+- tapOn: "Crear cuenta"
 
-- assertVisible: "Honda Civic 1.5T"
-- tapOn: "Avisos"
-- assertVisible: "Lista de alertas"
+- assertVisible: "Correo electrónico"
+- tapOn: "tu@correo.com"
+- setClipboard: "${SMOKE_EMAIL}"
+- pasteText
+- inputText: "1"
+- eraseText: 1
+- pressKey: Enter
+- tapOn: "Continuar"
+
+- assertVisible: "Nombre completo"
 - tapOn:
-    point: "33%, 28%"
-- assertVisible: "Causa detectada"
-- tapOn: "Volver"
-- tapOn: "Volver"
+    point: "50%,51%"
+- inputText: "${SMOKE_NAME}"
+- pressKey: Enter
+- tapOn: "Continuar"
 
-- assertVisible: "Honda Civic 1.5T"
-- tapOn: "Eficiencia"
-- assertVisible: "Puntuación general"
-- tapOn: "Volver"
+- assertVisible: "Contraseña nueva"
+- tapOn:
+    point: "50%,51%"
+- inputText: "${SMOKE_PASSWORD}"
+- pressKey: Enter
+- tapOn:
+    point: "50%,62%"
+- inputText: "${SMOKE_PASSWORD}"
+- pressKey: Enter
+- tapOn: "Crear cuenta"
+
+- extendedWaitUntil:
+    visible: "Honda Civic 1.5T"
+    timeout: 15000
 
 - tapOn: "Tiempo real"
 - assertVisible: "Conecta tu OBD2"
-- tapOn: "Emparejar OBD2"
-- assertVisible: "OBD2 en vivo"
+- tapOn: "Conectar ahora"
 
-- tapOn: "Viajes"
+- runFlow:
+    when:
+      visible: ".*(Allow While Using App|Permitir al usar la app).*"
+    commands:
+      - tapOn: ".*(Allow While Using App|Permitir al usar la app).*"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
+      visible: ".*(Change to Always Allow|Cambiar a permitir siempre).*"
+    commands:
+      - tapOn: ".*(Change to Always Allow|Cambiar a permitir siempre).*"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: "OBD2 en vivo"
+    timeout: 15000
+
+- extendedWaitUntil:
+    visible: "Combustible"
+    timeout: 8000
+
+- tapOn: "Volver"
+- tapOn: "Maps"
 - assertVisible: "Historial de viajes"
-- tapOn: "Ver"
-- assertVisible: "Detalle de viaje"
+- assertVisible: ".*Ruta automática.*"
+- tapOn: ".*Ruta automática.*"
+- assertVisible: "Ruta registrada"
+- assertVisible: "Distancia"
 
 - tapOn: "Perfil"
 - assertVisible: "Mi perfil"
+- assertVisible: "${SMOKE_NAME}"
+- tapOn: "Salir.*Cerrar"
+
+- extendedWaitUntil:
+    visible: "Iniciar sesión"
+    timeout: 15000
+
+- tapOn: "tu@correo.com"
+- setClipboard: "${SMOKE_EMAIL}"
+- pasteText
+- inputText: "1"
+- eraseText: 1
 - tapOn:
-    point: "55%, 49%"
-- assertVisible: "Guardar ajustes"
+    point: "50%,55%"
+- inputText: "${SMOKE_PASSWORD}"
+- pressKey: Enter
+- tapOn: "Iniciar sesión"
+
+- extendedWaitUntil:
+    visible: "Honda Civic 1.5T"
+    timeout: 15000
