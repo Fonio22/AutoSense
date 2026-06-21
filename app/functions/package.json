@@ -1,0 +1,19 @@
+{
+  "name": "autosense-functions",
+  "private": true,
+  "main": "lib/index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && node --test test/profile-resolver.test.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.6.0",
+    "firebase-functions": "^7.0.1"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}

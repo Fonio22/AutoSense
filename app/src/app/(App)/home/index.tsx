@@ -14,9 +14,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from 'heroui-native';
 import {
+  Bluetooth,
   CarFront,
   CircleAlert,
   Gauge,
+  Radio,
   Route,
   Sparkles,
 } from 'lucide-react-native';
@@ -27,6 +29,9 @@ import { PENCIL } from '@/components/pencil-ui';
 import {
   getAlertCount,
   getPriorityAlert,
+  isLegacySeededDashboard,
+  isLegacySeededVehicle,
+  useHasRegisteredDevice,
   useUserTrips,
 } from '@/lib/autosense-data';
 
@@ -239,29 +244,93 @@ function HomeMetricCard({
   );
 }
 
+function ConnectObdHome({ onOpenRealtime }: { onOpenRealtime: () => void }) {
+  return (
+    <View style={styles.connectPage}>
+      <View style={styles.connectHero}>
+        <Image
+          resizeMode="cover"
+          source={heroCarSource}
+          style={styles.connectHeroImage}
+        />
+        <View style={styles.connectImageWash} />
+
+        <View style={styles.connectStatusPill}>
+          <Radio color={PENCIL.accent} size={16} strokeWidth={2.3} />
+          <Text style={styles.connectKicker}>Primer AutoSense</Text>
+        </View>
+
+        <View style={styles.connectContent}>
+          <View style={styles.connectIcon}>
+            <Radio color={PENCIL.accent} size={30} strokeWidth={2.2} />
+          </View>
+          <Text style={styles.connectTitle}>Registra tu primer OBD2</Text>
+          <Text style={styles.connectText}>
+            Abre Tiempo real para conectar tu AutoSense por Bluetooth y guardar tu vehículo.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onOpenRealtime}
+            style={({ pressed }) => [styles.connectButton, pressed ? styles.metricCardPressed : null]}
+          >
+            <Bluetooth color="#FFFFFF" size={18} strokeWidth={2.3} />
+            <Text style={styles.connectButtonText}>Conectar AutoSense</Text>
+          </Pressable>
+          <View style={styles.connectHint}>
+            <CarFront color={PENCIL.success} size={15} strokeWidth={2.2} />
+            <Text style={styles.connectHintText}>Auto-scan al abrir Tiempo real</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { firebaseUser, profile } = useSession();
   const { trips } = useUserTrips(firebaseUser?.uid);
+  const {
+    hasRegisteredDevice,
+    isLoading: isRegisteredDeviceLoading,
+  } = useHasRegisteredDevice(firebaseUser?.uid);
   const [heroBlurProgress, setHeroBlurProgress] = useState(0);
   const latestTrip = trips[0] ?? null;
-  const dashboard = profile?.dashboard;
-  const alertCount = profile ? getAlertCount(profile.alerts) : 1;
+  const hasLiveObd = Boolean(
+    profile?.realtime?.isConnected
+      && profile.realtime.deviceLabel !== 'Demo OBD2',
+  );
+  const dashboard = isLegacySeededDashboard(profile?.dashboard) ? null : profile?.dashboard;
+  const hasHistoricalDashboard = Boolean(
+    dashboard
+      && (
+        dashboard.fuelPercent > 0
+        || dashboard.remainingRangeKm > 0
+        || dashboard.efficiencyScore > 0
+        || dashboard.currentTripDistanceKm > 0
+      ),
+  );
+  const shouldShowDashboard = hasRegisteredDevice || hasLiveObd || hasHistoricalDashboard;
+  const alertCount = profile ? getAlertCount(profile.alerts) : 0;
   const priorityAlert = profile ? getPriorityAlert(profile.alerts) : null;
-  const heroTitle = profile?.vehicle?.name ?? 'Honda Civic 1.5T';
-  const fuelPercent = dashboard?.fuelPercent ?? 48;
-  const remainingRangeKm = dashboard?.remainingRangeKm ?? 318;
-  const drivingStyle = dashboard?.drivingStyle ?? 'Suave';
-  const drivingStyleNote = dashboard?.drivingStyleNote ?? 'Aceleraciones estables';
-  const efficiencyScore = dashboard?.efficiencyScore ?? 82;
-  const efficiencyNote = dashboard?.efficiencyNote ?? 'Buen ahorro esta semana';
-  const currentTripDistance = dashboard?.currentTripDistanceKm ?? 28.4;
+  const vehicleName = isLegacySeededVehicle(profile?.vehicle) ? null : profile?.vehicle?.name;
+  const heroTitle = vehicleName ?? profile?.realtime?.deviceLabel ?? 'AutoSense';
+  const fuelPercent = dashboard?.fuelPercent ?? 0;
+  const remainingRangeKm = dashboard?.remainingRangeKm ?? 0;
+  const drivingStyle = dashboard?.drivingStyle ?? 'Sin datos';
+  const drivingStyleNote = dashboard?.drivingStyleNote ?? 'Esperando telemetría real';
+  const efficiencyScore = dashboard?.efficiencyScore ?? 0;
+  const efficiencyNote = dashboard?.efficiencyNote ?? 'Sin lectura real todavía';
+  const currentTripDistance = dashboard?.currentTripDistanceKm ?? 0;
   const currentTripConsumption =
-    dashboard?.currentTripConsumptionLabel ?? 'Promedio 8.1 L/100 km';
+    dashboard?.currentTripConsumptionLabel ?? 'Sin datos';
+  const prioritySubtitle = alertCount > 0
+    ? priorityAlert?.subtitle ?? 'Revisión pendiente'
+    : 'Sin alertas prioritarias';
   const savingsTip =
     dashboard?.savingsTip
-    ?? 'Mantén velocidades constantes; podrías ahorrar 9% de gasolina en rutas urbanas.';
+    ?? 'Conecta AutoSense para calcular sugerencias reales de ahorro.';
 
   function handleHomeScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
     const offsetY = Math.max(0, event.nativeEvent.contentOffset.y);
@@ -274,6 +343,31 @@ export default function HomeScreen() {
 
       return nextProgress;
     });
+  }
+
+  if (isRegisteredDeviceLoading && !hasLiveObd && !hasHistoricalDashboard) {
+    return (
+      <View style={styles.screen}>
+        <StatusBar style="dark" />
+      </View>
+    );
+  }
+
+  if (!shouldShowDashboard) {
+    return (
+      <View style={styles.screen}>
+        <StatusBar style="dark" />
+        <ScrollView
+          contentContainerStyle={[
+            styles.connectScroll,
+            { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 108 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <ConnectObdHome onOpenRealtime={() => router.push('/realtime')} />
+        </ScrollView>
+      </View>
+    );
   }
 
   return (
@@ -380,13 +474,15 @@ export default function HomeScreen() {
               iconBackground="#EEF2FF"
               iconColor={PENCIL.accent}
               onPress={() =>
-                router.push({
-                  pathname: '/trips/[tripId]',
-                  params: {
-                    origin: 'home',
-                    tripId: latestTrip?.id ?? 'today',
-                  },
-                })
+                latestTrip
+                  ? router.push({
+                      pathname: '/trips/[tripId]',
+                      params: {
+                        origin: 'home',
+                        tripId: latestTrip.id,
+                      },
+                    })
+                  : router.push('/trips')
               }
               subtitle={currentTripConsumption}
               title="Viaje actual"
@@ -394,11 +490,11 @@ export default function HomeScreen() {
             />
 
             <HomeMetricCard
-              icon={<CircleAlert color={PENCIL.warning} size={16} strokeWidth={2.2} />}
-              iconBackground={PENCIL.warningSoft}
-              iconColor={PENCIL.warning}
+              icon={<CircleAlert color={alertCount > 0 ? PENCIL.warning : PENCIL.success} size={16} strokeWidth={2.2} />}
+              iconBackground={alertCount > 0 ? PENCIL.warningSoft : PENCIL.successSoft}
+              iconColor={alertCount > 0 ? PENCIL.warning : PENCIL.success}
               onPress={() => router.push('/home/alerts')}
-              subtitle={priorityAlert?.subtitle ?? 'Sin alertas prioritarias'}
+              subtitle={prioritySubtitle}
               title="Prioridad"
               value={`${alertCount} ${alertCount === 1 ? 'aviso' : 'avisos'}`}
             />
@@ -644,6 +740,128 @@ const styles = StyleSheet.create({
     color: PENCIL.muted,
     fontSize: 12,
     fontWeight: '500',
+    lineHeight: 16,
+  },
+  connectScroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  connectPage: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  connectHero: {
+    minHeight: 540,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    padding: 22,
+    borderRadius: 30,
+    borderCurve: 'continuous',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    boxShadow: '0 18px 46px rgba(15, 23, 42, 0.10)',
+  },
+  connectHeroImage: {
+    position: 'absolute',
+    top: -18,
+    left: -22,
+    right: -22,
+    height: 300,
+    opacity: 0.74,
+  },
+  connectImageWash: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 190,
+    height: 150,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+  },
+  connectStatusPill: {
+    position: 'absolute',
+    top: 18,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  connectContent: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 13,
+  },
+  connectIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: PENCIL.accentSoft,
+    borderWidth: 1,
+    borderColor: PENCIL.accentBorder,
+  },
+  connectKicker: {
+    color: PENCIL.accent,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 16,
+  },
+  connectTitle: {
+    color: PENCIL.text,
+    maxWidth: 280,
+    textAlign: 'center',
+    fontSize: 35,
+    fontWeight: '900',
+    lineHeight: 38,
+  },
+  connectText: {
+    color: PENCIL.muted,
+    maxWidth: 292,
+    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 22,
+  },
+  connectButton: {
+    width: '100%',
+    minHeight: 56,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    backgroundColor: PENCIL.accent,
+  },
+  connectButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '900',
+    lineHeight: 20,
+  },
+  connectHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: PENCIL.successSoft,
+    borderWidth: 1,
+    borderColor: PENCIL.successBorder,
+  },
+  connectHintText: {
+    color: PENCIL.success,
+    fontSize: 12,
+    fontWeight: '800',
     lineHeight: 16,
   },
 });

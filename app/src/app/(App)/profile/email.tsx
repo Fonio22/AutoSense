@@ -52,6 +52,8 @@ export default function ProfileEmailScreen() {
     return null;
   }
 
+  const currentUser = firebaseUser;
+  const currentProfile = profile;
   const isPasswordProvider = profile.provider === 'password';
   const providerLabel = isPasswordProvider ? 'Email y contrasena' : 'Google';
   const trimmedEmail = email.trim();
@@ -67,7 +69,7 @@ export default function ProfileEmailScreen() {
       return;
     }
 
-    if (trimmedEmail === profile.email.trim()) {
+    if (trimmedEmail === currentProfile.email.trim()) {
       setErrorMessage('Escribe un correo distinto para actualizarlo.');
       setSuccessMessage('');
       return;
@@ -84,11 +86,11 @@ export default function ProfileEmailScreen() {
     setIsSaving(true);
 
     try {
-      const result = await updateAccountDetails(firebaseUser, {
+      const result = await updateAccountDetails(currentUser, {
         currentPassword,
-        displayName: profile.displayName,
+        displayName: currentProfile.displayName,
         email: trimmedEmail,
-        phoneNumber: profile.phoneNumber,
+        phoneNumber: currentProfile.phoneNumber,
       });
       setCurrentPassword('');
 

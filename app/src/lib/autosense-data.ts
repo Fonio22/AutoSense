@@ -12,6 +12,7 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  where,
   type Unsubscribe,
 } from 'firebase/firestore';
 
@@ -140,40 +141,51 @@ export type MockObdTelemetry = {
   voltage: number;
   throttle: number;
   intakeTemp: number;
+  validMask?: number;
+  anomaly?: {
+    score: number;
+    severity: 'NORMAL' | 'WATCH' | 'WARNING' | 'CRITICAL';
+    areaMask?: number;
+    baselineReady?: boolean;
+    modelReady?: boolean;
+  } | null;
 };
+
+export type ObdTelemetry = MockObdTelemetry;
 
 const USERS_COLLECTION = 'users';
 const TRIPS_SUBCOLLECTION = 'trips';
+const DEVICES_COLLECTION = 'devices';
 
 const DEFAULT_ALERTS: Record<AlertId, AutoSenseAlertSnapshot> = {
   battery: {
     title: 'Batería',
-    subtitle: 'Voltaje bajo detectado',
-    value: 'Crítica',
-    tone: 'danger',
+    subtitle: 'Sin lectura fuera de rango',
+    value: 'OK',
+    tone: 'success',
   },
   brakes: {
     title: 'Frenos',
-    subtitle: 'Revisión recomendada',
-    value: 'Media',
-    tone: 'warning',
+    subtitle: 'Sin sensor OBD2 activo',
+    value: 'OK',
+    tone: 'success',
   },
   oil: {
-    title: 'Aceite',
-    subtitle: 'Servicio próximo',
-    value: 'Media',
-    tone: 'warning',
+    title: 'Temperatura',
+    subtitle: 'Motor dentro de rango',
+    value: 'OK',
+    tone: 'success',
   },
   tire: {
     title: 'Llantas',
-    subtitle: 'Presión irregular',
-    value: 'Baja',
-    tone: 'accent',
+    subtitle: 'Sin sensor OBD2 activo',
+    value: 'OK',
+    tone: 'success',
   },
   efficiency: {
     title: 'Consumo',
-    subtitle: 'El uso subió esta semana',
-    value: 'Ver',
+    subtitle: 'Lectura normal',
+    value: 'OK',
     tone: 'success',
   },
 };
@@ -389,6 +401,65 @@ const DEFAULT_TRIPS: AutoSenseTripDoc[] = [
   },
 ];
 
+const LEGACY_SEEDED_TRIP_IDS = new Set(DEFAULT_TRIPS.map((trip) => trip.id));
+
+export function isLegacySeededDashboard(
+  dashboard?: AutoSenseUserDoc['dashboard'] | null,
+) {
+  return Boolean(dashboard)
+    && dashboard?.fuelPercent === 48
+    && dashboard.remainingRangeKm === 318
+    && dashboard.drivingStyle === 'Suave'
+    && dashboard.efficiencyScore === 82
+    && dashboard.currentTripDistanceKm === 28.4
+    && dashboard.currentTripConsumptionLabel === 'Promedio 8.1 L/100 km';
+}
+
+export function isLegacySeededEfficiency(
+  efficiency?: AutoSenseUserDoc['efficiency'] | null,
+) {
+  return Boolean(efficiency)
+    && efficiency?.score === 82
+    && efficiency.accelerationPercent === 87
+    && efficiency.brakingPercent === 91
+    && efficiency.idleMinutes === 14
+    && efficiency.economyValue === 8.6;
+}
+
+export function isLegacySeededVehicle(
+  vehicle?: AutoSenseUserDoc['vehicle'] | null,
+) {
+  return vehicle?.name === 'Honda Civic 1.5T';
+}
+
+function isLegacySeededTrip(trip: AutoSenseTripDoc) {
+  if (!LEGACY_SEEDED_TRIP_IDS.has(trip.id)) {
+    return false;
+  }
+
+  const seededTrip = DEFAULT_TRIPS.find((item) => item.id === trip.id);
+  return trip.title === seededTrip?.title && trip.summary === seededTrip?.summary;
+}
+
+function isImpossibleActiveTrip(trip: AutoSenseTripDoc) {
+  if (trip.statusLabel !== 'En curso') {
+    return false;
+  }
+
+  if (trip.durationMinutes > 240) {
+    return true;
+  }
+
+  const distanceKm = trip.distanceKm ?? Number.parseFloat(trip.distanceLabel);
+  const hours = Math.max(1, trip.durationMinutes) / 60;
+
+  return Number.isFinite(distanceKm) && distanceKm / hours > 220;
+}
+
+function filterLegacySeededTrips(trips: AutoSenseTripDoc[]) {
+  return trips.filter((trip) => !isLegacySeededTrip(trip) && !isImpossibleActiveTrip(trip));
+}
+
 function capitalize(word: string) {
   return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
 }
@@ -421,23 +492,23 @@ function buildDefaultUserDoc(user: User): Omit<AutoSenseUserDoc, 'createdAt' | '
     phoneNumber: '+507 6000 0000',
     roleLabel: 'Propietario',
     vehicle: {
-      name: 'Honda Civic 1.5T',
-      summary: 'Honda Civic 1.5T · Activo',
-      statusLabel: 'Activo',
+      name: 'AutoSense',
+      summary: 'AutoSense · Sin registrar',
+      statusLabel: 'Sin registrar',
       fuelTankLiters: 58,
     },
     dashboard: {
-      fuelPercent: 48,
-      remainingRangeKm: 318,
-      drivingStyle: 'Suave',
-      drivingStyleNote: 'Aceleraciones estables',
-      efficiencyScore: 82,
-      efficiencyNote: 'Buen ahorro esta semana',
-      currentTripDistanceKm: 28.4,
-      currentTripConsumptionLabel: 'Promedio 8.1 L/100 km',
+      fuelPercent: 0,
+      remainingRangeKm: 0,
+      drivingStyle: 'Sin datos',
+      drivingStyleNote: 'Conecta AutoSense para leer tu manejo',
+      efficiencyScore: 0,
+      efficiencyNote: 'Esperando telemetría real',
+      currentTripDistanceKm: 0,
+      currentTripConsumptionLabel: 'Sin datos',
       savingsTip:
-        'Mantén velocidades constantes; podrías ahorrar 9% de gasolina en rutas urbanas.',
-      savingsPercent: 9,
+        'Conecta AutoSense para calcular sugerencias reales de ahorro.',
+      savingsPercent: 0,
     },
     settings: {
       speedUnit: 'km/h',
@@ -448,11 +519,11 @@ function buildDefaultUserDoc(user: User): Omit<AutoSenseUserDoc, 'createdAt' | '
       privacyMode: 'Rutas privadas',
     },
     efficiency: {
-      score: 82,
-      accelerationPercent: 87,
-      brakingPercent: 91,
-      idleMinutes: 14,
-      economyValue: 8.6,
+      score: 0,
+      accelerationPercent: 0,
+      brakingPercent: 0,
+      idleMinutes: 0,
+      economyValue: 0,
     },
     alerts: DEFAULT_ALERTS,
     realtime: {
@@ -532,16 +603,8 @@ export async function ensureUserData(user: User) {
     );
   }
 
-  const tripsRef = collection(userRef, TRIPS_SUBCOLLECTION);
-  const tripsSnapshot = await getDocs(query(tripsRef, limit(1)));
-
-  if (!tripsSnapshot.empty) {
-    return;
-  }
-
-  await Promise.all(
-    DEFAULT_TRIPS.map((trip) => setDoc(doc(tripsRef, trip.id), trip)),
-  );
+  // Trips are created from real OBD2 sessions. Keep old seeded trips readable
+  // through Firestore, but do not create new demo history for fresh users.
 }
 
 export function subscribeToUser(
@@ -569,10 +632,10 @@ export function subscribeToTrips(
 
   return onSnapshot(tripsQuery, (snapshot) => {
     onValue(
-      snapshot.docs.map((document) => ({
+      filterLegacySeededTrips(snapshot.docs.map((document) => ({
         id: document.id,
         ...(document.data() as Omit<AutoSenseTripDoc, 'id'>),
-      })),
+      }))),
     );
   });
 }
@@ -584,10 +647,10 @@ async function getTripsOnce(userId: string) {
   );
   const snapshot = await getDocs(tripsQuery);
 
-  return snapshot.docs.map((document) => ({
+  return filterLegacySeededTrips(snapshot.docs.map((document) => ({
     id: document.id,
     ...(document.data() as Omit<AutoSenseTripDoc, 'id'>),
-  }));
+  })));
 }
 
 export async function updateUserSettings(
@@ -623,17 +686,238 @@ export async function updateUserVehicle(
 export async function setRealtimeConnectionState(
   userId: string,
   isConnected: boolean,
+  options: Partial<AutoSenseUserDoc['realtime']> = {},
 ) {
   await setDoc(
     doc(db, USERS_COLLECTION, userId),
     {
       realtime: {
         isConnected,
-        statusLabel: isConnected ? 'Conectado y transmitiendo' : 'Listo para emparejar',
-        signalLabel: isConnected ? 'Lectura en vivo' : 'Señal estable',
-        deviceLabel: 'OBD2 Bluetooth',
+        statusLabel: options.statusLabel
+          ?? (isConnected ? 'Conectado y transmitiendo' : 'Listo para emparejar'),
+        signalLabel: options.signalLabel
+          ?? (isConnected ? 'Lectura en vivo' : 'Señal estable'),
+        deviceLabel: options.deviceLabel ?? 'OBD2 Bluetooth',
         lastConnectedAt: isConnected ? serverTimestamp() : null,
       },
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function isUsefulTelemetry(telemetry: ObdTelemetry) {
+  return telemetry.speed > 0
+    || telemetry.rpm > 0
+    || telemetry.engineTemp > 0
+    || telemetry.fuelLiters > 0
+    || telemetry.engineLoad > 0
+    || telemetry.voltage > 0
+    || telemetry.throttle > 0
+    || telemetry.intakeTemp > 0;
+}
+
+function drivingStyleFromTelemetry(telemetry: ObdTelemetry) {
+  if (telemetry.anomaly?.severity === 'WARNING' || telemetry.anomaly?.severity === 'CRITICAL') {
+    return {
+      label: 'Revisar',
+      note: `IA local ${Math.round(telemetry.anomaly.score)}% de anomalía`,
+    };
+  }
+
+  if (telemetry.engineLoad >= 75 || telemetry.rpm >= 3800) {
+    return {
+      label: 'Exigente',
+      note: 'Carga alta detectada por OBD2',
+    };
+  }
+
+  if (telemetry.engineLoad <= 45 && telemetry.rpm <= 2800) {
+    return {
+      label: 'Suave',
+      note: 'Carga baja y RPM estable',
+    };
+  }
+
+  return {
+    label: 'Estable',
+    note: 'Respuesta normal del motor',
+  };
+}
+
+function efficiencyFromTelemetry(telemetry: ObdTelemetry) {
+  const effectiveThrottle = telemetry.engineLoad > 20 ? telemetry.throttle : Math.min(telemetry.throttle, 25);
+  const anomalyPenalty = telemetry.anomaly?.severity === 'CRITICAL'
+    ? 24
+    : telemetry.anomaly?.severity === 'WARNING'
+      ? 14
+      : 0;
+  const rpmPenalty = telemetry.rpm > 3800 ? 18 : telemetry.rpm > 3000 ? 8 : 0;
+  const loadPenalty = Math.round(clampNumber(telemetry.engineLoad - 35, 0, 45) * 0.7);
+  const throttlePenalty = Math.round(clampNumber(effectiveThrottle - 22, 0, 45) * 0.45);
+  const score = Math.round(clampNumber(96 - anomalyPenalty - rpmPenalty - loadPenalty - throttlePenalty, 0, 100));
+
+  return {
+    score,
+    note: score >= 82
+      ? 'Lectura eficiente del AutoSense'
+      : score >= 65
+        ? 'Consumo moderado en esta sesión'
+        : 'Carga alta en esta sesión',
+  };
+}
+
+function efficiencyDetailsFromTelemetry(telemetry: ObdTelemetry, score: number, consumption: number) {
+  const effectiveThrottle = telemetry.engineLoad > 20 ? telemetry.throttle : Math.min(telemetry.throttle, 25);
+  const accelerationPercent = Math.round(clampNumber(
+    100 - Math.max(0, effectiveThrottle - 18) * 1.1 - Math.max(0, telemetry.rpm - 2600) * 0.012,
+    0,
+    100,
+  ));
+  const brakingPercent = Math.round(clampNumber(
+    telemetry.speed > 0 ? 92 - Math.max(0, telemetry.engineLoad - 62) * 0.35 : 88,
+    0,
+    100,
+  ));
+  const idleMinutes = telemetry.speed <= 2 && telemetry.rpm >= 650 ? 1 : 0;
+
+  return {
+    score,
+    accelerationPercent,
+    brakingPercent,
+    idleMinutes,
+    economyValue: Number(consumption.toFixed(1)),
+  };
+}
+
+function alertSnapshot(
+  title: string,
+  subtitle: string,
+  value: string,
+  tone: AlertTone,
+): AutoSenseAlertSnapshot {
+  return { title, subtitle, value, tone };
+}
+
+function alertsFromTelemetry(
+  telemetry: ObdTelemetry,
+  efficiencyScore: number,
+): Record<AlertId, AutoSenseAlertSnapshot> {
+  const anomalyIsAlert = telemetry.anomaly?.baselineReady
+    && (telemetry.anomaly.severity === 'WARNING' || telemetry.anomaly.severity === 'CRITICAL');
+  const voltage = telemetry.voltage;
+  const battery = voltage > 0 && voltage < 11.8
+    ? alertSnapshot('Batería', `Voltaje ${voltage.toFixed(1)}V por debajo del rango`, 'Crítica', 'danger')
+    : voltage > 0 && voltage < 12.3
+      ? alertSnapshot('Batería', `Voltaje ${voltage.toFixed(1)}V requiere revisión`, 'Media', 'warning')
+      : alertSnapshot(
+        'Batería',
+        voltage > 0 ? `Voltaje ${voltage.toFixed(1)}V estable` : 'Voltaje no disponible',
+        'OK',
+        'success',
+      );
+  const temperature = telemetry.engineTemp;
+  const oil = temperature > 110
+    ? alertSnapshot('Temperatura', `Motor ${temperature}°C en rango crítico`, 'Crítica', 'danger')
+    : temperature > 100
+      ? alertSnapshot('Temperatura', `Motor ${temperature}°C por encima del rango normal`, 'Media', 'warning')
+      : alertSnapshot(
+        'Temperatura',
+        temperature > 0 ? `Motor ${temperature}°C dentro de rango` : 'Temperatura no disponible',
+        'OK',
+        'success',
+      );
+  const efficiency = anomalyIsAlert
+    ? alertSnapshot(
+      'Anomalía OBD2',
+      `IA local ${Math.round(telemetry.anomaly?.score ?? 0)}% · posible área a revisar`,
+      telemetry.anomaly?.severity === 'CRITICAL' ? 'Crítica' : 'Media',
+      telemetry.anomaly?.severity === 'CRITICAL' ? 'danger' : 'warning',
+    )
+    : telemetry.engineLoad >= 85 || telemetry.rpm >= 4200
+      ? alertSnapshot('Consumo', 'Carga alta sostenida detectada por OBD2', 'Revisar', 'warning')
+      : alertSnapshot(
+        'Consumo',
+        `Score real ${efficiencyScore}% desde RPM/carga/acelerador`,
+        'OK',
+        'success',
+      );
+
+  return {
+    battery,
+    brakes: alertSnapshot('Frenos', 'Sin sensor OBD2 activo', 'OK', 'success'),
+    oil,
+    tire: alertSnapshot('Llantas', 'Sin sensor OBD2 activo', 'OK', 'success'),
+    efficiency,
+  };
+}
+
+export async function updateDashboardFromTelemetry(
+  userId: string,
+  telemetry: ObdTelemetry,
+  currentProfile?: AutoSenseUserDoc | null,
+) {
+  if (!userId || !isUsefulTelemetry(telemetry)) {
+    return;
+  }
+
+  const currentDashboard = isLegacySeededDashboard(currentProfile?.dashboard)
+    ? null
+    : currentProfile?.dashboard;
+  const tankLiters = clampNumber(currentProfile?.vehicle?.fuelTankLiters ?? 58, 1, 150);
+  const hasFuelReading = telemetry.fuelLiters > 0;
+  const fuelLiters = hasFuelReading
+    ? clampNumber(telemetry.fuelLiters, 0, tankLiters)
+    : clampNumber(((currentDashboard?.fuelPercent ?? 0) / 100) * tankLiters, 0, tankLiters);
+  const fuelPercent = hasFuelReading
+    ? Math.round(clampNumber((fuelLiters / tankLiters) * 100, 0, 100))
+    : currentDashboard?.fuelPercent ?? 0;
+  const estimatedConsumption = clampNumber(
+    6.2 + telemetry.engineLoad * 0.045 + telemetry.throttle * 0.035,
+    4.5,
+    18,
+  );
+  const remainingRangeKm = hasFuelReading
+    ? Math.round(fuelLiters * (100 / estimatedConsumption))
+    : currentDashboard?.remainingRangeKm ?? 0;
+  const style = drivingStyleFromTelemetry(telemetry);
+  const efficiency = efficiencyFromTelemetry(telemetry);
+  const distanceKm = clampNumber(
+    (currentDashboard?.currentTripDistanceKm ?? 0) + (telemetry.speed > 0 ? telemetry.speed / 360 : 0),
+    0,
+    2000,
+  );
+  const savingsPercent = Math.round(clampNumber((100 - efficiency.score) / 4, 0, 25));
+  const savingsTip = efficiency.score >= 82
+    ? 'Mantén esta carga de motor y RPM para conservar el consumo bajo.'
+    : 'Reduce aceleraciones fuertes para mejorar el consumo en esta ruta.';
+  const efficiencyDetails = efficiencyDetailsFromTelemetry(
+    telemetry,
+    efficiency.score,
+    estimatedConsumption,
+  );
+
+  await setDoc(
+    doc(db, USERS_COLLECTION, userId),
+    {
+      dashboard: {
+        fuelPercent,
+        remainingRangeKm: clampNumber(remainingRangeKm, 0, 2000),
+        drivingStyle: style.label,
+        drivingStyleNote: style.note,
+        efficiencyScore: efficiency.score,
+        efficiencyNote: efficiency.note,
+        currentTripDistanceKm: Number(distanceKm.toFixed(1)),
+        currentTripConsumptionLabel: `Promedio ${estimatedConsumption.toFixed(1)} L/100 km`,
+        savingsTip,
+        savingsPercent,
+      },
+      efficiency: efficiencyDetails,
+      alerts: alertsFromTelemetry(telemetry, efficiency.score),
       updatedAt: serverTimestamp(),
     },
     { merge: true },
@@ -645,9 +929,19 @@ export function getInitials(label: string) {
   return parts.map((part) => part[0]?.toUpperCase() ?? '').join('') || 'AS';
 }
 
-function resolveAlerts(
+export function resolveAlerts(
   alerts?: Partial<Record<AlertId, AutoSenseAlertSnapshot>> | null,
 ) {
+  if (
+    alerts?.battery?.value === 'Crítica'
+    && alerts.brakes?.value === 'Media'
+    && alerts.oil?.value === 'Media'
+    && alerts.tire?.value === 'Baja'
+    && alerts.efficiency?.value === 'Ver'
+  ) {
+    return DEFAULT_ALERTS;
+  }
+
   return { ...DEFAULT_ALERTS, ...alerts };
 }
 
@@ -660,13 +954,36 @@ export function getAlertCount(
 export function getPriorityAlert(
   alerts?: Partial<Record<AlertId, AutoSenseAlertSnapshot>> | null,
 ) {
-  const resolvedAlerts = Object.values(resolveAlerts(alerts));
+  const resolvedAlerts = Object.values(resolveAlerts(alerts))
+    .filter((alert) => alert.value !== 'OK');
 
   return (
     resolvedAlerts.find((alert) => alert.tone === 'danger')
     ?? resolvedAlerts.find((alert) => alert.tone === 'warning')
     ?? resolvedAlerts[0]
+    ?? null
   );
+}
+
+if (__DEV__) {
+  const simulatorSample: ObdTelemetry = {
+    speed: 123,
+    rpm: 2193,
+    engineTemp: 33,
+    fuelLiters: 40.2,
+    engineLoad: 4,
+    voltage: 0,
+    throttle: 63,
+    intakeTemp: -37,
+  };
+
+  if (drivingStyleFromTelemetry(simulatorSample).label === 'Exigente') {
+    throw new Error('dashboard telemetry sanity check failed: low-load sample marked Exigente');
+  }
+
+  if (getAlertCount(alertsFromTelemetry(simulatorSample, 90)) !== 0) {
+    throw new Error('dashboard telemetry sanity check failed: low-load sample created alerts');
+  }
 }
 
 export function useUserSnapshot(
@@ -773,6 +1090,42 @@ export function useUserTrips(userId?: string | null) {
   };
 }
 
+export function useHasRegisteredDevice(userId?: string | null) {
+  const [hasRegisteredDevice, setHasRegisteredDevice] = useState(false);
+  const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    const devicesQuery = query(
+      collection(db, DEVICES_COLLECTION),
+      where('ownerId', '==', userId),
+      limit(1),
+    );
+
+    const unsubscribe = onSnapshot(
+      devicesQuery,
+      (snapshot) => {
+        setHasRegisteredDevice(!snapshot.empty);
+        setResolvedUserId(userId);
+      },
+      () => {
+        setHasRegisteredDevice(false);
+        setResolvedUserId(userId);
+      },
+    );
+
+    return unsubscribe;
+  }, [userId]);
+
+  return {
+    hasRegisteredDevice: Boolean(userId) && resolvedUserId === userId && hasRegisteredDevice,
+    isLoading: Boolean(userId) && resolvedUserId !== userId,
+  };
+}
+
 export function useTrip(userId: string | null | undefined, tripId: string) {
   const { trips, isLoading } = useUserTrips(userId);
 
@@ -783,35 +1136,4 @@ export function useTrip(userId: string | null | undefined, tripId: string) {
     }),
     [isLoading, tripId, trips],
   );
-}
-
-export function useMockObdTelemetry(isConnected: boolean) {
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    if (!isConnected) {
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTick((current) => current + 1);
-    }, 1400);
-
-    return () => clearInterval(timer);
-  }, [isConnected]);
-
-  return useMemo<MockObdTelemetry>(() => {
-    const phase = (isConnected ? tick : 0) / 2.8;
-
-    return {
-      speed: Math.max(0, Math.round(88 + Math.sin(phase) * 11)),
-      rpm: Math.max(850, Math.round(2350 + Math.cos(phase * 0.92) * 190)),
-      engineTemp: Math.round(91 + Math.sin(phase * 0.45) * 2),
-      fuelLiters: Number(Math.max(54.2, 58 - (isConnected ? tick : 0) * 0.04).toFixed(1)),
-      engineLoad: Math.round(36 + Math.sin(phase * 1.2) * 5),
-      voltage: Number((13.8 + Math.cos(phase * 0.55) * 0.2).toFixed(1)),
-      throttle: Math.round(18 + Math.sin(phase * 0.85) * 6),
-      intakeTemp: Math.round(24 + Math.cos(phase * 0.5) * 2),
-    };
-  }, [isConnected, tick]);
 }

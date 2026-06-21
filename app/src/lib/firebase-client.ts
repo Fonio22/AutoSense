@@ -9,6 +9,7 @@ import {
   type Persistence,
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
 
 if (typeof globalThis.atob === 'undefined') {
@@ -83,6 +84,7 @@ export const firebaseApp = getApps().length
 
 export const db = getFirestore(firebaseApp);
 export const storage = getStorage(firebaseApp);
+export const functions = getFunctions(firebaseApp, 'us-central1');
 
 function initAuth() {
   if (Platform.OS === 'web') {

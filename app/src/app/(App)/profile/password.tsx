@@ -52,6 +52,8 @@ export default function ProfilePasswordScreen() {
     return null;
   }
 
+  const currentUser = firebaseUser;
+  const currentProfile = profile;
   const isPasswordProvider = profile.provider === 'password';
 
   async function handleSave() {
@@ -78,12 +80,12 @@ export default function ProfilePasswordScreen() {
     setIsSaving(true);
 
     try {
-      await updateAccountDetails(firebaseUser, {
+      await updateAccountDetails(currentUser, {
         currentPassword,
-        displayName: profile.displayName,
-        email: profile.email,
+        displayName: currentProfile.displayName,
+        email: currentProfile.email,
         newPassword,
-        phoneNumber: profile.phoneNumber,
+        phoneNumber: currentProfile.phoneNumber,
       });
       backOrFallback('/profile/details');
     } catch (error) {

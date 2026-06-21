@@ -19,6 +19,7 @@ Simulador OBD2 -> CAN -> ESP32-S3 -> USB-CDC -> monitor serial en la Mac
 - Lee raw seguro de Mode 02 freeze frame y Mode 06 onboard monitoring.
 - Muestra un dashboard ANSI por USB-CDC.
 - Guarda una muestra binaria compacta cada N segundos en una particion raw.
+- Analiza anomalias localmente con baseline por vehiculo, Z-score e Isolation Forest pequeno.
 - Evita JSON, CSV y texto dentro del ESP32 para el historial.
 - Usa `dashboard.interval_ms` para la vista en vivo y `logging.interval_seconds` para el guardado historico.
 
@@ -97,6 +98,59 @@ Por ahora el perfil se infiere por VIN:
 Esto no activa escrituras ni codificaciones. En una iteracion futura la app movil podra elegir o descargar un perfil por marca/modelo, pero el guard seguira siendo obligatorio.
 
 Si el carro es VW/VAG conocido pero no entrega VIN por OBD Mode 09, puedes activar el perfil manualmente con `vag.force_profile=true` en `data/config.ini`. Ese override solo habilita el scanner extendido de lectura; no desbloquea servicios de escritura.
+
+## Anomaly detector local
+
+El detector vive en `obd_anomaly_detector.*` y consume solo el `ObdCompactSample` que ya usa el logger. No manda solicitudes OBD nuevas, no escribe ECUs y no cambia el formato del log binario.
+
+Pipeline:
+
+- Warmup/calibracion: Welford por senal y contexto de manejo (`IDLE`, `CRUISING`, `ACCELERATING`, `DECELERATING`, `UNKNOWN`).
+- Z-score: compara cada senal contra su baseline local, con piso de desviacion estandar y thresholds por senal.
+- Tiny Isolation Forest: 16 arboles, sample size 64, max depth 6, nodos estaticos e inferencia sin memoria dinamica.
+- Debounce: una muestra aislada sube a `WATCH`; para `WARNING/CRITICAL` se requieren patrones persistentes.
+- Explicacion: top 3 senales y area probable: motor, admision, combustible, electrico/bateria, temperatura, conduccion o sensores.
+
+Config default:
+
+```ini
+[anomaly]
+enabled=true
+interval_seconds=10
+min_samples=300
+save_interval_seconds=300
+z_weight=70
+iforest_weight=30
+debug_logs=false
+```
+
+Persistencia:
+
+- Baseline compacto en NVS namespace `obd_anom`.
+- Modelo Isolation Forest en `configfs:/anomaly_iforest.bin`.
+- Se invalida si cambia firmware, perfil activo o mascara de sensores.
+- Se guarda por lotes cada 5 minutos para evitar desgaste de flash.
+
+API interna:
+
+```cpp
+AnomalyResult obd_anomaly_process_sample(const ObdSample& sample);
+bool obd_anomaly_is_model_ready();
+void obd_anomaly_reset_baseline();
+void obd_anomaly_save_state();
+void obd_anomaly_load_state();
+```
+
+Self-check host:
+
+```bash
+g++ -std=c++17 -I src \
+  tools/anomaly_selftest.cpp \
+  src/obd_anomaly_detector.cpp src/tiny_isolation_forest.cpp \
+  -o /tmp/anomaly_selftest && /tmp/anomaly_selftest
+```
+
+Limitaciones: esto marca patrones raros y areas posibles a revisar; no es diagnostico definitivo. Para autos nuevos o perfiles recien aplicados, espera `min_samples` antes de alertas fuertes.
 
 ## VW/VAG extendido solo lectura
 

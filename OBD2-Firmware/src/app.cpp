@@ -5,11 +5,14 @@
 #include <string.h>
 
 #include "app_config.h"
+#include "obd_anomaly_detector.h"
+#include "obd_ble_protocol.h"
 #include "obd_binary_logger.h"
 #include "obd_dashboard.h"
 #include "obd_read_only_guard.h"
 #include "obd_service.h"
 #include "uds_vag_scanner.h"
+#include "vehicle_profile.h"
 
 namespace
 {
@@ -35,9 +38,12 @@ ObdDashboard DASH;
 ObdBinaryLogger LOGGER;
 UdsVagScanner VAG;
 AppRuntimeConfig RUNTIME_CONFIG;
+ProfileManager PROFILES;
+ObdBleProtocol BLE_PROTO;
 
 bool can_ok = false;
 bool config_loaded = false;
+bool profile_loaded = false;
 
 CanConfig active_can = {CAN_RX_PIN, CAN_TX_PIN, APP_CAN_DEFAULT_BAUD};
 
@@ -49,6 +55,9 @@ uint32_t stats_rsp_fps = 0;
 uint32_t stats_dec_fps = 0;
 uint32_t stats_key_qps = 0;
 uint32_t stats_bg_qps = 0;
+uint32_t anomaly_last_ms = 0;
+char anomaly_profile_id[40]{0};
+char anomaly_profile_hash[ProfileManager::kSha256HexLen + 1]{0};
 
 void pulseLed(int pin, int ms)
 {
@@ -127,6 +136,68 @@ void refreshSecondStats(uint32_t nowMs)
 
     pulseLed(can_ok ? LED_OK : LED_ERR, 40);
 }
+
+void configureAnomaly()
+{
+    ObdAnomalyConfig config{};
+    config.enabled = RUNTIME_CONFIG.anomalyEnabled;
+    config.intervalSeconds = RUNTIME_CONFIG.anomalyIntervalSeconds;
+    config.minSamples = RUNTIME_CONFIG.anomalyMinSamples;
+    config.saveIntervalSeconds = RUNTIME_CONFIG.anomalySaveIntervalSeconds;
+    config.zWeight = RUNTIME_CONFIG.anomalyZWeight;
+    config.iforestWeight = RUNTIME_CONFIG.anomalyIForestWeight;
+    config.debugLogs = RUNTIME_CONFIG.anomalyDebugLogs;
+    obd_anomaly_configure(config);
+}
+
+void refreshAnomalyIdentity()
+{
+    const char *profileId = PROFILES.hasActiveProfile() ? PROFILES.activeProfileId() : "none";
+    const char *profileHash = PROFILES.hasActiveProfile() ? PROFILES.activeProfileHash() : "";
+    if (strcmp(anomaly_profile_id, profileId) == 0 && strcmp(anomaly_profile_hash, profileHash) == 0)
+    {
+        return;
+    }
+
+    snprintf(anomaly_profile_id, sizeof(anomaly_profile_id), "%s", profileId);
+    snprintf(anomaly_profile_hash, sizeof(anomaly_profile_hash), "%s", profileHash);
+    obd_anomaly_set_identity(anomaly_profile_id, anomaly_profile_hash);
+    obd_anomaly_load_state();
+}
+
+ObdSample makeAnomalySample(uint32_t nowMs, const ObdCompactSample &compact)
+{
+    ObdSample sample{};
+    sample.timestampMs = nowMs;
+    sample.validMask = compact.validMask;
+    sample.rpm = compact.rpm;
+    sample.speedKph = compact.speedKph;
+    sample.coolantC = compact.coolantC;
+    sample.throttlePct = compact.throttlePct;
+    sample.fuelLevelPct = compact.fuelLevelPct;
+    sample.engineLoadPct = compact.engineLoadPct;
+    sample.mapKpa = compact.mapKpa;
+    sample.mafCentiGps = compact.mafCentiGps;
+    sample.ecuMv = compact.ecuMv;
+    sample.intakeAirC = compact.intakeAirC;
+    sample.sparkAdvanceDeg10 = compact.sparkAdvanceDeg10;
+    return sample;
+}
+
+void processAnomaly(uint32_t nowMs, const ObdCompactSample &compact)
+{
+    if (!RUNTIME_CONFIG.anomalyEnabled || compact.validMask == 0)
+    {
+        return;
+    }
+    if (anomaly_last_ms != 0 && (nowMs - anomaly_last_ms) < RUNTIME_CONFIG.anomalyIntervalSeconds * 1000UL)
+    {
+        return;
+    }
+    anomaly_last_ms = nowMs;
+    refreshAnomalyIdentity();
+    obd_anomaly_process_sample(makeAnomalySample(nowMs, compact));
+}
 } // namespace
 
 void appSetup()
@@ -146,24 +217,39 @@ void appSetup()
     OBD.begin();
     VAG.begin();
     config_loaded = loadAppRuntimeConfig(RUNTIME_CONFIG);
+    profile_loaded = PROFILES.begin();
+    if (PROFILES.hasActiveProfile())
+    {
+        OBD.applyRuntimeProfile(PROFILES.activeProfile());
+    }
     OBD.setDiagnosticInfoEnabled(RUNTIME_CONFIG.obdDiagnosticInfoEnabled);
     ObdReadOnlyGuard::printPolicy(Serial);
     DASH.setIntervalMs(RUNTIME_CONFIG.dashboardIntervalMs);
     DASH.begin();
     LOGGER.configure(RUNTIME_CONFIG.loggingEnabled, RUNTIME_CONFIG.loggingIntervalSeconds);
     bool logReady = LOGGER.begin();
+    configureAnomaly();
+    refreshAnomalyIdentity();
 
-    Serial.printf("[boot] config=%s log=%s log_capacity=%lu interval=%lus dashboard=%s/%lums ebook=%s obd_diag=%s vag_ext=%s vag_force=%s transport=USB-CDC\n",
+    BLE_PROTO.begin(&PROFILES, &OBD);
+
+    Serial.printf("[boot] config=%s profile=%s:%s profile_fs=%s log=%s log_capacity=%lu interval=%lus anomaly=%s/%lus save=%lus min=%lu dashboard=%s/%lums ebook=%s obd_diag=%s vag_ext=%s transport=USB-CDC+BLE\n",
                   config_loaded ? "ini" : "defaults",
+                  PROFILES.hasActiveProfile() ? PROFILES.activeProfileId() : "none",
+                  PROFILES.hasActiveProfile() ? PROFILES.activeProfileVersion() : "",
+                  profile_loaded ? "ready" : "empty",
                   logReady ? "ready" : "down",
                   (unsigned long)LOGGER.stats().capacityRecords,
                   (unsigned long)LOGGER.stats().intervalSeconds,
+                  RUNTIME_CONFIG.anomalyEnabled ? "on" : "off",
+                  (unsigned long)RUNTIME_CONFIG.anomalyIntervalSeconds,
+                  (unsigned long)RUNTIME_CONFIG.anomalySaveIntervalSeconds,
+                  (unsigned long)RUNTIME_CONFIG.anomalyMinSamples,
                   RUNTIME_CONFIG.dashboardEnabled ? "on" : "off",
                   (unsigned long)RUNTIME_CONFIG.dashboardIntervalMs,
                   RUNTIME_CONFIG.dashboardEbookMode ? "on" : "off",
                   RUNTIME_CONFIG.obdDiagnosticInfoEnabled ? "on" : "off",
-                  RUNTIME_CONFIG.vagExtendedEnabled ? "on" : "off",
-                  RUNTIME_CONFIG.vagForceProfile ? "on" : "off");
+                  RUNTIME_CONFIG.vagExtendedEnabled ? "on" : "off");
 
     initCan();
     pulseLed(LED_OK, 180);
@@ -174,15 +260,17 @@ void appLoop()
     uint32_t nowMs = millis();
 
     OBD.tick(nowMs, can_ok);
+    BLE_PROTO.tick(nowMs);
     const ObdVehicleInfo &vehicleInfo = OBD.vehicleInfo();
-    const bool vagProfileAllowed = strcmp(vehicleInfo.profile, "vw-vag") == 0 || RUNTIME_CONFIG.vagForceProfile;
-    VAG.tick(nowMs, can_ok, RUNTIME_CONFIG.vagExtendedEnabled && vagProfileAllowed);
+    const bool extendedReadOnlyAllowed = PROFILES.extendedReadOnlyEnabled();
+    VAG.tick(nowMs, can_ok, RUNTIME_CONFIG.vagExtendedEnabled && extendedReadOnlyAllowed);
     processCanFrames(nowMs);
     refreshSecondStats(nowMs);
 
     ObdCompactSample compactSample{};
     OBD.collectCompactSample(nowMs, RUNTIME_CONFIG.loggingMaxSampleAgeSeconds * 1000UL, &compactSample);
     LOGGER.tick(nowMs, compactSample);
+    processAnomaly(nowMs, compactSample);
 
     ObdDashboardState dashState{};
     dashState.canOk = can_ok;
@@ -211,7 +299,7 @@ void appLoop()
     dashState.logIntervalSeconds = logStats.intervalSeconds;
     dashState.ebookMode = RUNTIME_CONFIG.dashboardEbookMode;
     snprintf(dashState.route, sizeof(dashState.route), "%s", OBD.mode01RouteName());
-    snprintf(dashState.transport, sizeof(dashState.transport), "%s", "USB-CDC");
+    snprintf(dashState.transport, sizeof(dashState.transport), "%s", "USB-CDC+BLE");
 
     if (RUNTIME_CONFIG.dashboardEnabled)
     {

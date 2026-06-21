@@ -9,6 +9,7 @@ import type { AutoSenseTripDoc, MockObdTelemetry, TripPoint } from '@/lib/autose
 
 const ACTIVE_TRIP_KEY = 'autosense.activeTrip';
 const LOCATION_TASK_NAME = 'autosense.tripLocation';
+const MAX_ACTIVE_TRIP_MS = 4 * 60 * 60 * 1000;
 
 const MOCK_ROUTE: TripPoint[] = [
   { latitude: 8.9725, longitude: -79.5358 },
@@ -109,6 +110,14 @@ function formatDurationLabel(durationMinutes: number) {
   return `${Math.max(1, durationMinutes)}m`;
 }
 
+function hasImpossibleDistance(distanceKm: number | undefined, durationMinutes: number) {
+  if (!distanceKm || durationMinutes <= 0) {
+    return false;
+  }
+
+  return distanceKm / (durationMinutes / 60) > 220;
+}
+
 function getTripRef(userId: string, tripId: string) {
   return doc(db, 'users', userId, 'trips', tripId);
 }
@@ -125,6 +134,15 @@ async function writeActiveTripSession(session: ActiveTripSession | null) {
   }
 
   await SecureStore.setItemAsync(ACTIVE_TRIP_KEY, JSON.stringify(session));
+}
+
+function isStaleTripSession(session: ActiveTripSession) {
+  return Date.now() - new Date(session.startedAt).getTime() > MAX_ACTIVE_TRIP_MS;
+}
+
+async function clearStaleTripSession() {
+  await writeActiveTripSession(null);
+  await stopBackgroundLocationUpdates();
 }
 
 function buildTripDocument(
@@ -181,13 +199,21 @@ async function upsertTripDocument(
 
   const trip = tripSnapshot.data() as AutoSenseTripDoc;
   const routePath = [...trip.routePath, nextPoint].slice(-200);
-  const distanceKm = routePath.reduce((totalDistance, point, index) => {
+  const routeDistanceKm = routePath.reduce((totalDistance, point, index) => {
     if (index === 0) {
       return 0;
     }
 
     return totalDistance + distanceBetweenPoints(routePath[index - 1], point);
   }, 0);
+  const previousDistanceKm = trip.durationMinutes > 240
+    || hasImpossibleDistance(trip.distanceKm, trip.durationMinutes)
+    ? 0
+    : trip.distanceKm ?? 0;
+  const obdDistanceKm = telemetry?.speed
+    ? previousDistanceKm + telemetry.speed / 360
+    : 0;
+  const distanceKm = Math.max(routeDistanceKm, obdDistanceKm);
   const startedAt = trip.startedAt.toDate();
   const endDate = endedAt ?? new Date();
   const durationMinutes = Math.max(
@@ -343,6 +369,11 @@ export async function syncTripTracking(
     }
 
     return;
+  }
+
+  if (session?.userId === userId && isStaleTripSession(session)) {
+    await clearStaleTripSession();
+    session = null;
   }
 
   if (!session && vehicleMoving && engineActive) {

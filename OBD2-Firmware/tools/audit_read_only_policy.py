@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import re
 import sys
+import json
 from pathlib import Path
+from typing import Optional
 
 
 SAFE_OBD = {0x01, 0x02, 0x03, 0x06, 0x07, 0x09, 0x0A}
@@ -34,6 +36,7 @@ BLOCKED_UDS = {
 ALLOWED_CAN_SEND_FILES = {
     "src/obd_service.cpp",
     "src/uds_vag_scanner.cpp",
+    "src/obd_ble_protocol.cpp",
 }
 
 
@@ -101,6 +104,58 @@ def scan_guard_policy(path: Path, root: Path, text: str) -> list[str]:
     return errors
 
 
+def parse_profile_service(value: object) -> Optional[int]:
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    try:
+        return int(text, 16)
+    except ValueError:
+        return None
+
+
+def scan_vehicle_profiles(root: Path) -> list[str]:
+    errors: list[str] = []
+    profiles_dir = root.parent / "vehicle-profiles"
+    if not profiles_dir.exists():
+        return errors
+
+    for path in sorted(profiles_dir.glob("*.json")):
+        if path.name == "metadata.json":
+            continue
+
+        try:
+            profile = json.loads(path.read_text())
+        except json.JSONDecodeError as exc:
+            errors.append(f"{path.relative_to(root.parent)} invalid JSON: {exc}")
+            continue
+
+        for signal in profile.get("signals", []):
+            mode = parse_profile_service(signal.get("mode"))
+            if mode is None:
+                errors.append(f"{path.relative_to(root.parent)} signal has invalid mode")
+                continue
+            if mode in BLOCKED_OBD:
+                errors.append(f"{path.relative_to(root.parent)} uses blocked OBD mode 0x{mode:02X}")
+            elif mode not in SAFE_OBD:
+                errors.append(f"{path.relative_to(root.parent)} uses non-allowlisted OBD mode 0x{mode:02X}")
+
+        extended = profile.get("extendedReadOnly") or {}
+        for service_value in extended.get("udsServices", []):
+            service = parse_profile_service(service_value)
+            if service is None:
+                errors.append(f"{path.relative_to(root.parent)} has invalid UDS service")
+                continue
+            if service in BLOCKED_UDS:
+                errors.append(f"{path.relative_to(root.parent)} uses blocked UDS service 0x{service:02X}")
+            elif service not in SAFE_UDS:
+                errors.append(f"{path.relative_to(root.parent)} uses non-allowlisted UDS service 0x{service:02X}")
+
+    return errors
+
+
 def main() -> int:
     root = Path(__file__).resolve().parents[1]
     src = root / "src"
@@ -112,6 +167,8 @@ def main() -> int:
         errors.extend(scan_uds_payload_assignments(path, root, text))
         errors.extend(scan_can_send_locations(path, root, text))
         errors.extend(scan_guard_policy(path, root, text))
+
+    errors.extend(scan_vehicle_profiles(root))
 
     if errors:
         print("READ-ONLY POLICY AUDIT FAILED", file=sys.stderr)

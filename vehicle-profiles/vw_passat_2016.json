@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "profileId": "vw_passat_2016",
+  "version": "1.0.0",
+  "minFirmwareVersion": "1.0.0",
+  "supportLevel": "full",
+  "vehicleMatch": {
+    "make": "VOLKSWAGEN",
+    "model": "PASSAT",
+    "yearStart": 2016,
+    "yearEnd": 2016
+  },
+  "protocol": {
+    "bus": "CAN",
+    "baud": 500000,
+    "requestId": "0x7DF",
+    "responseIds": ["0x7E8", "0x7E9"],
+    "useIsoTp": true,
+    "timeoutMs": 800,
+    "retry": 2
+  },
+  "discovery": {
+    "mode01SupportPids": ["00", "20", "40", "60", "80", "A0", "C0"],
+    "mode09Pids": ["00", "02", "04", "06", "0A", "0B", "0C"]
+  },
+  "signals": [
+    { "key": "rpm", "label": "Engine RPM", "mode": "01", "pid": "0C", "unit": "rpm", "formula": "((A*256)+B)/4", "formulaId": "be16_div_4", "pollMs": 500, "required": true, "source": "manual_verified", "enabledByDefault": true },
+    { "key": "speed", "label": "Vehicle Speed", "mode": "01", "pid": "0D", "unit": "km/h", "formula": "A", "formulaId": "identity_a", "pollMs": 500, "required": true, "source": "manual_verified", "enabledByDefault": true },
+    { "key": "coolant", "label": "Coolant Temperature", "mode": "01", "pid": "05", "unit": "C", "formula": "A-40", "formulaId": "temp_a_minus_40", "pollMs": 500, "required": false, "source": "manual_verified", "enabledByDefault": true },
+    { "key": "engine_load", "label": "Engine Load", "mode": "01", "pid": "04", "unit": "pct", "formula": "A*100/255", "formulaId": "pct_a_255", "pollMs": 2000, "required": false, "source": "manual_verified", "enabledByDefault": true },
+    { "key": "stft_b1", "label": "Short Fuel Trim B1", "mode": "01", "pid": "06", "unit": "pct", "formula": "(A-128)*100/128", "formulaId": "trim_a_128", "pollMs": 5000, "required": false, "source": "manual_verified", "enabledByDefault": true },
+    { "key": "ltft_b1", "label": "Long Fuel Trim B1", "mode": "01", "pid": "07", "unit": "pct", "formula": "(A-128)*100/128", "formulaId": "trim_a_128", "pollMs": 5000, "required": false, "source": "manual_verified", "enabledByDefault": true },
+    { "key": "map", "label": "Intake Manifold Pressure", "mode": "01", "pid": "0B", "unit": "kPa", "formula": "A", "formulaId": "identity_a", "pollMs": 1000, "required": false, "source": "manual_verified", "enabledByDefault": true },
+    { "key": "intake_air", "label": "Intake Air Temperature", "mode": "01", "pid": "0F", "unit": "C", "formula": "A-40", "formulaId": "temp_a_minus_40", "pollMs": 1000, "required": false, "source": "manual_verified", "enabledByDefault": true },
+    { "key": "throttle", "label": "Throttle", "mode": "01", "pid": "11", "unit": "pct", "formula": "A*100/255", "formulaId": "pct_a_255", "pollMs": 500, "required": false, "source": "manual_verified", "enabledByDefault": true },
+    { "key": "runtime", "label": "Run Time Since Engine Start", "mode": "01", "pid": "1F", "unit": "s", "formula": "A*256+B", "formulaId": "be16", "pollMs": 5000, "required": false, "source": "manual_verified", "enabledByDefault": true },
+    { "key": "ecu_v", "label": "ECU Voltage", "mode": "01", "pid": "42", "unit": "V", "formula": "((A*256)+B)/1000", "formulaId": "be16_div_1000", "pollMs": 500, "required": false, "source": "manual_verified", "enabledByDefault": true },
+    { "key": "fuel_level", "label": "Fuel Level", "mode": "01", "pid": "2F", "unit": "pct", "formula": "A*100/255", "formulaId": "pct_a_255", "pollMs": 3000, "required": false, "source": "standard_obd2_unverified_for_vehicle", "enabledByDefault": false },
+    { "key": "maf", "label": "MAF", "mode": "01", "pid": "10", "unit": "g/s", "formula": "((A*256)+B)/100", "formulaId": "be16_div_100", "pollMs": 3000, "required": false, "source": "standard_obd2_unverified_for_vehicle", "enabledByDefault": false },
+    { "key": "oil_temp", "label": "Oil Temperature", "mode": "01", "pid": "5C", "unit": "C", "formula": "A-40", "formulaId": "temp_a_minus_40", "pollMs": 3000, "required": false, "source": "standard_obd2_unverified_for_vehicle", "enabledByDefault": false },
+    { "key": "fuel_rate", "label": "Fuel Rate", "mode": "01", "pid": "5E", "unit": "L/h", "formula": "((A*256)+B)*0.05", "formulaId": "be16_mul_0_05", "pollMs": 3000, "required": false, "source": "standard_obd2_unverified_for_vehicle", "enabledByDefault": false }
+  ],
+  "extendedReadOnly": {
+    "udsServices": ["0x22", "0x19"],
+    "dids": ["0xF187", "0xF188", "0xF189", "0xF18A", "0xF190", "0xF191", "0xF197"],
+    "dtcStatusMask": "0xFF",
+    "udsModules": [
+      { "address": "01", "name": "Engine", "routes": [{ "requestId": "0x7E0", "responseId": "0x7E8" }], "source": "existing_firmware" },
+      { "address": "02", "name": "Trans", "routes": [{ "requestId": "0x7E1", "responseId": "0x7E9" }], "source": "existing_firmware" },
+      { "address": "03", "name": "ABS", "routes": [{ "requestId": "0x713", "responseId": "0x77D" }, { "requestId": "0x713", "responseId": "0x71B" }], "source": "existing_firmware" },
+      { "address": "08", "name": "HVAC", "routes": [{ "requestId": "0x746", "responseId": "0x7B0" }, { "requestId": "0x746", "responseId": "0x74E" }], "source": "existing_firmware" },
+      { "address": "09", "name": "BCM", "routes": [{ "requestId": "0x70E", "responseId": "0x778" }, { "requestId": "0x70E", "responseId": "0x716" }], "source": "existing_firmware" },
+      { "address": "15", "name": "Airbag", "routes": [{ "requestId": "0x715", "responseId": "0x77F" }, { "requestId": "0x715", "responseId": "0x71D" }], "source": "existing_firmware" },
+      { "address": "17", "name": "Cluster", "routes": [{ "requestId": "0x714", "responseId": "0x77E" }, { "requestId": "0x714", "responseId": "0x71C" }], "source": "existing_firmware" },
+      { "address": "19", "name": "Gateway", "routes": [{ "requestId": "0x710", "responseId": "0x77A" }, { "requestId": "0x710", "responseId": "0x718" }], "source": "existing_firmware" },
+      { "address": "44", "name": "Steering", "routes": [{ "requestId": "0x712", "responseId": "0x77C" }, { "requestId": "0x712", "responseId": "0x71A" }], "source": "existing_firmware" },
+      { "address": "46", "name": "Comfort", "routes": [{ "requestId": "0x70D", "responseId": "0x777" }, { "requestId": "0x70D", "responseId": "0x715" }], "source": "existing_firmware" },
+      { "address": "53", "name": "ParkBrake", "routes": [{ "requestId": "0x752", "responseId": "0x7BC" }, { "requestId": "0x752", "responseId": "0x75A" }], "source": "existing_firmware" },
+      { "address": "5F", "name": "Infotain", "routes": [{ "requestId": "0x773", "responseId": "0x7DD" }, { "requestId": "0x773", "responseId": "0x77B" }], "source": "existing_firmware" },
+      { "address": "65", "name": "TPMS", "routes": [{ "requestId": "0x70B", "responseId": "0x775" }, { "requestId": "0x70B", "responseId": "0x713" }], "source": "existing_firmware" },
+      { "address": "16", "name": "SteerCol", "routes": [{ "requestId": "0x70C", "responseId": "0x776" }, { "requestId": "0x70C", "responseId": "0x714" }], "source": "existing_firmware" }
+    ]
+  },
+  "trackingRules": {
+    "startWhen": {
+      "speedKmhMin": 3,
+      "rpmMin": 500,
+      "throttleOrFuelMovementRequired": true
+    },
+    "stopWhen": {
+      "speedKmhMax": 2,
+      "idleSeconds": 120
+    }
+  }
+}

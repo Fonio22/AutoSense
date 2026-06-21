@@ -93,6 +93,8 @@ enum ObdCompactField : uint16_t
     OBD_SAMPLE_MAP = 1U << 6,
     OBD_SAMPLE_MAF = 1U << 7,
     OBD_SAMPLE_ECU_VOLTAGE = 1U << 8,
+    OBD_SAMPLE_INTAKE_AIR = 1U << 9,
+    OBD_SAMPLE_SPARK_ADVANCE = 1U << 10,
 };
 
 struct ObdCompactSample
@@ -107,6 +109,27 @@ struct ObdCompactSample
     uint8_t mapKpa{0};
     uint16_t mafCentiGps{0};
     uint16_t ecuMv{0};
+    int16_t intakeAirC{0};
+    int16_t sparkAdvanceDeg10{0};
+};
+
+struct ObdProfileSignalConfig
+{
+    uint8_t pid{0};
+    uint16_t pollMs{1000};
+    bool required{false};
+    bool enabled{true};
+};
+
+struct ObdRuntimeProfile
+{
+    static constexpr uint8_t kMaxSignals = 32;
+
+    char profileId[40]{"generic_obd2"};
+    char version[16]{"0.0.0"};
+    ObdProfileSignalConfig signals[kMaxSignals]{};
+    uint8_t signalCount{0};
+    bool extendedReadOnly{false};
 };
 
 class ObdService
@@ -132,15 +155,21 @@ public:
     uint32_t readGuardBlocked() const;
 
     uint16_t collectMetrics(ObdMetric *out, uint16_t maxOut) const;
+    uint16_t collectSupportedPids(uint8_t *out, uint16_t maxOut) const;
     bool collectCompactSample(uint32_t nowMs, uint32_t maxAgeMs, ObdCompactSample *out) const;
     const ObdVehicleInfo &vehicleInfo() const;
+    void applyRuntimeProfile(const ObdRuntimeProfile &profile);
+    const ObdRuntimeProfile &runtimeProfile() const;
+    bool hasRuntimeProfile() const;
 
     void clearWindowCounters();
 
 private:
     static constexpr uint8_t kMaxPid = 0xE0;
+    static constexpr uint16_t kMode01PidCount = kMaxPid + 1;
     static constexpr uint8_t kMaxQueryPids = 224;
     static constexpr uint8_t kMaxKeyPids = 16;
+    static constexpr uint8_t kPidBitmapWords = 8;
 
     enum class Mode01Route : uint8_t
     {
@@ -235,9 +264,12 @@ private:
     static bool isMode0AResponse(const CAN_FRAME &frame);
     static bool isMode09Response(const CAN_FRAME &frame);
     static bool isSupportBitmapPid(uint8_t pid);
+    static bool pidBit(const uint32_t *bits, uint8_t pid);
+    static bool setPidBit(uint32_t *bits, uint8_t pid);
 
     void resetDiscovery();
     void rebuildQueryPlan();
+    bool addRuntimeProfilePids(bool supportedOnly);
     bool addKeyPid(uint8_t pid);
     bool addBgPid(uint8_t pid);
     void handleSupportedBitmap(uint8_t pid, const uint8_t *data, uint8_t dataLen, uint32_t nowMs);
@@ -321,14 +353,16 @@ private:
     bool activeQuery_{false};
     bool discoveryComplete_{false};
     bool diagnosticInfoEnabled_{true};
+    bool runtimeProfileActive_{false};
+    ObdRuntimeProfile runtimeProfile_{};
 
     bool supportAnswered_[7] = {false, false, false, false, false, false, false};
-    bool supported_[256] = {false};
-    bool rawSeen_[256] = {false};
+    uint32_t supported_[kPidBitmapWords] = {0};
+    uint32_t rawSeen_[kPidBitmapWords] = {0};
 
-    bool mode09Supported_[256] = {false};
+    uint32_t mode09Supported_[kPidBitmapWords] = {0};
     bool mode09SupportKnown_{false};
-    bool mode06Supported_[256] = {false};
+    uint32_t mode06Supported_[kPidBitmapWords] = {0};
 
     uint8_t supportCursor_{0};
     uint8_t keyQueryPids_[kMaxKeyPids] = {0};
@@ -337,7 +371,7 @@ private:
     uint8_t bgQueryPids_[kMaxQueryPids] = {0};
     uint8_t bgQueryCount_{0};
     uint8_t bgQueryCursor_{0};
-    ObdPidHealth pidHealth_[256];
+    ObdPidHealth pidHealth_[kMode01PidCount];
 
     uint8_t mode09Cursor_{0};
     uint8_t mode06SupportCursor_{0};
@@ -370,10 +404,10 @@ private:
 
     uint16_t supportedCount_{0};
 
-    ObdMetric metrics_[256];
+    ObdMetric metrics_[kMode01PidCount];
     ObdVehicleInfo vehicle_{};
     ObdCompactSample compactSample_{};
-    uint32_t compactLastUpdateMs_[9] = {0};
+    uint32_t compactLastUpdateMs_[11] = {0};
     IsoTpRxState isoTpRx_{};
 
     // Indexed by frame number (1..15) for simple ISO-TP style chunk assembly.

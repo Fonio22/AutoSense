@@ -55,6 +55,9 @@ export default function ProfilePersonalScreen() {
     return null;
   }
 
+  const currentUser = firebaseUser;
+  const currentProfile = profile;
+
   async function handleUploadPhoto() {
     if (isUploading) {
       return;
@@ -64,7 +67,7 @@ export default function ProfilePersonalScreen() {
     setIsUploading(true);
 
     try {
-      await uploadProfilePhoto(firebaseUser);
+      await uploadProfilePhoto(currentUser);
     } catch (error) {
       setErrorMessage(firebaseAuthErrorMessage(error));
       return;
@@ -87,9 +90,9 @@ export default function ProfilePersonalScreen() {
     setIsSaving(true);
 
     try {
-      await updateAccountDetails(firebaseUser, {
+      await updateAccountDetails(currentUser, {
         displayName,
-        email: profile.email,
+        email: currentProfile.email,
         phoneNumber,
       });
       backOrFallback('/profile/details');

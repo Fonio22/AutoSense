@@ -78,6 +78,7 @@ private:
                           const ObdMetric *metrics,
                           uint16_t metricCount);
 
+    bool ensureBuffers();
     const ObdMetric *findMetricByPid(const ObdMetric *metrics, uint16_t count, uint8_t pid) const;
 
     bool started_{false};
@@ -87,7 +88,7 @@ private:
     uint32_t txPackets_{0};
     uint32_t txErrors_{0};
 
-    ObdMetric metricsScratch_[kMaxMetrics]{};
-    UdsVagModuleStatus vagScratch_[UdsVagScanner::kMaxModules]{};
-    ObdFrameBuffer frame_{};
+    ObdMetric *metricsScratch_{nullptr};
+    UdsVagModuleStatus *vagScratch_{nullptr};
+    ObdFrameBuffer *frame_{nullptr};
 };

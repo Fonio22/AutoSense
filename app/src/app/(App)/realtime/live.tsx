@@ -20,15 +20,23 @@ import {
   SurfaceCard,
 } from '@/components/pencil-ui';
 import { useSession } from '@/components/providers/session-provider';
-import { setRealtimeConnectionState, useMockObdTelemetry } from '@/lib/autosense-data';
+import {
+  setRealtimeConnectionState,
+  updateDashboardFromTelemetry,
+} from '@/lib/autosense-data';
 import { backOrFallback } from '@/lib/navigation';
+import { getActiveObdConnection } from '@/lib/obd/obd-device';
+import { useObdTelemetry } from '@/lib/obd/use-obd-telemetry';
 import { stopTripTracking, syncTripTracking } from '@/lib/trip-tracking';
 
 export default function RealtimeLiveScreen() {
   const { firebaseUser, profile } = useSession();
-  const isConnected = profile?.realtime?.isConnected ?? false;
-  const telemetry = useMockObdTelemetry(isConnected);
+  const isConnected = Boolean(getActiveObdConnection()) || (profile?.realtime?.isConnected ?? false);
+  const demoMode = profile?.realtime?.deviceLabel === 'Demo OBD2';
+  const telemetry = useObdTelemetry({ isConnected, demoMode });
   const isSyncing = useRef(false);
+  const lastTripSyncMs = useRef(0);
+  const lastDashboardSyncMs = useRef(0);
   const isImperial = profile?.settings?.speedUnit === 'mph';
   const useFahrenheit = profile?.settings?.temperatureUnit === '°F';
   const speedValue = isImperial
@@ -42,19 +50,28 @@ export default function RealtimeLiveScreen() {
     ? Math.round((telemetry.intakeTemp * 9) / 5 + 32)
     : telemetry.intakeTemp;
   const temperatureUnit = useFahrenheit ? '°F' : '°C';
+  const hasEngineTemp = telemetry.engineTemp !== 0;
+  const hasFuel = telemetry.fuelLiters > 0;
+  const hasVoltage = telemetry.voltage > 0;
+  const hasIntakeTemp = telemetry.intakeTemp !== 0;
+  const anomalyLabel = telemetry.anomaly
+    ? telemetry.anomaly.baselineReady
+      ? `IA ${telemetry.anomaly.severity}`
+      : 'IA calibrando'
+    : 'IA no reportada';
   const metrics = [
     {
       title: 'Temp motor',
-      value: `${engineTempValue}${temperatureUnit}`,
-      subtitle: 'Estable',
+      value: hasEngineTemp ? `${engineTempValue}${temperatureUnit}` : '--',
+      subtitle: hasEngineTemp && telemetry.engineTemp > 100 ? 'Alta' : hasEngineTemp ? 'Estable' : 'No disponible',
       icon: <Thermometer color={PENCIL.warning} size={16} strokeWidth={2.2} />,
       iconBackground: PENCIL.warningSoft,
       iconColor: PENCIL.warning,
     },
     {
       title: 'Combustible',
-      value: `${telemetry.fuelLiters.toFixed(1)} L`,
-      subtitle: 'Estimado',
+      value: hasFuel ? `${telemetry.fuelLiters.toFixed(1)} L` : '--',
+      subtitle: hasFuel ? 'Lectura OBD2' : 'No disponible',
       icon: <Fuel color={PENCIL.success} size={16} strokeWidth={2.2} />,
       iconBackground: PENCIL.successSoft,
       iconColor: PENCIL.success,
@@ -62,15 +79,15 @@ export default function RealtimeLiveScreen() {
     {
       title: 'Carga motor',
       value: `${telemetry.engineLoad}%`,
-      subtitle: 'Normal',
+      subtitle: telemetry.engineLoad >= 75 ? 'Alta' : 'Normal',
       icon: <Activity color={PENCIL.accent} size={16} strokeWidth={2.2} />,
       iconBackground: PENCIL.accentSoft,
       iconColor: PENCIL.accent,
     },
     {
       title: 'Voltaje ECU',
-      value: `${telemetry.voltage}V`,
-      subtitle: 'Correcto',
+      value: hasVoltage ? `${telemetry.voltage.toFixed(1)}V` : '--',
+      subtitle: hasVoltage ? 'Lectura OBD2' : 'No disponible',
       icon: <BatteryCharging color={PENCIL.success} size={16} strokeWidth={2.2} />,
       iconBackground: PENCIL.successSoft,
       iconColor: PENCIL.success,
@@ -78,15 +95,15 @@ export default function RealtimeLiveScreen() {
     {
       title: 'Acelerador',
       value: `${telemetry.throttle}%`,
-      subtitle: 'Suave',
+      subtitle: 'Lectura OBD2',
       icon: <Gauge color={PENCIL.warning} size={16} strokeWidth={2.2} />,
       iconBackground: PENCIL.warningSoft,
       iconColor: PENCIL.warning,
     },
     {
       title: 'Aire admisión',
-      value: `${intakeTempValue}${temperatureUnit}`,
-      subtitle: 'Estable',
+      value: hasIntakeTemp ? `${intakeTempValue}${temperatureUnit}` : '--',
+      subtitle: hasIntakeTemp ? 'Lectura OBD2' : 'No disponible',
       icon: <Wind color={PENCIL.accent} size={16} strokeWidth={2.2} />,
       iconBackground: PENCIL.accentSoft,
       iconColor: PENCIL.accent,
@@ -98,9 +115,17 @@ export default function RealtimeLiveScreen() {
       return;
     }
 
+    const now = Date.now();
+    if (isConnected && now - lastTripSyncMs.current < 10000) {
+      return;
+    }
+    lastTripSyncMs.current = now;
     isSyncing.current = true;
 
     void syncTripTracking(firebaseUser.uid, isConnected, telemetry)
+      .catch((error) => {
+        console.warn('[obd] trip sync failed', error);
+      })
       .finally(() => {
         isSyncing.current = false;
       });
@@ -110,11 +135,53 @@ export default function RealtimeLiveScreen() {
     telemetry,
   ]);
 
+  useEffect(() => {
+    if (
+      !firebaseUser?.uid
+      || !isConnected
+      || demoMode
+      || !getActiveObdConnection()
+    ) {
+      return;
+    }
+
+    const hasRealTelemetry = telemetry.speed > 0
+      || telemetry.rpm > 0
+      || telemetry.engineTemp > 0
+      || telemetry.fuelLiters > 0
+      || telemetry.engineLoad > 0
+      || telemetry.voltage > 0
+      || telemetry.throttle > 0
+      || telemetry.intakeTemp > 0;
+
+    if (!hasRealTelemetry) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastDashboardSyncMs.current < 10000) {
+      return;
+    }
+
+    lastDashboardSyncMs.current = now;
+    void updateDashboardFromTelemetry(firebaseUser.uid, telemetry, profile)
+      .catch((error) => {
+        console.warn('[obd] dashboard telemetry sync failed', error);
+      });
+  }, [
+    demoMode,
+    firebaseUser?.uid,
+    isConnected,
+    profile,
+    telemetry,
+  ]);
+
   async function handleBack() {
     if (firebaseUser?.uid) {
       await stopTripTracking(firebaseUser.uid);
       await setRealtimeConnectionState(firebaseUser.uid, false);
     }
+    await getActiveObdConnection()?.disconnect().catch(() => undefined);
 
     backOrFallback('/realtime');
   }
@@ -151,7 +218,9 @@ export default function RealtimeLiveScreen() {
             <View style={styles.heroStatus}>
               <CircleCheck color={PENCIL.success} size={16} strokeWidth={2.2} />
               <Text style={styles.heroStatusText}>
-                {profile?.realtime?.statusLabel ?? 'Sensores conectados y transmitiendo'}
+                {demoMode
+                  ? 'Modo demo: datos simulados'
+                  : profile?.realtime?.statusLabel ?? 'Sensores conectados y transmitiendo'}
               </Text>
             </View>
           </View>
@@ -177,17 +246,17 @@ export default function RealtimeLiveScreen() {
             <View style={{ gap: 8 }}>
               <ListRow
                 icon={<Zap color={PENCIL.success} size={18} strokeWidth={2.1} />}
-                subtitle={`${profile?.realtime?.deviceLabel ?? 'OBD2 Bluetooth'} · sin errores`}
+                subtitle={`${profile?.realtime?.deviceLabel ?? 'OBD2 Bluetooth'} · ${anomalyLabel}`}
                 title="Motor"
-                value="OK"
-                valueColor={PENCIL.success}
+                value={telemetry.anomaly?.severity === 'WARNING' || telemetry.anomaly?.severity === 'CRITICAL' ? 'Revisar' : 'OK'}
+                valueColor={telemetry.anomaly?.severity === 'WARNING' || telemetry.anomaly?.severity === 'CRITICAL' ? PENCIL.warning : PENCIL.success}
               />
               <ListRow
                 icon={<Thermometer color={PENCIL.warning} size={18} strokeWidth={2.1} />}
-                subtitle={`Motor ${engineTempValue}${temperatureUnit} dentro de rango`}
+                subtitle={hasEngineTemp ? `Motor ${engineTempValue}${temperatureUnit}` : 'Temperatura no disponible'}
                 title="Refrigeración"
-                value="OK"
-                valueColor={PENCIL.success}
+                value={hasEngineTemp && telemetry.engineTemp > 100 ? 'Revisar' : 'OK'}
+                valueColor={hasEngineTemp && telemetry.engineTemp > 100 ? PENCIL.warning : PENCIL.success}
               />
               <ListRow
                 icon={<Activity color={PENCIL.accent} size={18} strokeWidth={2.1} />}

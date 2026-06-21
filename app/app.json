@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/autosense-logo.png",
     "scheme": "autosense",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/images/autosense-logo.png",
       "bundleIdentifier": "com.antoniozhong.autosense",
@@ -23,6 +23,14 @@
     "android": {
       "package": "com.antoniozhong.autosense",
       "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECEIVE_BOOT_COMPLETED"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/autosense-logo.png",
@@ -76,7 +84,8 @@
           "isAndroidForegroundServiceEnabled": true
         }
       ],
-      "expo-image"
+      "expo-image",
+      "react-native-ble-plx"
     ],
     "developmentClient": {
       "silentLaunch": true

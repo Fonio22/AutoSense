@@ -16,7 +16,7 @@ import {
   PENCIL,
   SurfaceCard,
 } from '@/components/pencil-ui';
-import { type AlertId } from '@/lib/autosense-data';
+import { resolveAlerts, type AlertId } from '@/lib/autosense-data';
 import { backOrFallback } from '@/lib/navigation';
 
 const FALLBACK_ALERTS: AlertId[] = ['battery', 'brakes', 'oil', 'tire', 'efficiency'];
@@ -51,8 +51,9 @@ function getAlertValueColor(value: string) {
 
 export default function AlertsScreen() {
   const { profile } = useSession();
+  const resolvedAlerts = resolveAlerts(profile?.alerts);
   const alerts = FALLBACK_ALERTS.map((id) => {
-    const alert = profile?.alerts?.[id];
+    const alert = resolvedAlerts[id];
 
     return {
       id,

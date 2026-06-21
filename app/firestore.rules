@@ -348,6 +348,32 @@ service cloud.firestore {
           && isValidTripShape(request.resource.data);
         allow delete: if false;
       }
+
+      match /vehicles/{vehicleId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+    }
+
+    match /devices/{deviceId} {
+      allow read: if isSignedIn()
+        && resource.data.ownerId == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /vehicleProfiles/{profileId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /profileApplications/{applicationId} {
+      allow read: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /vinDecodeCache/{cacheId} {
+      allow read, write: if false;
     }
 
     match /{document=**} {

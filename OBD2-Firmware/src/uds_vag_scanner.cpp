@@ -1,5 +1,6 @@
 #include "uds_vag_scanner.h"
 
+#include <new>
 #include <string.h>
 
 #include "obd_read_only_guard.h"
@@ -156,7 +157,6 @@ const UdsVagScanner::ModuleRoute &UdsVagScanner::currentRoute() const
 void UdsVagScanner::begin()
 {
     enabled_ = false;
-    resetScan(millis());
 }
 
 bool UdsVagScanner::enabled() const
@@ -185,13 +185,42 @@ uint8_t UdsVagScanner::collectModules(UdsVagModuleStatus *out, uint8_t maxOut) c
     uint8_t total = moduleCount();
     for (uint8_t i = 0; i < total && count < maxOut; i++)
     {
-        out[count++] = modules_[i];
+        if (modules_)
+        {
+            out[count++] = modules_[i];
+        }
+        else
+        {
+            initStatusFromDef(out[count++], moduleDefs()[i]);
+        }
     }
     return count;
 }
 
+bool UdsVagScanner::ensureModules()
+{
+    if (!modules_)
+    {
+        modules_ = new (std::nothrow) UdsVagModuleStatus[kMaxModules]();
+    }
+    return modules_ != nullptr;
+}
+
+void UdsVagScanner::releaseModules()
+{
+    delete[] modules_;
+    modules_ = nullptr;
+}
+
 void UdsVagScanner::resetScan(uint32_t nowMs)
 {
+    if (!ensureModules())
+    {
+        enabled_ = false;
+        state_ = RequestState::Idle;
+        return;
+    }
+
     const ModuleDef *defs = moduleDefs();
     uint8_t total = moduleCount();
     for (uint8_t i = 0; i < total && i < kMaxModules; i++)
@@ -217,11 +246,16 @@ void UdsVagScanner::tick(uint32_t nowMs, bool canReady, bool enableProfile)
     {
         enabled_ = false;
         state_ = RequestState::Idle;
+        releaseModules();
         return;
     }
 
     if (!enabled_)
     {
+        if (!ensureModules())
+        {
+            return;
+        }
         enabled_ = true;
         resetScan(nowMs);
     }
@@ -260,7 +294,7 @@ void UdsVagScanner::tick(uint32_t nowMs, bool canReady, bool enableProfile)
 
 bool UdsVagScanner::sendCurrentRequest(uint32_t nowMs)
 {
-    if (moduleIndex_ >= moduleCount())
+    if (!modules_ || moduleIndex_ >= moduleCount())
     {
         return false;
     }
@@ -375,7 +409,7 @@ bool UdsVagScanner::sendFlowControl(const ModuleRoute &route)
 
 bool UdsVagScanner::handleFrame(const CAN_FRAME &frame, uint32_t nowMs)
 {
-    if (!enabled_ || state_ != RequestState::Waiting || moduleIndex_ >= moduleCount())
+    if (!modules_ || !enabled_ || state_ != RequestState::Waiting || moduleIndex_ >= moduleCount())
     {
         return false;
     }
@@ -457,7 +491,7 @@ bool UdsVagScanner::handleFrame(const CAN_FRAME &frame, uint32_t nowMs)
 
 bool UdsVagScanner::handleCompletePayload(const uint8_t *payload, uint16_t len, uint32_t nowMs)
 {
-    if (!payload || len == 0 || moduleIndex_ >= moduleCount())
+    if (!modules_ || !payload || len == 0 || moduleIndex_ >= moduleCount())
     {
         return false;
     }
@@ -601,7 +635,7 @@ void UdsVagScanner::markNegative(const uint8_t *payload, uint16_t len, UdsVagMod
 
 void UdsVagScanner::markTimeout(uint32_t nowMs)
 {
-    if (moduleIndex_ >= moduleCount())
+    if (!modules_ || moduleIndex_ >= moduleCount())
     {
         return;
     }
@@ -624,7 +658,7 @@ void UdsVagScanner::advanceOperation(uint32_t nowMs)
     responsePendingCount_ = 0;
     nextRequestMs_ = nowMs + kRequestSpacingMs;
 
-    if (moduleIndex_ >= moduleCount())
+    if (!modules_ || moduleIndex_ >= moduleCount())
     {
         return;
     }
@@ -648,7 +682,7 @@ void UdsVagScanner::advanceOperation(uint32_t nowMs)
 
 void UdsVagScanner::advanceUnconfirmedOperation(uint32_t nowMs)
 {
-    if (moduleIndex_ >= moduleCount())
+    if (!modules_ || moduleIndex_ >= moduleCount())
     {
         return;
     }
@@ -672,7 +706,7 @@ void UdsVagScanner::advanceUnconfirmedOperation(uint32_t nowMs)
 
 void UdsVagScanner::advanceRouteOrModule(uint32_t nowMs)
 {
-    if (moduleIndex_ >= moduleCount())
+    if (!modules_ || moduleIndex_ >= moduleCount())
     {
         return;
     }

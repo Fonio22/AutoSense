@@ -13,6 +13,7 @@ import {
 import { View, Text, StyleSheet } from 'react-native';
 
 import { useSession } from '@/components/providers/session-provider';
+import { isLegacySeededEfficiency } from '@/lib/autosense-data';
 import {
   AppScreen,
   CompactMetricCard,
@@ -24,35 +25,41 @@ import {
 } from '@/components/pencil-ui';
 import { backOrFallback } from '@/lib/navigation';
 
-const behaviorInsights = [
-  {
-    title: 'Aceleración',
-    subtitle: 'Mantén el pedal estable en arranques cortos',
-    icon: <Sparkles color={PENCIL.accent} size={18} strokeWidth={2.1} />,
-    iconBackground: PENCIL.accentSoft,
-  },
-  {
-    title: 'Frenado',
-    subtitle: 'Evita frenadas bruscas en tráfico lento',
-    icon: <Zap color={PENCIL.warning} size={18} strokeWidth={2.1} />,
-    iconBackground: PENCIL.warningSoft,
-  },
-  {
-    title: 'Trayectoria',
-    subtitle: 'Tu ruta diaria se está volviendo más eficiente',
-    icon: <Route color={PENCIL.success} size={18} strokeWidth={2.1} />,
-    iconBackground: PENCIL.successSoft,
-  },
-] as const;
-
 export default function EfficiencyScreen() {
   const { profile } = useSession();
-  const efficiency = profile?.efficiency;
-  const score = efficiency?.score ?? 82;
-  const accelerationPercent = efficiency?.accelerationPercent ?? 87;
-  const brakingPercent = efficiency?.brakingPercent ?? 91;
-  const idleMinutes = efficiency?.idleMinutes ?? 14;
-  const economyValue = efficiency?.economyValue ?? 8.6;
+  const efficiency = isLegacySeededEfficiency(profile?.efficiency) ? null : profile?.efficiency;
+  const dashboard = profile?.dashboard;
+  const score = efficiency?.score ?? 0;
+  const accelerationPercent = efficiency?.accelerationPercent ?? 0;
+  const brakingPercent = efficiency?.brakingPercent ?? 0;
+  const idleMinutes = efficiency?.idleMinutes ?? 0;
+  const economyValue = efficiency?.economyValue ?? 0;
+  const behaviorInsights = [
+    {
+      title: 'Aceleración',
+      subtitle: accelerationPercent >= 80
+        ? 'Aceleración estable según RPM, carga y acelerador OBD2'
+        : 'Aceleración fuerte detectada por RPM/carga/acelerador',
+      icon: <Sparkles color={PENCIL.accent} size={18} strokeWidth={2.1} />,
+      iconBackground: PENCIL.accentSoft,
+    },
+    {
+      title: 'Frenado',
+      subtitle: brakingPercent >= 80
+        ? 'Sin patrón brusco estimado desde velocidad y carga'
+        : 'Cambio de velocidad/carga sugiere conducción más agresiva',
+      icon: <Zap color={PENCIL.warning} size={18} strokeWidth={2.1} />,
+      iconBackground: PENCIL.warningSoft,
+    },
+    {
+      title: 'Trayectoria',
+      subtitle: dashboard?.currentTripDistanceKm
+        ? `${dashboard.currentTripDistanceKm.toFixed(1)} km registrados con telemetría OBD2`
+        : 'Esperando distancia de una sesión real',
+      icon: <Route color={PENCIL.success} size={18} strokeWidth={2.1} />,
+      iconBackground: PENCIL.successSoft,
+    },
+  ] as const;
 
   return (
     <AppScreen

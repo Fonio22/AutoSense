@@ -4,15 +4,14 @@ import { Card } from 'heroui-native';
 import {
   BatteryCharging,
   CircleAlert,
-  Fuel,
   ShieldCheck,
   Thermometer,
   TimerReset,
-  TriangleAlert,
   Wrench,
 } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { useSession } from '@/components/providers/session-provider';
 import {
   AppScreen,
   CompactMetricCard,
@@ -22,6 +21,11 @@ import {
   ProgressBars,
   SurfaceCard,
 } from '@/components/pencil-ui';
+import {
+  resolveAlerts,
+  type AlertId,
+  type AutoSenseAlertSnapshot,
+} from '@/lib/autosense-data';
 import { backOrFallback } from '@/lib/navigation';
 
 type AlertSlug = 'battery' | 'brakes' | 'oil' | 'tire';
@@ -31,6 +35,12 @@ type AlertSectionItem = {
   subtitle: string;
   icon: ReactNode;
   iconBackground: string;
+};
+
+type AlertBase = {
+  title: string;
+  heroIcon: ReactNode;
+  heroIconBackground: string;
 };
 
 type AlertConfig = {
@@ -48,322 +58,142 @@ type AlertConfig = {
     value: string;
     subtitle?: string;
     icon: ReactNode;
-      iconBackground: string;
-      iconColor: string;
-    }[];
+    iconBackground: string;
+    iconColor: string;
+  }[];
   detailTitle: string;
   detailItems: AlertSectionItem[];
   followUpTitle: string;
   followUpItems: AlertSectionItem[];
 };
 
-const ALERTS: Record<AlertSlug, AlertConfig> = {
+const ALERTS: Record<AlertSlug, AlertBase> = {
   battery: {
     title: 'Batería',
-    heroLabel: 'Causa detectada',
-    heroValue: '68%',
-    heroScale: 'salud',
-    heroDescription: 'Voltaje por debajo del rango ideal.',
     heroIcon: <BatteryCharging color={PENCIL.warning} size={19} strokeWidth={2.2} />,
     heroIconBackground: PENCIL.warningSoft,
-    progressValues: [1, 1, 1, 0, 0],
-    progressColor: PENCIL.warning,
-    metrics: [
-      {
-        title: 'Voltaje',
-        value: '12.1V',
-        subtitle: 'Bajo',
-        icon: <BatteryCharging color={PENCIL.warning} size={16} strokeWidth={2.2} />,
-        iconBackground: PENCIL.warningSoft,
-        iconColor: PENCIL.warning,
-      },
-      {
-        title: 'Arranques',
-        value: '3',
-        subtitle: 'Fallidos',
-        icon: <TriangleAlert color={PENCIL.warning} size={16} strokeWidth={2.2} />,
-        iconBackground: PENCIL.warningSoft,
-        iconColor: PENCIL.warning,
-      },
-      {
-        title: 'Salud',
-        value: '68%',
-        subtitle: 'Estimación',
-        icon: <ShieldCheck color={PENCIL.accent} size={16} strokeWidth={2.2} />,
-        iconBackground: PENCIL.accentSoft,
-        iconColor: PENCIL.accent,
-      },
-      {
-        title: 'Urgencia',
-        value: '48h',
-        subtitle: 'Máximo',
-        icon: <TimerReset color={PENCIL.danger} size={16} strokeWidth={2.2} />,
-        iconBackground: PENCIL.dangerSoft,
-        iconColor: PENCIL.danger,
-      },
-    ],
-    detailTitle: 'Detalles',
-    detailItems: [
-      {
-        title: 'Diagnóstico principal',
-        subtitle: 'La batería cayó por debajo del nivel habitual durante varios arranques y puede fallar en ciclos cortos.',
-        icon: <CircleAlert color={PENCIL.warning} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.warningSoft,
-      },
-      {
-        title: 'Causa probable',
-        subtitle: 'El acumulador parece estar perdiendo capacidad útil o carga estable bajo demanda.',
-        icon: <TriangleAlert color={PENCIL.danger} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.dangerSoft,
-      },
-    ],
-    followUpTitle: 'Seguimiento recomendado',
-    followUpItems: [
-      {
-        title: 'Acción sugerida',
-        subtitle: 'Haz chequeo eléctrico y prueba de carga en las próximas 48 horas.',
-        icon: <Wrench color={PENCIL.accent} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.accentSoft,
-      },
-      {
-        title: 'Uso temporal',
-        subtitle: 'Evita dejar luces o accesorios activos con el motor apagado hasta revisarla.',
-        icon: <ShieldCheck color={PENCIL.success} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.successSoft,
-      },
-    ],
   },
   brakes: {
     title: 'Frenos',
-    heroLabel: 'Causa detectada',
-    heroValue: '83%',
-    heroScale: 'desgaste',
-    heroDescription: 'Desgaste alto detectado en pastillas.',
-    heroIcon: <Wrench color={PENCIL.danger} size={19} strokeWidth={2.2} />,
-    heroIconBackground: PENCIL.dangerSoft,
-    progressValues: [1, 1, 1, 1, 0],
-    progressColor: PENCIL.warning,
-    metrics: [
-      {
-        title: 'Desgaste',
-        value: '83%',
-        subtitle: 'Pastillas',
-        icon: <Wrench color={PENCIL.danger} size={16} strokeWidth={2.2} />,
-        iconBackground: PENCIL.dangerSoft,
-        iconColor: PENCIL.danger,
-      },
-      {
-        title: 'Temperatura',
-        value: '68°C',
-        subtitle: 'En uso',
-        icon: <Thermometer color={PENCIL.warning} size={16} strokeWidth={2.2} />,
-        iconBackground: PENCIL.warningSoft,
-        iconColor: PENCIL.warning,
-      },
-      {
-        title: 'Respuesta',
-        value: '41ms',
-        subtitle: 'Promedio',
-        icon: <ShieldCheck color={PENCIL.accent} size={16} strokeWidth={2.2} />,
-        iconBackground: PENCIL.accentSoft,
-        iconColor: PENCIL.accent,
-      },
-      {
-        title: 'Servicio',
-        value: 'Alta',
-        subtitle: 'Prioridad',
-        icon: <CircleAlert color={PENCIL.danger} size={16} strokeWidth={2.2} />,
-        iconBackground: PENCIL.dangerSoft,
-        iconColor: PENCIL.danger,
-      },
-    ],
-    detailTitle: 'Detalles',
-    detailItems: [
-      {
-        title: 'Diagnóstico principal',
-        subtitle: 'El sistema muestra mayor desgaste y una respuesta de frenado menos consistente en ciudad.',
-        icon: <CircleAlert color={PENCIL.warning} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.warningSoft,
-      },
-      {
-        title: 'Causa probable',
-        subtitle: 'El calor y el uso urbano continuo pueden estar acelerando el desgaste del conjunto.',
-        icon: <Thermometer color={PENCIL.warning} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.warningSoft,
-      },
-    ],
-    followUpTitle: 'Seguimiento recomendado',
-    followUpItems: [
-      {
-        title: 'Acción sugerida',
-        subtitle: 'Programa revisión de pastillas, discos y líquido antes del próximo fin de semana.',
-        icon: <Wrench color={PENCIL.accent} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.accentSoft,
-      },
-      {
-        title: 'Revisión de uso',
-        subtitle: 'Si escuchas ruido o vibración al frenar, reduce conducción hasta el servicio.',
-        icon: <ShieldCheck color={PENCIL.success} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.successSoft,
-      },
-    ],
+    heroIcon: <Wrench color={PENCIL.warning} size={19} strokeWidth={2.2} />,
+    heroIconBackground: PENCIL.warningSoft,
   },
   oil: {
-    title: 'Aceite',
-    heroLabel: 'Causa detectada',
-    heroValue: '76%',
-    heroScale: 'estado',
-    heroDescription: 'Servicio preventivo cercano.',
-    heroIcon: <Fuel color={PENCIL.warning} size={19} strokeWidth={2.2} />,
+    title: 'Temperatura',
+    heroIcon: <Thermometer color={PENCIL.warning} size={19} strokeWidth={2.2} />,
     heroIconBackground: PENCIL.warningSoft,
-    progressValues: [1, 1, 1, 1, 0],
-    progressColor: PENCIL.warning,
-    metrics: [
-      {
-        title: 'Presión',
-        value: '29 psi',
-        subtitle: 'Normal',
-        icon: <Fuel color={PENCIL.warning} size={16} strokeWidth={2.2} />,
-        iconBackground: PENCIL.warningSoft,
-        iconColor: PENCIL.warning,
-      },
-      {
-        title: 'Kilometraje',
-        value: '4,800',
-        subtitle: 'Desde cambio',
-        icon: <TimerReset color={PENCIL.warning} size={16} strokeWidth={2.2} />,
-        iconBackground: PENCIL.warningSoft,
-        iconColor: PENCIL.warning,
-      },
-      {
-        title: 'Viscosidad',
-        value: '76%',
-        subtitle: 'Correcta',
-        icon: <ShieldCheck color={PENCIL.accent} size={16} strokeWidth={2.2} />,
-        iconBackground: PENCIL.accentSoft,
-        iconColor: PENCIL.accent,
-      },
-      {
-        title: 'Servicio',
-        value: 'Próximo',
-        subtitle: 'Sugerido',
-        icon: <CircleAlert color={PENCIL.warning} size={16} strokeWidth={2.2} />,
-        iconBackground: PENCIL.warningSoft,
-        iconColor: PENCIL.warning,
-      },
-    ],
-    detailTitle: 'Detalles',
-    detailItems: [
-      {
-        title: 'Diagnóstico principal',
-        subtitle: 'El aceite sigue estable, pero ya entra en el tramo final del ciclo recomendado.',
-        icon: <TimerReset color={PENCIL.warning} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.warningSoft,
-      },
-      {
-        title: 'Causa probable',
-        subtitle: 'El kilometraje acumulado desde el último cambio es la razón principal del aviso.',
-        icon: <ShieldCheck color={PENCIL.success} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.successSoft,
-      },
-    ],
-    followUpTitle: 'Seguimiento recomendado',
-    followUpItems: [
-      {
-        title: 'Nivel estable',
-        subtitle: 'No se detectan fugas ni caídas bruscas de presión en esta lectura.',
-        icon: <ShieldCheck color={PENCIL.success} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.successSoft,
-      },
-      {
-        title: 'Acción sugerida',
-        subtitle: 'Prepara cambio de aceite y filtro en el próximo mantenimiento preventivo.',
-        icon: <Wrench color={PENCIL.accent} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.accentSoft,
-      },
-    ],
   },
   tire: {
     title: 'Llantas',
-    heroLabel: 'Causa detectada',
-    heroValue: '28 psi',
-    heroScale: 'delantera',
-    heroDescription: 'Presión baja detectada.',
     heroIcon: <CircleAlert color={PENCIL.accent} size={19} strokeWidth={2.2} />,
     heroIconBackground: PENCIL.accentSoft,
-    progressValues: [1, 1, 0, 0, 0],
-    progressColor: PENCIL.accent,
+  },
+};
+
+function progressColorForAlert(alert: AutoSenseAlertSnapshot) {
+  if (alert.tone === 'danger') {
+    return PENCIL.danger;
+  }
+  if (alert.tone === 'warning') {
+    return PENCIL.warning;
+  }
+  if (alert.tone === 'accent') {
+    return PENCIL.accent;
+  }
+  return PENCIL.success;
+}
+
+function buildLiveAlertConfig(
+  base: AlertBase,
+  snapshot: AutoSenseAlertSnapshot,
+): AlertConfig {
+  const isOk = snapshot.value === 'OK';
+  const color = progressColorForAlert(snapshot);
+  const background = isOk ? PENCIL.successSoft : base.heroIconBackground;
+  const statusMetric = {
+    title: 'Estado',
+    value: snapshot.value,
+    subtitle: isOk ? 'Sin aviso' : 'Activo',
+    icon: isOk
+      ? <ShieldCheck color={PENCIL.success} size={16} strokeWidth={2.2} />
+      : <CircleAlert color={color} size={16} strokeWidth={2.2} />,
+    iconBackground: isOk ? PENCIL.successSoft : background,
+    iconColor: color,
+  };
+
+  return {
+    title: snapshot.title || base.title,
+    heroLabel: isOk ? 'Estado actual' : 'Aviso detectado',
+    heroValue: snapshot.value,
+    heroScale: isOk ? 'lectura' : 'estado',
+    heroDescription: snapshot.subtitle,
+    heroIcon: isOk
+      ? <ShieldCheck color={PENCIL.success} size={19} strokeWidth={2.2} />
+      : base.heroIcon,
+    heroIconBackground: background,
+    progressValues: isOk
+      ? [1, 1, 1, 1, 1]
+      : snapshot.tone === 'danger'
+        ? [1, 1, 1, 1, 0]
+        : [1, 1, 1, 0, 0],
+    progressColor: color,
     metrics: [
+      statusMetric,
       {
-        title: 'Presión',
-        value: '28 psi',
-        subtitle: 'Delantera',
+        title: 'Fuente',
+        value: snapshot.title === 'Anomalía OBD2' ? 'IA local' : 'OBD2',
+        subtitle: 'AutoSense',
         icon: <CircleAlert color={PENCIL.accent} size={16} strokeWidth={2.2} />,
         iconBackground: PENCIL.accentSoft,
         iconColor: PENCIL.accent,
       },
       {
-        title: 'Temperatura',
-        value: '41°C',
-        subtitle: 'Estable',
-        icon: <Thermometer color={PENCIL.warning} size={16} strokeWidth={2.2} />,
-        iconBackground: PENCIL.warningSoft,
-        iconColor: PENCIL.warning,
+        title: 'Avisos',
+        value: isOk ? '0' : '1',
+        subtitle: 'Activos',
+        icon: <ShieldCheck color={isOk ? PENCIL.success : PENCIL.warning} size={16} strokeWidth={2.2} />,
+        iconBackground: isOk ? PENCIL.successSoft : PENCIL.warningSoft,
+        iconColor: isOk ? PENCIL.success : PENCIL.warning,
       },
       {
-        title: 'Alineación',
-        value: '92%',
-        subtitle: 'Correcta',
-        icon: <ShieldCheck color={PENCIL.success} size={16} strokeWidth={2.2} />,
-        iconBackground: PENCIL.successSoft,
-        iconColor: PENCIL.success,
-      },
-      {
-        title: 'Rotación',
-        value: '12 días',
-        subtitle: 'Próxima',
-        icon: <Wrench color={PENCIL.accent} size={16} strokeWidth={2.2} />,
+        title: 'Acción',
+        value: isOk ? 'Ninguna' : 'Revisar',
+        subtitle: isOk ? 'Monitorear' : 'Validar',
+        icon: <TimerReset color={PENCIL.accent} size={16} strokeWidth={2.2} />,
         iconBackground: PENCIL.accentSoft,
         iconColor: PENCIL.accent,
       },
     ],
-    detailTitle: 'Detalles',
+    detailTitle: 'Lectura actual',
     detailItems: [
       {
-        title: 'Diagnóstico principal',
-        subtitle: 'La presión de la llanta delantera izquierda cayó por debajo del rango ideal para este recorrido.',
-        icon: <CircleAlert color={PENCIL.accent} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.accentSoft,
-      },
-      {
-        title: 'Causa probable',
-        subtitle: 'La diferencia puede venir de una fuga lenta o pérdida de presión por temperatura nocturna.',
-        icon: <TriangleAlert color={PENCIL.warning} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.warningSoft,
+        title: isOk ? 'AutoSense no detecta falla activa' : 'AutoSense detectó un aviso activo',
+        subtitle: snapshot.subtitle,
+        icon: isOk
+          ? <ShieldCheck color={PENCIL.success} size={18} strokeWidth={2.1} />
+          : <CircleAlert color={color} size={18} strokeWidth={2.1} />,
+        iconBackground: isOk ? PENCIL.successSoft : background,
       },
     ],
-    followUpTitle: 'Seguimiento recomendado',
+    followUpTitle: 'Seguimiento',
     followUpItems: [
       {
-        title: 'Acción sugerida',
-        subtitle: 'Corrige presión, revisa la válvula y confirma desgaste en el borde interior.',
-        icon: <Wrench color={PENCIL.success} size={18} strokeWidth={2.1} />,
-        iconBackground: PENCIL.successSoft,
-      },
-      {
-        title: 'Siguiente revisión',
-        subtitle: 'Verifica la lectura otra vez después de inflarla y antes del próximo trayecto largo.',
-        icon: <ShieldCheck color={PENCIL.accent} size={18} strokeWidth={2.1} />,
+        title: 'Monitoreo continuo',
+        subtitle: 'La app actualizará este aviso cuando llegue nueva telemetría real desde el ESP32.',
+        icon: <TimerReset color={PENCIL.accent} size={18} strokeWidth={2.1} />,
         iconBackground: PENCIL.accentSoft,
       },
     ],
-  },
-};
+  };
+}
 
 export default function AlertDetailScreen() {
+  const { profile } = useSession();
   const params = useLocalSearchParams<{ slug?: string }>();
   const slug = typeof params.slug === 'string' ? params.slug : 'battery';
-  const alert = slug in ALERTS ? ALERTS[slug as AlertSlug] : ALERTS.battery;
+  const alertSlug = slug in ALERTS ? slug as AlertSlug : 'battery';
+  const alertSnapshot = resolveAlerts(profile?.alerts)[alertSlug as AlertId];
+  const alert = buildLiveAlertConfig(ALERTS[alertSlug], alertSnapshot);
 
   return (
     <AppScreen

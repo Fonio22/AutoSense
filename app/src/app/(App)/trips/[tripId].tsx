@@ -28,7 +28,8 @@ import { type AutoSenseTripDoc, useTrip } from '@/lib/autosense-data';
 import { backOrFallback } from '@/lib/navigation';
 
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-const canRenderNativeMap = !isExpoGo && (Platform.OS === 'ios' || Platform.OS === 'android');
+// ponytail: Android Google Maps crashes without an API key; enable it when app.json provides one.
+const canRenderNativeMap = !isExpoGo && Platform.OS === 'ios';
 
 function getTripBadgeIcon(trip: AutoSenseTripDoc) {
   if (trip.category === 'university') {

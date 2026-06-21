@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "profileId": "obd2_simulator",
+  "version": "1.0.1",
+  "minFirmwareVersion": "1.0.0",
+  "supportLevel": "simulator",
+  "vehicleMatch": {
+    "make": "SIMULATOR",
+    "model": "OBD2",
+    "yearStart": 1996,
+    "yearEnd": 2099
+  },
+  "protocol": {
+    "bus": "CAN",
+    "baud": 500000,
+    "requestId": "0x7DF",
+    "responseIds": ["0x7E8"],
+    "useIsoTp": true,
+    "timeoutMs": 800,
+    "retry": 1
+  },
+  "discovery": {
+    "mode01SupportPids": ["00", "20", "40", "60"],
+    "mode09Pids": ["00", "02"]
+  },
+  "signals": [
+    { "key": "rpm", "label": "Engine RPM", "mode": "01", "pid": "0C", "unit": "rpm", "formula": "((A*256)+B)/4", "formulaId": "be16_div_4", "pollMs": 500, "required": true, "source": "simulator_physical", "enabledByDefault": true },
+    { "key": "speed", "label": "Vehicle Speed", "mode": "01", "pid": "0D", "unit": "km/h", "formula": "A", "formulaId": "identity_a", "pollMs": 500, "required": true, "source": "simulator_physical", "enabledByDefault": true },
+    { "key": "coolant", "label": "Engine Coolant Temperature", "mode": "01", "pid": "05", "unit": "C", "formula": "A-40", "formulaId": "temp_a_minus_40", "pollMs": 1000, "required": false, "source": "simulator_physical", "enabledByDefault": true },
+    { "key": "engine_load", "label": "Calculated Load", "mode": "01", "pid": "04", "unit": "pct", "formula": "A*100/255", "formulaId": "pct_a_255", "pollMs": 1000, "required": false, "source": "simulator_physical", "enabledByDefault": true },
+    { "key": "map", "label": "Intake Manifold Pressure", "mode": "01", "pid": "0B", "unit": "kPa", "formula": "A", "formulaId": "identity_a", "pollMs": 1000, "required": false, "source": "simulator_physical", "enabledByDefault": true },
+    { "key": "throttle", "label": "Throttle Position", "mode": "01", "pid": "11", "unit": "pct", "formula": "A*100/255", "formulaId": "pct_a_255", "pollMs": 1000, "required": false, "source": "simulator_physical", "enabledByDefault": true },
+    { "key": "spark_adv", "label": "Initial Timing Advance", "mode": "01", "pid": "0E", "unit": "deg", "formula": "(A/2)-64", "formulaId": "spark_adv_a_half_minus_64", "pollMs": 1000, "required": false, "source": "simulator_physical", "enabledByDefault": true },
+    { "key": "intake_air", "label": "Intake Air Temperature", "mode": "01", "pid": "0F", "unit": "C", "formula": "A-40", "formulaId": "temp_a_minus_40", "pollMs": 1000, "required": false, "source": "simulator_physical", "enabledByDefault": true },
+    { "key": "maf", "label": "Mass Airflow", "mode": "01", "pid": "10", "unit": "g/s", "formula": "((A*256)+B)/100", "formulaId": "be16_div_100", "pollMs": 1000, "required": false, "source": "simulator_physical", "enabledByDefault": true },
+    { "key": "fuel_level", "label": "Fuel Level", "mode": "01", "pid": "2F", "unit": "pct", "formula": "A*100/255", "formulaId": "pct_a_255", "pollMs": 2000, "required": false, "source": "simulator_physical", "enabledByDefault": true }
+  ],
+  "trackingRules": {
+    "startWhen": {
+      "speedKmhMin": 3,
+      "rpmMin": 500,
+      "throttleOrFuelMovementRequired": false
+    },
+    "stopWhen": {
+      "speedKmhMax": 2,
+      "idleSeconds": 120
+    }
+  }
+}

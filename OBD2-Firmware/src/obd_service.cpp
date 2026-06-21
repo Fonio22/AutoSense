@@ -46,6 +46,8 @@ constexpr uint8_t kCompactEngineLoad = 5;
 constexpr uint8_t kCompactMap = 6;
 constexpr uint8_t kCompactMaf = 7;
 constexpr uint8_t kCompactEcuVoltage = 8;
+constexpr uint8_t kCompactIntakeAir = 9;
+constexpr uint8_t kCompactSparkAdvance = 10;
 
 struct Mode01PidMeta
 {
@@ -181,6 +183,21 @@ void splitSigned10(int16_t value, char *out, size_t outSize)
     {
         snprintf(out, outSize, "%u.%u", (unsigned int)(value / 10), (unsigned int)(value % 10));
     }
+}
+
+void formatPct10Value(uint16_t value, char *out, size_t outSize)
+{
+    snprintf(out, outSize, "%u.%u", (unsigned int)(value / 10), (unsigned int)(value % 10));
+}
+
+void formatPctA(uint8_t value, char *out, size_t outSize)
+{
+    formatPct10Value(pct10(value), out, outSize);
+}
+
+int16_t tempA(uint8_t value)
+{
+    return (int16_t)value - 40;
 }
 
 void formatDataHex(const uint8_t *data, uint8_t len, char *out, size_t outSize)
@@ -397,6 +414,24 @@ void ObdService::setDiagnosticInfoEnabled(bool enabled)
     diagnosticInfoEnabled_ = enabled;
 }
 
+void ObdService::applyRuntimeProfile(const ObdRuntimeProfile &profile)
+{
+    runtimeProfile_ = profile;
+    runtimeProfileActive_ = runtimeProfile_.signalCount > 0;
+    resetDiscovery();
+    rebuildQueryPlan();
+}
+
+const ObdRuntimeProfile &ObdService::runtimeProfile() const
+{
+    return runtimeProfile_;
+}
+
+bool ObdService::hasRuntimeProfile() const
+{
+    return runtimeProfileActive_;
+}
+
 uint32_t ObdService::responsesWindow() const
 {
     return respWindow_;
@@ -472,6 +507,8 @@ bool ObdService::collectCompactSample(uint32_t nowMs, uint32_t maxAgeMs, ObdComp
         OBD_SAMPLE_MAP,
         OBD_SAMPLE_MAF,
         OBD_SAMPLE_ECU_VOLTAGE,
+        OBD_SAMPLE_INTAKE_AIR,
+        OBD_SAMPLE_SPARK_ADVANCE,
     };
 
     for (uint8_t i = 0; i < sizeof(kBits) / sizeof(kBits[0]); i++)
@@ -628,6 +665,10 @@ void ObdService::sendMode02Request(uint8_t pid)
 
 void ObdService::markMode01Request(uint8_t pid, uint32_t nowMs)
 {
+    if (pid > kMaxPid)
+    {
+        return;
+    }
     ObdPidHealth &health = pidHealth_[pid];
     if (health.lastReqMs != 0 && health.lastRspMs < health.lastReqMs && health.missCount < 0xFFFF)
     {
@@ -639,6 +680,10 @@ void ObdService::markMode01Request(uint8_t pid, uint32_t nowMs)
 
 void ObdService::markMode01Response(uint8_t pid, uint32_t nowMs)
 {
+    if (pid > kMaxPid)
+    {
+        return;
+    }
     ObdPidHealth &health = pidHealth_[pid];
     health.lastRspMs = nowMs;
     health.active = true;
@@ -867,7 +912,7 @@ void ObdService::tick(uint32_t nowMs, bool canReady)
 
     uint8_t pid = kMode09ProbePids[mode09Cursor_];
     mode09Cursor_ = (uint8_t)((mode09Cursor_ + 1) % (sizeof(kMode09ProbePids) / sizeof(kMode09ProbePids[0])));
-    if (pid == 0x00 || alwaysProbeMode09Pid(pid) || !mode09SupportKnown_ || mode09Supported_[pid])
+    if (pid == 0x00 || alwaysProbeMode09Pid(pid) || !mode09SupportKnown_ || pidBit(mode09Supported_, pid))
     {
         sendMode09Request(pid);
     }
@@ -895,6 +940,10 @@ bool ObdService::scheduleKeyLane(uint32_t nowMs)
 
 bool ObdService::shouldSkipBgPid(uint8_t pid, uint32_t nowMs) const
 {
+    if (pid > kMaxPid)
+    {
+        return false;
+    }
     const ObdPidHealth &health = pidHealth_[pid];
     if (health.missCount <= 25)
     {
@@ -988,6 +1037,24 @@ bool ObdService::isSupportBitmapPid(uint8_t pid)
     return isSupportPidValue(pid);
 }
 
+bool ObdService::pidBit(const uint32_t *bits, uint8_t pid)
+{
+    return bits && (bits[pid >> 5] & (1UL << (pid & 31U)));
+}
+
+bool ObdService::setPidBit(uint32_t *bits, uint8_t pid)
+{
+    if (!bits)
+    {
+        return false;
+    }
+    uint32_t mask = 1UL << (pid & 31U);
+    uint32_t &word = bits[pid >> 5];
+    bool changed = (word & mask) == 0;
+    word |= mask;
+    return changed;
+}
+
 uint8_t ObdService::singleFramePayloadLen(const CAN_FRAME &frame)
 {
     if (frame.length < 2 || (frame.data.byte[0] & 0xF0) != 0x00)
@@ -1018,7 +1085,10 @@ void ObdService::resetDiscovery()
 
     memset(metrics_, 0, sizeof(metrics_));
     memset(&vehicle_, 0, sizeof(vehicle_));
-    snprintf(vehicle_.profile, sizeof(vehicle_.profile), "%s", "generic");
+    snprintf(vehicle_.profile,
+             sizeof(vehicle_.profile),
+             "%s",
+             runtimeProfileActive_ ? runtimeProfile_.profileId : "generic_obd2");
     memset(&compactSample_, 0, sizeof(compactSample_));
     memset(compactLastUpdateMs_, 0, sizeof(compactLastUpdateMs_));
 
@@ -1113,6 +1183,34 @@ bool ObdService::isKeyPid(uint8_t pid) const
     return false;
 }
 
+bool ObdService::addRuntimeProfilePids(bool supportedOnly)
+{
+    bool added = false;
+    for (uint8_t i = 0; i < runtimeProfile_.signalCount; i++)
+    {
+        const ObdProfileSignalConfig &signal = runtimeProfile_.signals[i];
+        if (!signal.enabled || signal.pid == 0 || signal.pid > kMaxPid)
+        {
+            continue;
+        }
+        if (supportedOnly && !pidBit(supported_, signal.pid))
+        {
+            continue;
+        }
+
+        pidHealth_[signal.pid].active = true;
+        if (signal.required || signal.pollMs <= 1000)
+        {
+            added = addKeyPid(signal.pid) || added;
+        }
+        else
+        {
+            added = addBgPid(signal.pid) || added;
+        }
+    }
+    return added;
+}
+
 void ObdService::rebuildQueryPlan()
 {
     keyQueryCount_ = 0;
@@ -1120,10 +1218,21 @@ void ObdService::rebuildQueryPlan()
     bgQueryCount_ = 0;
     bgQueryCursor_ = 0;
 
+    if (runtimeProfileActive_)
+    {
+        if (addRuntimeProfilePids(true))
+        {
+            return;
+        }
+
+        addRuntimeProfilePids(false);
+        return;
+    }
+
     bool anySupported = false;
     for (uint16_t pid = 1; pid <= kMaxPid; pid++)
     {
-        if (!supported_[pid])
+        if (!pidBit(supported_, (uint8_t)pid))
         {
             continue;
         }
@@ -1194,9 +1303,13 @@ void ObdService::handleSupportedBitmap(uint8_t pid, const uint8_t *data, uint8_t
             continue;
         }
 
-        if (!supported_[discovered])
+        if (discovered > kMaxPid)
         {
-            supported_[discovered] = true;
+            continue;
+        }
+
+        if (setPidBit(supported_, (uint8_t)discovered))
+        {
             supportedCount_++;
         }
     }
@@ -1226,6 +1339,10 @@ void ObdService::setMetricText(uint8_t pid,
                                bool error,
                                uint32_t nowMs)
 {
+    if (pid > kMaxPid)
+    {
+        return;
+    }
     ObdMetric &m = metrics_[pid];
     const Mode01PidMeta *meta = findMode01Meta(pid);
 
@@ -1234,7 +1351,7 @@ void ObdService::setMetricText(uint8_t pid,
 
     m.mode = 0x01;
     m.pid = pid;
-    m.supported = supported_[pid];
+    m.supported = pidBit(supported_, pid);
     m.decoded = decoded;
     m.warn = warn;
     m.error = error;
@@ -1244,7 +1361,7 @@ void ObdService::setMetricText(uint8_t pid,
     snprintf(m.unit, sizeof(m.unit), "%s", unit ? unit : (meta ? meta->unit : ""));
     snprintf(m.formula, sizeof(m.formula), "%s", meta ? meta->formula : "");
     snprintf(m.category, sizeof(m.category), "%s", meta ? meta->category : defaultCategoryForPid(pid));
-    snprintf(m.notes, sizeof(m.notes), "%s", meta ? meta->notes : (supported_[pid] ? "supported" : "observed"));
+    snprintf(m.notes, sizeof(m.notes), "%s", meta ? meta->notes : (pidBit(supported_, pid) ? "supported" : "observed"));
 
     m.lastUpdateMs = nowMs;
     if (m.lastChangeMs == 0 || valueChanged)
@@ -1255,6 +1372,10 @@ void ObdService::setMetricText(uint8_t pid,
 
 void ObdService::setRawMetric(uint8_t pid, const uint8_t *data, uint8_t dataLen, uint32_t nowMs)
 {
+    if (pid > kMaxPid)
+    {
+        return;
+    }
     char rawHex[24];
     formatDataHex(data, dataLen, rawHex, sizeof(rawHex));
 
@@ -1265,6 +1386,10 @@ void ObdService::setRawMetric(uint8_t pid, const uint8_t *data, uint8_t dataLen,
 
 void ObdService::recordMetricRaw(uint8_t pid, const uint8_t *data, uint8_t dataLen, uint32_t nowMs)
 {
+    if (pid > kMaxPid)
+    {
+        return;
+    }
     ObdMetric &m = metrics_[pid];
     uint32_t prevUpdateMs = m.lastUpdateMs;
     if (m.firstUpdateMs == 0)
@@ -1349,7 +1474,7 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
             uint16_t load10 = pct10(data[0]);
             compactSample_.engineLoadPct = (uint8_t)((load10 + 5U) / 10U);
             markCompactField(kCompactEngineLoad, nowMs);
-            snprintf(val, sizeof(val), "%u.%u", (unsigned int)(load10 / 10), (unsigned int)(load10 % 10));
+            formatPct10Value(load10, val, sizeof(val));
         }
         setMetricText(pid, "engine_load", val, "pct", true, false, false, nowMs);
         return true;
@@ -1358,7 +1483,7 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
         if (dataLen < 1)
             return false;
         {
-            int16_t c = (int16_t)data[0] - 40;
+            int16_t c = tempA(data[0]);
             compactSample_.coolantC = c;
             markCompactField(kCompactCoolant, nowMs);
             snprintf(val, sizeof(val), "%d", (int)c);
@@ -1426,6 +1551,8 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
             return false;
         {
             int16_t deg10 = (int16_t)data[0] * 5 - 640;
+            compactSample_.sparkAdvanceDeg10 = deg10;
+            markCompactField(kCompactSparkAdvance, nowMs);
             splitSigned10(deg10, val, sizeof(val));
             setMetricText(pid, "spark_adv", val, "deg", true, false, false, nowMs);
         }
@@ -1434,8 +1561,13 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
     case 0x0F:
         if (dataLen < 1)
             return false;
-        snprintf(val, sizeof(val), "%d", (int)((int16_t)data[0] - 40));
-        setMetricText(pid, "intake_air", val, "C", true, false, false, nowMs);
+        {
+            int16_t c = tempA(data[0]);
+            compactSample_.intakeAirC = c;
+            markCompactField(kCompactIntakeAir, nowMs);
+            snprintf(val, sizeof(val), "%d", (int)c);
+            setMetricText(pid, "intake_air", val, "C", true, false, false, nowMs);
+        }
         return true;
 
     case 0x10:
@@ -1457,7 +1589,7 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
             uint16_t throttle10 = pct10(data[0]);
             compactSample_.throttlePct = (uint8_t)((throttle10 + 5U) / 10U);
             markCompactField(kCompactThrottle, nowMs);
-            snprintf(val, sizeof(val), "%u.%u", (unsigned int)(throttle10 / 10), (unsigned int)(throttle10 % 10));
+            formatPct10Value(throttle10, val, sizeof(val));
         }
         setMetricText(pid, "throttle", val, "pct", true, false, false, nowMs);
         return true;
@@ -1581,7 +1713,7 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
             uint16_t fuel10 = pct10(data[0]);
             compactSample_.fuelLevelPct = (uint8_t)((fuel10 + 5U) / 10U);
             markCompactField(kCompactFuelLevel, nowMs);
-            snprintf(val, sizeof(val), "%u.%u", (unsigned int)(fuel10 / 10), (unsigned int)(fuel10 % 10));
+            formatPct10Value(fuel10, val, sizeof(val));
         }
         setMetricText(pid, "fuel_level", val, "pct", true, false, false, nowMs);
         return true;
@@ -1589,7 +1721,7 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
     case 0x2C:
         if (dataLen < 1)
             return false;
-        snprintf(val, sizeof(val), "%u.%u", (unsigned int)(pct10(data[0]) / 10), (unsigned int)(pct10(data[0]) % 10));
+        formatPctA(data[0], val, sizeof(val));
         setMetricText(pid, "cmd_egr", val, "pct", true, false, false, nowMs);
         return true;
 
@@ -1606,7 +1738,7 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
     case 0x2E:
         if (dataLen < 1)
             return false;
-        snprintf(val, sizeof(val), "%u.%u", (unsigned int)(pct10(data[0]) / 10), (unsigned int)(pct10(data[0]) % 10));
+        formatPctA(data[0], val, sizeof(val));
         setMetricText(pid, "evap_purge", val, "pct", true, false, false, nowMs);
         return true;
 
@@ -1712,7 +1844,7 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
     case 0x5A:
         if (dataLen < 1)
             return false;
-        snprintf(val, sizeof(val), "%u.%u", (unsigned int)(pct10(data[0]) / 10), (unsigned int)(pct10(data[0]) % 10));
+        formatPctA(data[0], val, sizeof(val));
         snprintf(key, sizeof(key), "pos_%02X", (unsigned int)pid);
         setMetricText(pid, key, val, "pct", true, false, false, nowMs);
         return true;
@@ -1720,7 +1852,7 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
     case 0x46:
         if (dataLen < 1)
             return false;
-        snprintf(val, sizeof(val), "%d", (int)((int16_t)data[0] - 40));
+        snprintf(val, sizeof(val), "%d", (int)tempA(data[0]));
         setMetricText(pid, "ambient", val, "C", true, false, false, nowMs);
         return true;
 
@@ -1758,14 +1890,14 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
     case 0x52:
         if (dataLen < 1)
             return false;
-        snprintf(val, sizeof(val), "%u.%u", (unsigned int)(pct10(data[0]) / 10), (unsigned int)(pct10(data[0]) % 10));
+        formatPctA(data[0], val, sizeof(val));
         setMetricText(pid, "ethanol", val, "pct", true, false, false, nowMs);
         return true;
 
     case 0x5C:
         if (dataLen < 1)
             return false;
-        snprintf(val, sizeof(val), "%d", (int)((int16_t)data[0] - 40));
+        snprintf(val, sizeof(val), "%d", (int)tempA(data[0]));
         setMetricText(pid, "oil_temp", val, "C", true, false, false, nowMs);
         return true;
 
@@ -1815,7 +1947,7 @@ bool ObdService::decodeMode01Pid(uint8_t pid, const uint8_t *data, uint8_t dataL
     case 0x5B:
         if (dataLen < 1)
             return false;
-        snprintf(val, sizeof(val), "%u.%u", (unsigned int)(pct10(data[0]) / 10), (unsigned int)(pct10(data[0]) % 10));
+        formatPctA(data[0], val, sizeof(val));
         setMetricText(pid, "hybrid_batt", val, "pct", true, false, false, nowMs);
         return true;
 
@@ -1892,7 +2024,7 @@ void ObdService::parseMode09Support(const uint8_t *data, uint8_t dataLen)
             continue;
         }
         uint8_t pid = (uint8_t)(0x01 + i);
-        mode09Supported_[pid] = true;
+        setPidBit(mode09Supported_, pid);
     }
     mode09SupportKnown_ = true;
 }
@@ -1922,9 +2054,8 @@ void ObdService::parseMode06Support(uint8_t tid, const uint8_t *data, uint8_t da
             continue;
         }
 
-        if (!mode06Supported_[discovered])
+        if (setPidBit(mode06Supported_, (uint8_t)discovered))
         {
-            mode06Supported_[discovered] = true;
             if (vehicle_.mode06SupportedCount < 0xFF)
             {
                 vehicle_.mode06SupportedCount++;
@@ -1959,7 +2090,7 @@ uint8_t ObdService::nextMode06Tid()
         {
             continue;
         }
-        if (mode06Supported_[tid])
+        if (pidBit(mode06Supported_, tid))
         {
             return tid;
         }
@@ -1972,21 +2103,10 @@ uint8_t ObdService::nextMode06Tid()
 
 void ObdService::updateVehicleProfile()
 {
-    if (vehicle_.vin[0] == '\0')
-    {
-        snprintf(vehicle_.profile, sizeof(vehicle_.profile), "%s", "generic");
-        return;
-    }
-
-    if (strncmp(vehicle_.vin, "WVW", 3) == 0 ||
-        strncmp(vehicle_.vin, "3VW", 3) == 0 ||
-        strncmp(vehicle_.vin, "1VW", 3) == 0)
-    {
-        snprintf(vehicle_.profile, sizeof(vehicle_.profile), "%s", "vw-vag");
-        return;
-    }
-
-    snprintf(vehicle_.profile, sizeof(vehicle_.profile), "%s", "generic");
+    snprintf(vehicle_.profile,
+             sizeof(vehicle_.profile),
+             "%s",
+             runtimeProfileActive_ ? runtimeProfile_.profileId : "generic_obd2");
 }
 
 ObdMode09EcuInfo *ObdService::mode09EcuForResponse(uint32_t responseId, bool extended)
@@ -2741,14 +2861,17 @@ bool ObdService::handleFrame(const CAN_FRAME &frame, uint32_t nowMs)
     }
 
     uint8_t pid = frame.data.byte[2];
+    if (pid > kMaxPid)
+    {
+        return false;
+    }
     uint8_t dataLen = boundedPayloadLen((uint8_t)(payloadLen - 2), frame.length > 3 ? (uint8_t)(frame.length - 3) : 0);
     const uint8_t *data = &frame.data.byte[3];
     recordMetricRaw(pid, data, dataLen, nowMs);
     markMode01Response(pid, nowMs);
 
-    if (!isSupportBitmapPid(pid) && !supported_[pid])
+    if (!isSupportBitmapPid(pid) && setPidBit(supported_, pid))
     {
-        supported_[pid] = true;
         supportedCount_++;
         rebuildQueryPlan();
     }
@@ -2768,8 +2891,26 @@ bool ObdService::handleFrame(const CAN_FRAME &frame, uint32_t nowMs)
     }
 
     setRawMetric(pid, data, dataLen, nowMs);
-    rawSeen_[pid] = true;
+    setPidBit(rawSeen_, pid);
     return true;
+}
+
+uint16_t ObdService::collectSupportedPids(uint8_t *out, uint16_t maxOut) const
+{
+    if (!out || maxOut == 0)
+    {
+        return 0;
+    }
+
+    uint16_t count = 0;
+    for (uint16_t pid = 1; pid <= kMaxPid && count < maxOut; pid++)
+    {
+        if (pidBit(supported_, (uint8_t)pid))
+        {
+            out[count++] = (uint8_t)pid;
+        }
+    }
+    return count;
 }
 
 uint16_t ObdService::collectMetrics(ObdMetric *out, uint16_t maxOut) const
@@ -2789,7 +2930,7 @@ uint16_t ObdService::collectMetrics(ObdMetric *out, uint16_t maxOut) const
             continue;
         }
 
-        if (supported_[pid])
+        if (pidBit(supported_, (uint8_t)pid))
         {
             ObdMetric tmp{};
             const Mode01PidMeta *meta = findMode01Meta((uint8_t)pid);

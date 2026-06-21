@@ -91,6 +91,8 @@ private:
     void storeAscii(char *dst, size_t dstSize, const uint8_t *data, uint16_t len);
     void storeHex(char *dst, size_t dstSize, const uint8_t *data, uint16_t len);
     void decodeUdsDtc(uint32_t dtc, char out[10]);
+    bool ensureModules();
+    void releaseModules();
 
     static const ModuleDef *moduleDefs();
     static uint8_t moduleCount();
@@ -113,5 +115,5 @@ private:
     uint8_t rxNextSeq_{1};
     uint8_t rxPayload_[180]{0};
 
-    UdsVagModuleStatus modules_[kMaxModules]{};
+    UdsVagModuleStatus *modules_{nullptr};
 };

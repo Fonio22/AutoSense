@@ -1,6 +1,7 @@
 #include "obd_dashboard.h"
 
 #include <stdarg.h>
+#include <new>
 #include <stdio.h>
 #include <string.h>
 
@@ -24,16 +25,16 @@ struct DashboardPidDef
 };
 
 const DashboardPidDef kDashboardLive[] = {
+    {0x04, "LOAD"},
+    {0x05, "Coolant"},
+    {0x0B, "MAP"},
     {0x0C, "RPM"},
     {0x0D, "Speed"},
-    {0x05, "Coolant"},
-    {0x42, "ECU volts"},
-    {0x04, "LOAD"},
-    {0x11, "Throttle"},
-    {0x0B, "MAP"},
+    {0x0E, "Timing"},
+    {0x0F, "IAT"},
     {0x10, "MAF"},
+    {0x11, "Throttle"},
     {0x2F, "Fuel"},
-    {0x5C, "Oil temp"},
 };
 
 const DashboardPidDef kMissingWatch[] = {
@@ -231,6 +232,23 @@ const ObdMetric *ObdDashboard::findMetricByPid(const ObdMetric *metrics, uint16_
         }
     }
     return nullptr;
+}
+
+bool ObdDashboard::ensureBuffers()
+{
+    if (!metricsScratch_)
+    {
+        metricsScratch_ = new (std::nothrow) ObdMetric[kMaxMetrics]();
+    }
+    if (!vagScratch_)
+    {
+        vagScratch_ = new (std::nothrow) UdsVagModuleStatus[UdsVagScanner::kMaxModules]();
+    }
+    if (!frame_)
+    {
+        frame_ = new (std::nothrow) ObdFrameBuffer();
+    }
+    return metricsScratch_ && vagScratch_ && frame_;
 }
 
 const char *ObdDashboard::colorForMetric(const ObdMetric &metric, uint32_t nowMs)
@@ -618,8 +636,14 @@ void ObdDashboard::renderFrame(ObdFrameBuffer *frame,
 
 bool ObdDashboard::sendFrameTo()
 {
-    size_t written = Serial.write((const uint8_t *)frame_.data, frame_.len);
-    if (written != frame_.len)
+    if (!frame_)
+    {
+        txErrors_++;
+        return false;
+    }
+
+    size_t written = Serial.write((const uint8_t *)frame_->data, frame_->len);
+    if (written != frame_->len)
     {
         txErrors_++;
         return false;
@@ -647,6 +671,12 @@ void ObdDashboard::tick(uint32_t nowMs,
 
     lastFrameMs_ = nowMs;
 
-    renderFrame(&frame_, nowMs, state, obdService, vehicleInfo, vagScanner);
+    if (!ensureBuffers())
+    {
+        txErrors_++;
+        return;
+    }
+
+    renderFrame(frame_, nowMs, state, obdService, vehicleInfo, vagScanner);
     sendFrameTo();
 }

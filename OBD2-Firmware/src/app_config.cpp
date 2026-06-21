@@ -109,6 +109,37 @@ void applySetting(AppRuntimeConfig &config, const char *section, const char *key
             config.dashboardIntervalMs = parseU32(value, config.dashboardIntervalMs, 50, 10000);
         }
     }
+    else if (strcmp(section, "anomaly") == 0)
+    {
+        if (strcmp(key, "enabled") == 0)
+        {
+            config.anomalyEnabled = parseBool(value, config.anomalyEnabled);
+        }
+        else if (strcmp(key, "interval_seconds") == 0)
+        {
+            config.anomalyIntervalSeconds = parseU32(value, config.anomalyIntervalSeconds, 1, 3600);
+        }
+        else if (strcmp(key, "min_samples") == 0)
+        {
+            config.anomalyMinSamples = parseU32(value, config.anomalyMinSamples, 10, 10000);
+        }
+        else if (strcmp(key, "save_interval_seconds") == 0)
+        {
+            config.anomalySaveIntervalSeconds = parseU32(value, config.anomalySaveIntervalSeconds, 60, 86400);
+        }
+        else if (strcmp(key, "z_weight") == 0)
+        {
+            config.anomalyZWeight = (uint8_t)parseU32(value, config.anomalyZWeight, 0, 100);
+        }
+        else if (strcmp(key, "iforest_weight") == 0)
+        {
+            config.anomalyIForestWeight = (uint8_t)parseU32(value, config.anomalyIForestWeight, 0, 100);
+        }
+        else if (strcmp(key, "debug_logs") == 0)
+        {
+            config.anomalyDebugLogs = parseBool(value, config.anomalyDebugLogs);
+        }
+    }
     else if (strcmp(section, "obd") == 0)
     {
         if (strcmp(key, "diagnostic_info_enabled") == 0)
@@ -121,10 +152,6 @@ void applySetting(AppRuntimeConfig &config, const char *section, const char *key
         if (strcmp(key, "enabled") == 0)
         {
             config.vagExtendedEnabled = parseBool(value, config.vagExtendedEnabled);
-        }
-        else if (strcmp(key, "force_profile") == 0)
-        {
-            config.vagForceProfile = parseBool(value, config.vagForceProfile);
         }
     }
 }

@@ -111,16 +111,18 @@ export default function ProfileVehicleScreen() {
     ?? VEHICLE_PRESETS[0];
 
   async function handleSave() {
-    if (isSaving) {
+    if (isSaving || !firebaseUser?.uid || !draftVehicle) {
       return;
     }
 
+    const userId = firebaseUser.uid;
+    const vehicle = draftVehicle;
     setIsSaving(true);
 
     try {
-      await updateUserVehicle(firebaseUser.uid, {
-        ...draftVehicle,
-        summary: summaryForVehicle(draftVehicle.name, draftVehicle.statusLabel),
+      await updateUserVehicle(userId, {
+        ...vehicle,
+        summary: summaryForVehicle(vehicle.name, vehicle.statusLabel),
       }, {
         deviceLabel: draftAdapter,
         signalLabel: draftLink.signalLabel,

@@ -2,6 +2,8 @@ import { router } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { Platform } from 'react-native';
 
+import { getActiveObdConnection } from '@/lib/obd/obd-device';
+
 export default function AppTabs() {
   return (
     <NativeTabs
@@ -16,7 +18,7 @@ export default function AppTabs() {
           }
 
           if (route.name === 'realtime') {
-            router.dismissTo('/realtime');
+            router.dismissTo(getActiveObdConnection() ? '/realtime/live' : '/realtime');
           }
         },
       })}

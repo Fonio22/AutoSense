@@ -37,6 +37,7 @@ nohup.out
 
 # typescript
 *.tsbuildinfo
+functions/lib/
 
 example
 
