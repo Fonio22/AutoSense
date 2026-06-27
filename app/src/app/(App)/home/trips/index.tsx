@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import {
   Fuel,
   Gauge,
@@ -166,12 +166,7 @@ function TripCard({ trip }: { trip: AutoSenseTripDoc }) {
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() =>
-        router.push({
-          pathname: '/trips/[tripId]',
-          params: { tripId: trip.id },
-        })
-      }
+      onPress={() => router.push(`/home/trips/${trip.id}` as Href)}
       style={({ pressed }) => [styles.tripPressable, pressed ? styles.tripPressed : null]}
     >
       <SurfaceCard padding={12}>

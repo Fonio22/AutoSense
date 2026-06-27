@@ -5,8 +5,9 @@ Firmware para ESP32-S3 que consulta datos OBD2 por CAN, muestra un dashboard ANS
 Flujo actual:
 
 ```text
-Simulador OBD2 -> CAN -> ESP32-S3 -> USB-CDC -> monitor serial en la Mac
-                                    -> flash interna -> log binario circular
+Simulador/carro OBD2 -> CAN binario -> ESP32-S3 -> USB-CDC -> monitor serial
+                                             -> BLE -> app movil
+                                             -> flash interna -> log binario circular
 ```
 
 ## Que hace
@@ -22,6 +23,482 @@ Simulador OBD2 -> CAN -> ESP32-S3 -> USB-CDC -> monitor serial en la Mac
 - Analiza anomalias localmente con baseline por vehiculo, Z-score e Isolation Forest pequeno.
 - Evita JSON, CSV y texto dentro del ESP32 para el historial.
 - Usa `dashboard.interval_ms` para la vista en vivo y `logging.interval_seconds` para el guardado historico.
+
+## Flujo completo paso a paso
+
+Esta seccion explica el firmware como si fuera una linea de produccion: arranca, pregunta datos al carro, recibe bytes, los convierte a valores, guarda un resumen compacto, corre el detector de anomalias y manda una vista en vivo al celular.
+
+### 1. Arranque del ESP32
+
+El punto de entrada es pequeno:
+
+```text
+main.cpp -> setup() -> appSetup()
+main.cpp -> loop()  -> appLoop()
+```
+
+`appSetup()` hace esto:
+
+1. Abre `Serial` a 115200 baudios para el dashboard por USB.
+2. Configura LEDs y el pin `GPIO14` del transceiver CAN en modo normal.
+3. Inicializa `ObdService`, `UdsVagScanner`, dashboard, logger binario, detector de anomalias y BLE.
+4. Lee `data/config.ini` desde LittleFS (`configfs`).
+5. Carga `/active_profile.json` si la app ya habia aplicado un perfil de vehiculo.
+6. Imprime la politica de solo lectura.
+7. Abre CAN en `GPIO12` RX, `GPIO13` TX, 500000 baudios.
+8. Empieza a anunciar BLE como `AutoSense OBD2`.
+
+Despues de eso `appLoop()` corre una vuelta muy corta muchas veces por segundo. En cada vuelta llama a:
+
+```text
+OBD.tick()              -> decide que solicitud OBD2 enviar
+BLE_PROTO.tick()        -> manda telemetria al celular si hay streaming activo
+VAG.tick()              -> escaneo UDS/VAG solo si el perfil lo permite
+processCanFrames()      -> procesa respuestas CAN recibidas
+LOGGER.tick()           -> guarda una muestra binaria si toca por tiempo
+processAnomaly()        -> corre IA local si toca por tiempo
+DASH.tick()             -> refresca pantalla USB si toca por tiempo
+```
+
+### 2. Los datos vienen en binario, no en texto
+
+En el bus CAN no viaja JSON, CSV ni texto. Viajan bytes. Cuando ves algo como `02 01 0C`, eso es hexadecimal escrito para humanos, pero en memoria son 3 bytes binarios:
+
+```text
+0x02 0x01 0x0C
+```
+
+Ejemplo para pedir RPM:
+
+```text
+CAN ID: 0x7DF
+DATA:   02 01 0C 00 00 00 00 00
+```
+
+Significado:
+
+| Byte | Valor | Significado |
+| --- | --- | --- |
+| 0 | `02` | hay 2 bytes utiles despues de este byte |
+| 1 | `01` | OBD Mode 01, datos actuales |
+| 2 | `0C` | PID RPM |
+| 3-7 | `00` | relleno del frame CAN |
+
+Una ECU puede responder:
+
+```text
+CAN ID: 0x7E8
+DATA:   04 41 0C 2E E0 00 00 00
+```
+
+Significado:
+
+| Byte | Valor | Significado |
+| --- | --- | --- |
+| 0 | `04` | hay 4 bytes utiles despues de este byte |
+| 1 | `41` | respuesta positiva a Mode 01 (`0x01 + 0x40`) |
+| 2 | `0C` | respuesta del PID RPM |
+| 3 | `2E` | byte A |
+| 4 | `E0` | byte B |
+
+La formula OBD2 de RPM es:
+
+```text
+RPM = ((A * 256) + B) / 4
+RPM = ((0x2E * 256) + 0xE0) / 4
+RPM = 3000
+```
+
+El firmware imprime bytes crudos en hexadecimal para debug (`RAW` en dashboard), pero para trabajar internamente usa numeros: `rpm=3000`, `speedKph=88`, `coolantC=91`, etc.
+
+### 3. Como decide que preguntar al carro
+
+Al arrancar, `ObdService` no asume que todos los PIDs existen. Primero hace discovery de PIDs soportados:
+
+```text
+0100, 0120, 0140, 0160, 0180, 01A0, 01C0
+```
+
+Cada respuesta trae un bitmap de 32 bits. Cada bit dice si un PID existe. Por ejemplo, la respuesta de `0100` dice que PIDs entre `01` y `20` puede consultar el firmware.
+
+El firmware reconstruye su plan de consulta asi:
+
+1. Si hay perfil activo, usa los PIDs del perfil.
+2. Si no hay perfil activo, usa los PIDs descubiertos por bitmap.
+3. Si todavia no sabe nada, usa una lista fallback segura de PIDs comunes.
+
+Hay dos carriles de consulta:
+
+| Carril | Intervalo | Uso |
+| --- | ---: | --- |
+| Key lane | 50 ms | PIDs importantes como RPM, velocidad, coolant, throttle, combustible, MAF, MAP y voltaje |
+| Background lane | 350 ms | PIDs menos criticos descubiertos por el carro |
+
+No significa que cada PID se lea cada 50 ms. Significa que cada 50 ms se manda una solicitud del carril rapido y el cursor avanza al siguiente PID. Si hay 10 PIDs rapidos, cada uno vuelve aproximadamente cada 500 ms.
+
+Ademas hay consultas de diagnostico de solo lectura:
+
+| Consulta | Intervalo default | Que lee |
+| --- | ---: | --- |
+| Mode 09 | 3 s | VIN, CALID, CVN, ECU name, IPT si responde |
+| Mode 06 | 10 s | monitores onboard de emisiones/motor |
+| Mode 03 | 15 s | DTCs stored |
+| Mode 07 | 20 s | DTCs pending |
+| Mode 02 | 25 s | freeze frame raw |
+| Mode 0A | 30 s | DTCs permanent |
+
+Cada 30 s se repite el discovery de PIDs soportados, porque algunos carros tardan en responder o cambian que ECUs contestan.
+
+### 4. Como recibe y decodifica respuestas
+
+`processCanFrames()` lee todos los frames disponibles desde `CAN0`. Cada frame se pasa a:
+
+```text
+OBD.handleFrame(frame, nowMs)
+VAG.handleFrame(frame, nowMs)
+```
+
+`OBD.handleFrame()` filtra respuestas OBD normales:
+
+```text
+0x7E8..0x7EF       respuestas CAN 11-bit normales
+0x18DAF1xx         respuestas CAN extendidas 29-bit
+```
+
+Luego revisa el servicio:
+
+| Respuesta | Significado |
+| --- | --- |
+| `0x41` | respuesta Mode 01, datos actuales |
+| `0x42` | respuesta Mode 02, freeze frame |
+| `0x43` | respuesta Mode 03, DTC stored |
+| `0x46` | respuesta Mode 06 |
+| `0x47` | respuesta Mode 07, DTC pending |
+| `0x49` | respuesta Mode 09 |
+| `0x4A` | respuesta Mode 0A, DTC permanent |
+
+Para Mode 01, el firmware hace tres cosas:
+
+1. Guarda los bytes crudos en `ObdMetric.raw` como texto hex para el dashboard.
+2. Decodifica el PID con su formula.
+3. Si el PID es importante para IA/logging, actualiza `ObdCompactSample`.
+
+Ejemplos de formulas usadas:
+
+| PID | Campo | Formula |
+| --- | --- | --- |
+| `0C` | RPM | `((A*256)+B)/4` |
+| `0D` | velocidad | `A` km/h |
+| `05` | coolant | `A-40` C |
+| `11` | throttle | `A*100/255` % |
+| `2F` | fuel level | `A*100/255` % |
+| `04` | engine load | `A*100/255` % |
+| `0B` | MAP | `A` kPa |
+| `10` | MAF | `((A*256)+B)/100` g/s |
+| `42` | voltaje ECU | `((A*256)+B)/1000` V |
+| `0F` | intake air | `A-40` C |
+| `0E` | spark advance | `A/2-64` grados |
+
+### 5. Que es `ObdCompactSample`
+
+`ObdCompactSample` es la version pequena de los datos. No contiene todo el dashboard, solo las senales que sirven para historial, BLE e IA:
+
+| Bit `validMask` | Senal | Tipo interno |
+| ---: | --- | --- |
+| 0 | RPM | `uint16_t rpm` |
+| 1 | velocidad | `uint8_t speedKph` |
+| 2 | coolant | `int16_t coolantC` |
+| 3 | throttle | `uint8_t throttlePct` |
+| 4 | fuel level | `uint8_t fuelLevelPct` |
+| 5 | engine load | `uint8_t engineLoadPct` |
+| 6 | MAP | `uint8_t mapKpa` |
+| 7 | MAF | `uint16_t mafCentiGps` |
+| 8 | voltaje ECU | `uint16_t ecuMv` |
+| 9 | intake air | `int16_t intakeAirC` |
+| 10 | spark advance | `int16_t sparkAdvanceDeg10` |
+
+`validMask` existe porque no todas las muestras tienen todas las senales. Si RPM llego hace 1 segundo pero MAF no llega hace 20 segundos, RPM queda valida y MAF no.
+
+Para logging e IA, `appLoop()` llama:
+
+```text
+OBD.collectCompactSample(nowMs, loggingMaxSampleAgeSeconds * 1000, &compactSample)
+```
+
+Con la configuracion actual, una senal cuenta como valida si se actualizo en los ultimos 15 segundos.
+
+### 6. Como guarda el historial en flash
+
+El historial no se guarda en hexadecimal. Se guarda como binario puro en la particion raw `obdlog`.
+
+Particion actual:
+
+```text
+obdlog offset 0x1A0000 size 0x650000
+```
+
+Formato de cada registro v1:
+
+| Campo | Bytes | Nota |
+| --- | ---: | --- |
+| magic | 2 | siempre `AS` |
+| version | 1 | version del formato, hoy `1` |
+| validMask | 2 | bits de senales presentes |
+| sequence | 4 | contador creciente |
+| uptimeSeconds | 4 | segundos desde arranque |
+| rpm | 2 | RPM entero |
+| speedKph | 1 | km/h |
+| coolantRaw | 1 | `coolantC + 40` |
+| throttlePct | 1 | porcentaje entero |
+| fuelLevelPct | 1 | porcentaje entero |
+| engineLoadPct | 1 | porcentaje entero |
+| mapKpa | 1 | kPa |
+| mafGps | 1 | MAF redondeado a g/s |
+| ecuVoltageDecivolts | 1 | voltaje en decivoltios, por ejemplo 138 = 13.8 V |
+| crc8 | 1 | checksum del registro |
+
+Total: 24 bytes exactos por muestra.
+
+Detalles importantes:
+
+- Los campos multi-byte se escriben en little-endian, como el ESP32. `tools/dump_obd_log.py` los lee con formato Python `<2sBHIIH8BB`.
+- El logger escribe cada `logging.interval_seconds`, por defecto 10 s.
+- Solo escribe si hay al menos una senal valida (`validMask != 0`).
+- Cada sector flash mide 4096 bytes. Caben 170 registros de 24 bytes; quedan 16 bytes sin usar por sector.
+- Al llegar al inicio de un sector, borra el sector completo antes de escribir.
+- Cuando llena la particion, vuelve al inicio: es un log circular.
+- Al arrancar, escanea los registros existentes, busca el mayor `sequence` valido y sigue desde la siguiente posicion.
+- El CRC8 evita aceptar registros cortados o corruptos.
+
+Capacidad actual:
+
+```text
+sectorCount = 0x650000 / 4096 = 1616 sectores
+capacity    = 1616 * 170 = 274720 registros
+```
+
+Con 10 s por registro, eso da unos 31.8 dias de historial. Con 5 s, unos 15.9 dias.
+
+Limitacion actual del formato v1: `ObdCompactSample` tiene 11 senales, pero el log binario v1 guarda fisicamente 9 campos principales: RPM, velocidad, coolant, throttle, fuel, engine load, MAP, MAF y voltaje. Intake air y spark advance se usan para BLE/IA si estan presentes, pero no se exportan desde `dump_obd_log.py` en el formato v1.
+
+### 7. Como corre la IA local
+
+La IA local vive en:
+
+```text
+obd_anomaly_detector.cpp
+tiny_isolation_forest.cpp
+```
+
+No pregunta datos nuevos al carro. Usa el mismo `ObdCompactSample` que ya fue recolectado por OBD.
+
+Por defecto:
+
+```ini
+[anomaly]
+enabled=true
+interval_seconds=10
+min_samples=300
+save_interval_seconds=300
+z_weight=70
+iforest_weight=30
+debug_logs=false
+```
+
+Eso significa:
+
+- Intenta correr una inferencia cada 10 s.
+- Necesita datos validos recientes.
+- Primero aprende una linea base del carro.
+- Guarda estado cada 300 s si hubo cambios.
+- Combina 70% Z-score y 30% Isolation Forest cuando el modelo ya esta listo.
+
+El flujo interno es:
+
+```text
+ObdCompactSample
+  -> ObdSample
+  -> detectar contexto de manejo
+  -> actualizar o consultar baseline
+  -> calcular Z-score por senal
+  -> normalizar senales
+  -> Isolation Forest si ya esta entrenado
+  -> combinar score
+  -> aplicar debounce
+  -> guardar ultimo AnomalyResult
+```
+
+Contextos de manejo:
+
+| Contexto | Regla simplificada |
+| --- | --- |
+| `IDLE` | velocidad <= 2 km/h y RPM entre 450 y 1200 |
+| `ACCELERATING` | sube velocidad >= 3 km/h o RPM >= 250 contra muestra previa |
+| `DECELERATING` | baja velocidad >= 3 km/h contra muestra previa |
+| `CRUISING` | velocidad > 10 km/h sin aceleracion fuerte |
+| `UNKNOWN` | faltan RPM/velocidad o no hay suficiente historial |
+
+El baseline usa Welford, que es una forma estable de calcular promedio y desviacion estandar sin guardar todas las muestras. Guarda estadisticas globales y por contexto. Una senal se compara contra el contexto si ese contexto ya tiene suficientes datos; si no, usa el baseline global.
+
+El Z-score responde esta pregunta:
+
+```text
+que tan lejos esta este valor de lo normal para este carro?
+```
+
+Formula conceptual:
+
+```text
+z = abs(valor_actual - promedio) / desviacion_estandar
+```
+
+El firmware usa un piso minimo de desviacion estandar por senal para evitar falsos positivos cuando una senal casi no varia. Ejemplo: RPM nunca usa una desviacion menor a 80 RPM; voltaje nunca usa menos de 0.10 V.
+
+Luego convierte el conjunto de Z-scores a un score 0..100:
+
+```text
+zScore = clamp(rms(z_scores) * 12.5, 0, 100)
+```
+
+El Isolation Forest es pequeno:
+
+| Parametro | Valor |
+| --- | ---: |
+| arboles | 16 |
+| sample size | 64 |
+| ring buffer | 128 muestras |
+| profundidad maxima | 6 |
+| nodos maximos por arbol | 127 |
+
+No usa memoria dinamica para inferencia. Entrena con muestras normales y estables (`IDLE` o `CRUISING`) cuando el baseline ya esta listo. Si todavia no esta listo, el score final usa solo Z-score.
+
+Severidad:
+
+| Score | Severidad cruda |
+| ---: | --- |
+| 0..34.9 | `NORMAL` |
+| 35..64.9 | `WATCH` |
+| 65..84.9 | `WARNING` |
+| 85..100 | `CRITICAL` |
+
+Debounce:
+
+- Una muestra rara puede subir a `WATCH`.
+- Para reportar `WARNING` o `CRITICAL`, hacen falta 3 muestras fuertes dentro de una ventana de 5 inferencias.
+- Con `interval_seconds=10`, una alerta fuerte tarda normalmente unos 30 s de persistencia.
+- Cuando vuelve a normal, baja de severidad gradualmente en vez de saltar directo a normal.
+
+Tiempo aproximado de aprendizaje default:
+
+| Etapa | Tiempo aproximado |
+| --- | ---: |
+| Baseline minimo, 300 muestras cada 10 s | 50 min |
+| Ring de Isolation Forest, 64 muestras normales extra | 10.7 min |
+| Entrenar 16 arboles, 1 paso por inferencia | 2.7 min |
+
+En condiciones ideales, el modelo completo puede estar listo alrededor de 1 hora despues de empezar a recibir datos estables. Si el carro esta apagado, faltan PIDs o el manejo es muy variable, tarda mas.
+
+El detector no dice "cambia esta pieza". Entrega:
+
+| Campo | Significado |
+| --- | --- |
+| `score` | 0..100, que tan anomalo se ve |
+| `severity` | `NORMAL`, `WATCH`, `WARNING`, `CRITICAL` |
+| `areaMask` | area probable: motor, admision, combustible, electrico, temperatura, conduccion o sensor |
+| `topSignals` | hasta 3 senales que mas se alejaron del baseline |
+| `baselineReady` | ya hay baseline suficiente |
+| `modelReady` | Isolation Forest ya esta entrenado |
+
+### 8. Como manda datos al celular
+
+El firmware usa BLE GATT con un servicio propio:
+
+| Elemento | UUID |
+| --- | --- |
+| Servicio | `6f2d0001-5f9b-4b56-9f51-8f7f4a3a1001` |
+| RX, app escribe al ESP32 | `6f2d0002-5f9b-4b56-9f51-8f7f4a3a1001` |
+| TX, ESP32 notifica a la app | `6f2d0003-5f9b-4b56-9f51-8f7f4a3a1001` |
+
+Comandos soportados:
+
+| Comando | Uso |
+| --- | --- |
+| `GET_DEVICE_INFO` | version de firmware, hardware y tamano maximo de chunk |
+| `READ_VIN` | devuelve VIN si Mode 09 ya lo obtuvo |
+| `GET_ACTIVE_PROFILE` | perfil activo y SHA-256 |
+| `START_PROFILE_TRANSFER` | empieza envio de perfil desde app |
+| `PROFILE_CHUNK` | chunk base64 del JSON de perfil |
+| `END_PROFILE_TRANSFER` | valida tamano y SHA-256 |
+| `APPLY_PROFILE` | guarda y activa el perfil |
+| `GET_SUPPORTED_PIDS` | lista corta de PIDs soportados |
+| `START_STREAM` | activa telemetria en vivo |
+| `STOP_STREAM` | apaga telemetria en vivo |
+
+La app usa `react-native-ble-plx`, que representa los valores BLE como base64 en JavaScript. Eso no significa que el firmware trabaje en base64 para telemetria normal. El firmware manda JSON como bytes; la libreria movil lo entrega base64 a JS y la app lo decodifica.
+
+Cuando la app manda `START_STREAM`, el ESP32 envia `TELEMETRY` cada 1000 ms:
+
+```json
+{
+  "command": "TELEMETRY",
+  "ok": true,
+  "data": {
+    "speed": 88,
+    "rpm": 2350,
+    "engineTemp": 91,
+    "fuelLiters": 34.2,
+    "engineLoad": 36,
+    "voltage": 13.8,
+    "throttle": 18,
+    "intakeTemp": 24,
+    "validMask": 511,
+    "anomaly": {
+      "score": 72.4,
+      "severity": "WARNING",
+      "areaMask": 8,
+      "baselineReady": true,
+      "modelReady": true
+    }
+  }
+}
+```
+
+Detalles:
+
+- BLE transmite una vista en vivo cada 1 s.
+- El modelo de anomalias no corre cada 1 s; por defecto corre cada 10 s.
+- Por eso la app puede recibir el mismo resultado de anomalia durante varias notificaciones BLE.
+- BLE solo usa datos con edad maxima de 5 s para la telemetria en vivo.
+- `fuelLiters` se calcula como `fuelLevelPct * 0.6`. Es una aproximacion que asume tanque de 60 L.
+- La app convierte `WARNING` o `CRITICAL` en alerta visual. El firmware solo envia score/severidad/area, no una reparacion definitiva.
+
+### 9. Resumen de tiempos default
+
+| Proceso | Default | Donde se define |
+| --- | ---: | --- |
+| Consulta key lane | 50 ms por solicitud | `obd_service.cpp` |
+| Consulta background | 350 ms por solicitud | `obd_service.cpp` |
+| Dashboard USB | 1000 ms | `dashboard.interval_ms` |
+| BLE stream | 1000 ms | `obd_ble_protocol.cpp` |
+| Guardado binario | 10 s | `logging.interval_seconds` |
+| IA local | 10 s | `anomaly.interval_seconds` |
+| Guardar baseline/modelo | 300 s | `anomaly.save_interval_seconds` |
+| Mode 09 | 3 s | `obd_service.cpp` |
+| Mode 06 | 10 s | `obd_service.cpp` |
+| Mode 03 | 15 s | `obd_service.cpp` |
+| Mode 07 | 20 s | `obd_service.cpp` |
+| Mode 02 | 25 s | `obd_service.cpp` |
+| Mode 0A | 30 s | `obd_service.cpp` |
+
+### 10. Que no hace
+
+- No borra codigos de falla.
+- No reinicia TPMS.
+- No calibra modulos.
+- No escribe codificaciones.
+- No hace output tests ni actuator tests.
+- No diagnostica una pieza exacta; marca patrones raros y areas probables.
+- No guarda todo el dashboard en flash; guarda un resumen binario compacto.
 
 ## Solo lectura primero
 
@@ -83,21 +560,22 @@ La arquitectura esta separada para preparar perfiles por vehiculo sin endurecer 
 ```text
 ObdReadOnlyGuard -> bloqueo/allowlist de seguridad
 ObdService       -> discovery OBD2, scheduler, decoders y VIN
-VehicleProfile   -> perfil inferido por VIN, por ahora generic o vw-vag
-UdsVagScanner    -> VW/VAG extendido solo lectura, activado por perfil
+VehicleProfile   -> perfil JSON activo aplicado por la app movil
+UdsVagScanner    -> VW/VAG extendido solo lectura, activado por perfil con extendedReadOnly
 ObdDashboard     -> vista serial de metricas, VIN, DTCs y estado del guard
 ObdBinaryLogger  -> historial compacto en flash
 tools/           -> captura de reportes y exportacion del log binario
 ```
 
-Por ahora el perfil se infiere por VIN:
+Flujo actual de perfiles:
 
-- `WVW`, `3VW`, `1VW` => `vw-vag`
-- cualquier otro VIN => `generic`
+1. El ESP32 intenta leer VIN con OBD Mode 09.
+2. La app movil puede usar ese VIN para resolver/descargar un perfil.
+3. La app envia el perfil al ESP32 por BLE en chunks.
+4. El ESP32 valida tamano, SHA-256, JSON, formulas permitidas y servicios seguros.
+5. Si pasa validacion, guarda `/active_profile.json` en LittleFS y reinicia el plan de polling.
 
-Esto no activa escrituras ni codificaciones. En una iteracion futura la app movil podra elegir o descargar un perfil por marca/modelo, pero el guard seguira siendo obligatorio.
-
-Si el carro es VW/VAG conocido pero no entrega VIN por OBD Mode 09, puedes activar el perfil manualmente con `vag.force_profile=true` en `data/config.ini`. Ese override solo habilita el scanner extendido de lectura; no desbloquea servicios de escritura.
+El firmware actual no lee una clave `vag.force_profile`. Para activar VW/VAG extendido hacen falta dos condiciones: `vag.enabled=true` en `data/config.ini` y un perfil activo que contenga `extendedReadOnly`, como `vw_passat_2016`.
 
 ## Anomaly detector local
 
@@ -154,7 +632,7 @@ Limitaciones: esto marca patrones raros y areas posibles a revisar; no es diagno
 
 ## VW/VAG extendido solo lectura
 
-Cuando el VIN detecta `vw-vag` y `vag.enabled=true`, el firmware activa `UdsVagScanner`. Si el VIN no llega pero sabes que el carro es VW/VAG, usa `vag.force_profile=true`. Este scanner usa ISO-TP basico sobre CAN 11-bit y solo manda servicios UDS permitidos por el guard:
+Cuando `vag.enabled=true` y el perfil activo contiene `extendedReadOnly`, el firmware activa `UdsVagScanner`. El VIN ayuda a la app a elegir el perfil, pero el ESP32 no activa VAG solo por prefijo de VIN. Este scanner usa ISO-TP basico sobre CAN 11-bit y solo manda servicios UDS permitidos por el guard:
 
 | Servicio | Uso |
 | --- | --- |
@@ -277,10 +755,9 @@ Para activar VW/VAG extendido despues de esa primera captura, cambia `data/confi
 ```ini
 [vag]
 enabled=true
-force_profile=true
 ```
 
-Usa `force_profile=true` solo cuando el vehiculo sea VW/VAG conocido y Mode 09 no devuelva VIN. Si el VIN ya detecta `vw-vag`, puedes dejar `force_profile=false`.
+Ademas, aplica desde la app un perfil que contenga `extendedReadOnly`, por ejemplo `vw_passat_2016`. Solo cambiar `vag.enabled=true` no basta si no hay perfil activo.
 
 Luego sube solo LittleFS y reinicia:
 
@@ -340,7 +817,6 @@ diagnostic_info_enabled=true
 
 [vag]
 enabled=true
-force_profile=true
 ```
 
 Interpretacion:
@@ -349,8 +825,7 @@ Interpretacion:
 - `dashboard.interval_ms=1000` refresca la vista en vivo una vez por segundo.
 - `dashboard.ebook_mode=true` activa la salida ANSI completa por cable.
 - `obd.diagnostic_info_enabled=true` permite Mode 02/03/06/07/0A de solo lectura. Mode 09/VIN se mantiene para perfil.
-- `vag.enabled=true` activa el scanner VW/VAG extendido. Si vas a hacer una primera prueba conservadora en otro carro, ponlo en `false`.
-- `vag.force_profile=true` fuerza el perfil VW/VAG aunque el VIN tarde en llegar. Usalo solo para carros VW/VAG conocidos; si el VIN ya detecta `vw-vag`, puedes dejarlo en `false`.
+- `vag.enabled=true` permite el scanner VW/VAG extendido, pero solo se ejecuta si el perfil activo trae `extendedReadOnly`. Si vas a hacer una primera prueba conservadora en otro carro, ponlo en `false`.
 
 Sube el `config.ini` al LittleFS:
 
@@ -392,7 +867,7 @@ Importante: no uses `-f nocontrol` para el dashboard. Ese filtro elimina los cod
 Linea esperada al arrancar:
 
 ```text
-[boot] config=ini log=ready log_capacity=... interval=10s dashboard=on/1000ms ebook=on obd_diag=on vag_ext=on vag_force=on transport=USB-CDC
+[boot] config=ini profile=... profile_fs=... log=ready log_capacity=... interval=10s anomaly=on/10s save=300s min=300 dashboard=on/1000ms ebook=on obd_diag=on vag_ext=on transport=USB-CDC+BLE
 ```
 
 En pantalla deberias ver `ONE-SCREEN`, `link=USB-CDC`, `mode=EBOOK`, `can=UP`, `rsp/s > 0`, `decoded/s > 0` y `log seq` subiendo cada 10 segundos.

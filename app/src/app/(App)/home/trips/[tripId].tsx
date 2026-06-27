@@ -1,6 +1,6 @@
 import { type ComponentType, useEffect, useState } from 'react';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, type Href, useLocalSearchParams } from 'expo-router';
 import { Card } from 'heroui-native';
 import {
   Fuel,
@@ -30,6 +30,8 @@ import { backOrFallback } from '@/lib/navigation';
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 // ponytail: Android Google Maps crashes without an API key; enable it when app.json provides one.
 const canRenderNativeMap = !isExpoGo && Platform.OS === 'ios';
+// ponytail: Expo typed routes lag moved files until Metro regenerates .expo/types.
+const TRIPS_ROUTE = '/home/trips' as Href;
 
 function getTripBadgeIcon(trip: AutoSenseTripDoc) {
   if (trip.category === 'university') {
@@ -247,7 +249,7 @@ export default function TripDetailScreen() {
       return;
     }
 
-    backOrFallback('/trips');
+    backOrFallback(TRIPS_ROUTE);
   };
 
   return (

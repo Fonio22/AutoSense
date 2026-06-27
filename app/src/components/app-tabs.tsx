@@ -12,11 +12,6 @@ export default function AppTabs() {
       iconColor={{ default: '#9CA3AF', selected: '#2563EB' }}
       screenListeners={({ route }) => ({
         tabPress: () => {
-          if (route.name === 'trips') {
-            router.dismissTo('/trips');
-            return;
-          }
-
           if (route.name === 'realtime') {
             router.dismissTo(getActiveObdConnection() ? '/realtime/live' : '/realtime');
           }
@@ -40,14 +35,6 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Icon
           md="dashboard"
           sf={Platform.OS === 'ios' ? 'gauge' : undefined}
-        />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="trips">
-        <NativeTabs.Trigger.Label>Maps</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          md="map"
-          sf={Platform.OS === 'ios' ? 'map' : undefined}
         />
       </NativeTabs.Trigger>
 

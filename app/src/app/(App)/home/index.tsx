@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { type ReactNode, useState } from 'react';
 import {
@@ -43,6 +43,8 @@ const HERO_CONTENT_TOP = 378;
 const HERO_EDGE_FILL_TOP = '#B4B4BA';
 const HERO_EDGE_FILL_MID = '#B9B9BF';
 const HERO_EDGE_FILL_BOTTOM = '#BBBBC0';
+// ponytail: Expo typed routes lag moved files until Metro regenerates .expo/types.
+const TRIPS_ROUTE = '/home/trips' as Href;
 const ABSOLUTE_FILL = {
   bottom: 0,
   left: 0,
@@ -475,14 +477,8 @@ export default function HomeScreen() {
               iconColor={PENCIL.accent}
               onPress={() =>
                 latestTrip
-                  ? router.push({
-                      pathname: '/trips/[tripId]',
-                      params: {
-                        origin: 'home',
-                        tripId: latestTrip.id,
-                      },
-                    })
-                  : router.push('/trips')
+                  ? router.push(`/home/trips/${latestTrip.id}?origin=home` as Href)
+                  : router.push(TRIPS_ROUTE)
               }
               subtitle={currentTripConsumption}
               title="Viaje actual"
