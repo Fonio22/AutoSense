@@ -1,0 +1,405 @@
+[boot] config=ini profile=obd2_simulator:1.0.1 profile_fs=ready log=ready log_capacity=274720 interval=10s dashboard=on/1000ms ebook=on obd_diag=on vag_ext=on transport=USB-CDC+BLE
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+
+assert failed: spinlock_acquire spinlock.h:122 (result == core_id || result == SPINLOCK_FREE)
+
+
+Backtrace: 0x403778ea:0x3fcd0760 0x4037f64d:0x3fcd0780 0x40384ff5:0x3fcd07a0 0x40382449:0x3fcd08d0 0x40380372:0x3fcd0910 0x42016f82:0x3fcd0950 0x4200d794:0x3fcd0990
+
+
+
+
+ELF file SHA256: 4080c9bf978d2409
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420aa82e
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+[readOnlyGuard] SAFE_READ:
+  OBD: 01 current data, 02 freeze frame, 03 stored DTC, 06 onboard monitor, 07 pending DTC, 09 vehicle info, 0A permanent DTC
+  UDS: 19 ReadDTCInformation, 22 ReadDataByIdentifier
+  ISO-TP: flow-control frames only after a first-frame response
+[readOnlyGuard] BLOCKED_WRITE_RISK:
+  OBD: 04 clear/reset emissions data, 08 control operation
+  UDS: 10 session, 11 reset, 14 clear DTC, 23 read memory dump, 27 security, 28 comm control, 2A periodic, 2C dynamic DID,
+       2E write DID, 2F IO control, 31 routine, 34/35/36/37/38 transfer, 3D write memory, 3E tester-present, 83 timing, 85 DTC setting, 87 link control
+[boot] config=ini profile=obd2_simulator:1.0.1 profile_fs=ready log=ready log_capacity=274720 interval=10s dashboard=on/1000ms ebook=on obd_diag=on vag_ext=on transport=USB-CDC+BLE
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+
+assert failed: spinlock_acquire spinlock.h:122 (result == core_id || result == SPINLOCK_FREE)
+
+
+Backtrace: 0x403778ea:0x3fcd0760 0x4037f64d:0x3fcd0780 0x40384ff5:0x3fcd07a0 0x40382449:0x3fcd08d0 0x40380372:0x3fcd0910 0x42016f82:0x3fcd0950 0x4200d794:0x3fcd0990
+
+
+
+
+ELF file SHA256: 4080c9bf978d2409
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420aa82e
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+[readOnlyGuard] SAFE_READ:
+  OBD: 01 current data, 02 freeze frame, 03 stored DTC, 06 onboard monitor, 07 pending DTC, 09 vehicle info, 0A permanent DTC
+  UDS: 19 ReadDTCInformation, 22 ReadDataByIdentifier
+  ISO-TP: flow-control frames only after a first-frame response
+[readOnlyGuard] BLOCKED_WRITE_RISK:
+  OBD: 04 clear/reset emissions data, 08 control operation
+  UDS: 10 session, 11 reset, 14 clear DTC, 23 read memory dump, 27 security, 28 comm control, 2A periodic, 2C dynamic DID,
+       2E write DID, 2F IO control, 31 routine, 34/35/36/37/38 transfer, 3D write memory, 3E tester-present, 83 timing, 85 DTC setting, 87 link control
+[boot] config=ini profile=obd2_simulator:1.0.1 profile_fs=ready log=ready log_capacity=274720 interval=10s dashboard=on/1000ms ebook=on obd_diag=on vag_ext=on transport=USB-CDC+BLE
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+
+assert failed: spinlock_acquire spinlock.h:122 (result == core_id || result == SPINLOCK_FREE)
+
+
+Backtrace: 0x403778ea:0x3fcd0760 0x4037f64d:0x3fcd0780 0x40384ff5:0x3fcd07a0 0x40382449:0x3fcd08d0 0x40380372:0x3fcd0910 0x42016f82:0x3fcd0950 0x4200d794:0x3fcd0990
+
+
+
+
+ELF file SHA256: 4080c9bf978d2409
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420aa82e
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+[readOnlyGuard] SAFE_READ:
+  OBD: 01 current data, 02 freeze frame, 03 stored DTC, 06 onboard monitor, 07 pending DTC, 09 vehicle info, 0A permanent DTC
+  UDS: 19 ReadDTCInformation, 22 ReadDataByIdentifier
+  ISO-TP: flow-control frames only after a first-frame response
+[readOnlyGuard] BLOCKED_WRITE_RISK:
+  OBD: 04 clear/reset emissions data, 08 control operation
+  UDS: 10 session, 11 reset, 14 clear DTC, 23 read memory dump, 27 security, 28 comm control, 2A periodic, 2C dynamic DID,
+       2E write DID, 2F IO control, 31 routine, 34/35/36/37/38 transfer, 3D write memory, 3E tester-present, 83 timing, 85 DTC setting, 87 link control
+[boot] config=ini profile=obd2_simulator:1.0.1 profile_fs=ready log=ready log_capacity=274720 interval=10s dashboard=on/1000ms ebook=on obd_diag=on vag_ext=on transport=USB-CDC+BLE
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+
+assert failed: spinlock_acquire spinlock.h:122 (result == core_id || result == SPINLOCK_FREE)
+
+
+Backtrace: 0x403778ea:0x3fcd0760 0x4037f64d:0x3fcd0780 0x40384ff5:0x3fcd07a0 0x40382449:0x3fcd08d0 0x40380372:0x3fcd0910 0x42016f82:0x3fcd0950 0x4200d794:0x3fcd0990
+
+
+
+
+ELF file SHA256: 4080c9bf978d2409
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420aa82e
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+[readOnlyGuard] SAFE_READ:
+  OBD: 01 current data, 02 freeze frame, 03 stored DTC, 06 onboard monitor, 07 pending DTC, 09 vehicle info, 0A permanent DTC
+  UDS: 19 ReadDTCInformation, 22 ReadDataByIdentifier
+  ISO-TP: flow-control frames only after a first-frame response
+[readOnlyGuard] BLOCKED_WRITE_RISK:
+  OBD: 04 clear/reset emissions data, 08 control operation
+  UDS: 10 session, 11 reset, 14 clear DTC, 23 read memory dump, 27 security, 28 comm control, 2A periodic, 2C dynamic DID,
+       2E write DID, 2F IO control, 31 routine, 34/35/36/37/38 transfer, 3D write memory, 3E tester-present, 83 timing, 85 DTC setting, 87 link control
+[boot] config=ini profile=obd2_simulator:1.0.1 profile_fs=ready log=ready log_capacity=274720 interval=10s dashboard=on/1000ms ebook=on obd_diag=on vag_ext=on transport=USB-CDC+BLE
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+
+assert failed: spinlock_acquire spinlock.h:122 (result == core_id || result == SPINLOCK_FREE)
+
+
+Backtrace: 0x403778ea:0x3fcd0760 0x4037f64d:0x3fcd0780 0x40384ff5:0x3fcd07a0 0x40382449:0x3fcd08d0 0x40380372:0x3fcd0910 0x42016f82:0x3fcd0950 0x4200d794:0x3fcd0990
+
+
+
+
+ELF file SHA256: 4080c9bf978d2409
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420aa82e
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+[readOnlyGuard] SAFE_READ:
+  OBD: 01 current data, 02 freeze frame, 03 stored DTC, 06 onboard monitor, 07 pending DTC, 09 vehicle info, 0A permanent DTC
+  UDS: 19 ReadDTCInformation, 22 ReadDataByIdentifier
+  ISO-TP: flow-control frames only after a first-frame response
+[readOnlyGuard] BLOCKED_WRITE_RISK:
+  OBD: 04 clear/reset emissions data, 08 control operation
+  UDS: 10 session, 11 reset, 14 clear DTC, 23 read memory dump, 27 security, 28 comm control, 2A periodic, 2C dynamic DID,
+       2E write DID, 2F IO control, 31 routine, 34/35/36/37/38 transfer, 3D write memory, 3E tester-present, 83 timing, 85 DTC setting, 87 link control
+[boot] config=ini profile=obd2_simulator:1.0.1 profile_fs=ready log=ready log_capacity=274720 interval=10s dashboard=on/1000ms ebook=on obd_diag=on vag_ext=on transport=USB-CDC+BLE
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+
+assert failed: spinlock_acquire spinlock.h:122 (result == core_id || result == SPINLOCK_FREE)
+
+
+Backtrace: 0x403778ea:0x3fcd0760 0x4037f64d:0x3fcd0780 0x40384ff5:0x3fcd07a0 0x40382449:0x3fcd08d0 0x40380372:0x3fcd0910 0x42016f82:0x3fcd0950 0x4200d794:0x3fcd0990
+
+
+
+
+ELF file SHA256: 4080c9bf978d2409
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420aa82e
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+[readOnlyGuard] SAFE_READ:
+  OBD: 01 current data, 02 freeze frame, 03 stored DTC, 06 onboard monitor, 07 pending DTC, 09 vehicle info, 0A permanent DTC
+  UDS: 19 ReadDTCInformation, 22 ReadDataByIdentifier
+  ISO-TP: flow-control frames only after a first-frame response
+[readOnlyGuard] BLOCKED_WRITE_RISK:
+  OBD: 04 clear/reset emissions data, 08 control operation
+  UDS: 10 session, 11 reset, 14 clear DTC, 23 read memory dump, 27 security, 28 comm control, 2A periodic, 2C dynamic DID,
+       2E write DID, 2F IO control, 31 routine, 34/35/36/37/38 transfer, 3D write memory, 3E tester-present, 83 timing, 85 DTC setting, 87 link control
+[boot] config=ini profile=obd2_simulator:1.0.1 profile_fs=ready log=ready log_capacity=274720 interval=10s dashboard=on/1000ms ebook=on obd_diag=on vag_ext=on transport=USB-CDC+BLE
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+
+assert failed: spinlock_acquire spinlock.h:122 (result == core_id || result == SPINLOCK_FREE)
+
+
+Backtrace: 0x403778ea:0x3fcd0760 0x4037f64d:0x3fcd0780 0x40384ff5:0x3fcd07a0 0x40382449:0x3fcd08d0 0x40380372:0x3fcd0910 0x42016f82:0x3fcd0950 0x4200d794:0x3fcd0990
+
+
+
+
+ELF file SHA256: 4080c9bf978d2409
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420aa82e
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+[readOnlyGuard] SAFE_READ:
+  OBD: 01 current data, 02 freeze frame, 03 stored DTC, 06 onboard monitor, 07 pending DTC, 09 vehicle info, 0A permanent DTC
+  UDS: 19 ReadDTCInformation, 22 ReadDataByIdentifier
+  ISO-TP: flow-control frames only after a first-frame response
+[readOnlyGuard] BLOCKED_WRITE_RISK:
+  OBD: 04 clear/reset emissions data, 08 control operation
+  UDS: 10 session, 11 reset, 14 clear DTC, 23 read memory dump, 27 security, 28 comm control, 2A periodic, 2C dynamic DID,
+       2E write DID, 2F IO control, 31 routine, 34/35/36/37/38 transfer, 3D write memory, 3E tester-present, 83 timing, 85 DTC setting, 87 link control
+[boot] config=ini profile=obd2_simulator:1.0.1 profile_fs=ready log=ready log_capacity=274720 interval=10s dashboard=on/1000ms ebook=on obd_diag=on vag_ext=on transport=USB-CDC+BLE
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+
+assert failed: spinlock_acquire spinlock.h:122 (result == core_id || result == SPINLOCK_FREE)
+
+
+Backtrace: 0x403778ea:0x3fcd0760 0x4037f64d:0x3fcd0780 0x40384ff5:0x3fcd07a0 0x40382449:0x3fcd08d0 0x40380372:0x3fcd0910 0x42016f82:0x3fcd0950 0x4200d794:0x3fcd0990
+
+
+
+
+ELF file SHA256: 4080c9bf978d2409
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420aa82e
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+[readOnlyGuard] SAFE_READ:
+  OBD: 01 current data, 02 freeze frame, 03 stored DTC, 06 onboard monitor, 07 pending DTC, 09 vehicle info, 0A permanent DTC
+  UDS: 19 ReadDTCInformation, 22 ReadDataByIdentifier
+  ISO-TP: flow-control frames only after a first-frame response
+[readOnlyGuard] BLOCKED_WRITE_RISK:
+  OBD: 04 clear/reset emissions data, 08 control operation
+  UDS: 10 session, 11 reset, 14 clear DTC, 23 read memory dump, 27 security, 28 comm control, 2A periodic, 2C dynamic DID,
+       2E write DID, 2F IO control, 31 routine, 34/35/36/37/38 transfer, 3D write memory, 3E tester-present, 83 timing, 85 DTC setting, 87 link control
+[boot] config=ini profile=obd2_simulator:1.0.1 profile_fs=ready log=ready log_capacity=274720 interval=10s dashboard=on/1000ms ebook=on obd_diag=on vag_ext=on transport=USB-CDC+BLE
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+
+assert failed: spinlock_acquire spinlock.h:122 (result == core_id || result == SPINLOCK_FREE)
+
+
+Backtrace: 0x403778ea:0x3fcd0760 0x4037f64d:0x3fcd0780 0x40384ff5:0x3fcd07a0 0x40382449:0x3fcd08d0 0x40380372:0x3fcd0910 0x42016f82:0x3fcd0950 0x4200d794:0x3fcd0990
+
+
+
+
+ELF file SHA256: 4080c9bf978d2409
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (RTC_SW_CPU_RST),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420aa82e
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce3808,len:0x4bc
+load:0x403c9700,len:0xbd8
+load:0x403cc700,len:0x2a0c
+entry 0x403c98d0
+[readOnlyGuard] SAFE_READ:
+  OBD: 01 current data, 02 freeze frame, 03 stored DTC, 06 onboard monitor, 07 pending DTC, 09 vehicle info, 0A permanent DTC
+  UDS: 19 ReadDTCInformation, 22 ReadDataByIdentifier
+  ISO-TP: flow-control frames only after a first-frame response
+[readOnlyGuard] BLOCKED_WRITE_RISK:
+  OBD: 04 clear/reset emissions data, 08 control operation
+  UDS: 10 session, 11 reset, 14 clear DTC, 23 read memory dump, 27 security, 28 comm control, 2A periodic, 2C dynamic DID,
+       2E write DID, 2F IO control, 31 routine, 34/35/36/37/38 transfer, 3D write memory, 3E tester-present, 83 timing, 85 DTC setting, 87 link control
+[boot] config=ini profile=obd2_simulator:1.0.1 profile_fs=ready log=ready log_capacity=274720 interval=10s dashboard=on/1000ms ebook=on obd_diag=on vag_ext=on transport=USB-CDC+BLE
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+TWAI Driver installed
+Creating queues
+Starting can handler task
+TWAI Driver started
+AutoSense OBD2 Live  uptime=1s  ONE-SCREEN
+link=USB-CDC+BLE can=UP query=ACTIVE mode=EBOOK route=7DF pids key/bg/q/sup=9/1/10/0
+rate can=0 rsp/s=0 dec/s=0 key/s=0 bg/s=0 guard=0 vag=OFF/IDLE/0
+log=ON seq=1704 rec=1704/274720 every=10s err=0 | vin=-- profile=obd2_simulator
+OBD LIVE (tabla unica: solo valores leidos)
+PID DATO         VALOR        U      HZ   RAW              AGE
+Esperando metricas OBD decodificadas...
+DIAG MIL/DTC --                STD_DTC stored/pending/perm abajo
+DIAG STD  03=none  07=none  0A=none  FF=--  M06=--
+Mode09 calid=-- cvn=-- ecu=-- ipt=--
+No leido OBD: fuel_level, maf, fuel_rate, ambient
+VW/VAG leido (UDS solo lectura)
+ADR NAME       PART/SW              DTC                  NOTE
+Esperando modulos VW/VAG...
+No leido UDS: --
+AutoSense OBD2 Live  uptime=2s  ONE-SCREEN
+link=USB-CDC+BLE can=UP query=ACTIVE mode=EBOOK route=7DF pids key/bg/q/sup=9/1/10/96
+rate can=3 rsp/s=3 dec/s=3 key/s=0 bg/s=0 guard=0 vag=OFF/IDLE/0
+log=ON seq=1704 rec=1704/274720 every=10s err=0 | vin=-- profile=obd2_simulator
+OBD LIVE (tabla unica: solo valores leidos)
+PID DATO         VALOR        U      HZ   RAW              AGE
+Esperando metricas OBD decodificadas...
+DIAG MIL/DTC --                STD_DTC stored/pending/perm abajo
+DIAG STD  03=none  07=none  0A=none  FF=--  M06=--
+Mode09 calid=-- cvn=-- ecu=-- ipt=--
+No leido OBD: fuel_level, maf, fuel_rate, ambient
+VW/VAG leido (UDS solo lectura)
+ADR NAME       PART/SW              DTC                  NOTE
+Esperando modulos VW/VAG...
+No leido UDS: --
+AutoSense OBD2 Live  uptime=3s  ONE-SCREEN
+link=USB-CDC+BLE can=UP query=ACTIVE mode=EBOOK route=7DF pids key/bg/q/sup=9/1/10/96
+rate can=3 rsp/s=3 dec/s=3 key/s=0 bg/s=0 guard=0 vag=OFF/IDLE/0
+log=ON seq=1704 rec=1704/274720 every=10s err=0 | vin=-- profile=obd2_simulator
+OBD LIVE (tabla unica: solo valores leidos)
+PID DATO         VALOR        U      HZ   RAW              AGE
+Esperando metricas OBD decodificadas...
+DIAG MIL/DTC --                STD_DTC stored/pending/perm abajo
+DIAG STD  03=none  07=none  0A=none  FF=--  M06=--
+Mode09 calid=-- cvn=-- ecu=-- ipt=--
+No leido OBD: fuel_level, maf, fuel_rate, ambient
+VW/VAG leido (UDS solo lectura)
+ADR NAME       PART/SW              DTC                  NOTE
+Esperando modulos VW/VAG...
+No leido UDS: --

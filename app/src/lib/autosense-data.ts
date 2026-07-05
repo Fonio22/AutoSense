@@ -142,6 +142,11 @@ export type MockObdTelemetry = {
   throttle: number;
   intakeTemp: number;
   validMask?: number;
+  routeType?: 'unknown' | 'city' | 'highway';
+  routeState?: 'unknown' | 'city' | 'highway_candidate' | 'highway';
+  routeConfidence?: number;
+  routeScore?: number;
+  routeReason?: string;
   anomaly?: {
     score: number;
     severity: 'NORMAL' | 'WATCH' | 'WARNING' | 'CRITICAL';

@@ -16,6 +16,8 @@ export const AUTOSENSE_OBD_RX_UUID = '6f2d0002-5f9b-4b56-9f51-8f7f4a3a1001';
 export const AUTOSENSE_OBD_TX_UUID = '6f2d0003-5f9b-4b56-9f51-8f7f4a3a1001';
 
 type AnomalySeverity = NonNullable<MockObdTelemetry['anomaly']>['severity'];
+type RouteType = NonNullable<MockObdTelemetry['routeType']>;
+type RouteState = NonNullable<MockObdTelemetry['routeState']>;
 type BlePlxModule = typeof import('react-native-ble-plx');
 type FileSystemModule = typeof import('expo-file-system/legacy');
 
@@ -516,6 +518,21 @@ function normalizeTelemetry(data: Partial<MockObdTelemetry>): MockObdTelemetry {
         modelReady: Boolean(data.anomaly.modelReady),
       }
     : null;
+  const rawRouteType = String(data.routeType ?? 'unknown');
+  const routeType: RouteType = (
+    rawRouteType === 'city'
+    || rawRouteType === 'highway'
+  )
+    ? rawRouteType
+    : 'unknown';
+  const rawRouteState = String(data.routeState ?? 'unknown');
+  const routeState: RouteState = (
+    rawRouteState === 'city'
+    || rawRouteState === 'highway_candidate'
+    || rawRouteState === 'highway'
+  )
+    ? rawRouteState
+    : 'unknown';
 
   return {
     speed: Math.max(0, Math.round(Number(data.speed ?? 0))),
@@ -527,6 +544,11 @@ function normalizeTelemetry(data: Partial<MockObdTelemetry>): MockObdTelemetry {
     throttle: Math.round(Number(data.throttle ?? 0)),
     intakeTemp: Math.round(Number(data.intakeTemp ?? 0)),
     validMask: Number(data.validMask ?? 0),
+    routeType,
+    routeState,
+    routeConfidence: Math.max(0, Math.min(100, Math.round(Number(data.routeConfidence ?? 0)))),
+    routeScore: Math.max(-100, Math.min(100, Math.round(Number(data.routeScore ?? 0)))),
+    routeReason: String(data.routeReason ?? ''),
     anomaly,
   };
 }

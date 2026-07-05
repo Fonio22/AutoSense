@@ -1,0 +1,11 @@
+mode,pid,supported,key,value,unit,hz,category,raw,updated_age_seconds,notes
+01,04,yes,LOAD,7.8,pct,0.1,live,14:00:00:00:00,0,captured
+01,05,yes,Coolant,25,C,1.8,live,41:00:00:00:00,0,captured
+01,0B,yes,MAP,204,kPa,1.8,live,CC:00:00:00:00,0,captured
+01,0C,yes,RPM,1335.7,,1.8,live,14:DF:00:00:00,0,captured
+01,0D,yes,Speed,241,km/h,1.8,live,F1:00:00:00:00,0,captured
+01,10,yes,MAF,8.48,g/s,1.8,live,03:50:00:00:00,0,captured
+01,11,yes,Throttle,98.4,pct,1.6,live,FB:00:00:00:00,0,captured
+01,2F,yes,Fuel,30.5,pct,1.6,live,4E:00:00:00:00,0,captured
+01,42,yes,ECU volts,0.000,V,1.6,live,00:00:00:00:00,0,captured
+01,5C,yes,Oil temp,-40,C,1.6,live,00:00:00:00:00,0,captured

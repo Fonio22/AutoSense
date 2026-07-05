@@ -5,6 +5,7 @@
 #include <BLECharacteristic.h>
 #include <BLEServer.h>
 
+#include "obd_route_classifier.h"
 #include "obd_service.h"
 #include "vehicle_profile.h"
 
@@ -13,6 +14,7 @@ class ObdBleProtocol
 public:
     void begin(ProfileManager *profiles, ObdService *obd);
     void tick(uint32_t nowMs);
+    void setRouteEstimate(const ObdRouteEstimate &estimate);
 
 private:
     class RxCallbacks;
@@ -43,6 +45,7 @@ private:
 
     bool streaming_{false};
     uint32_t lastStreamMs_{0};
+    ObdRouteEstimate routeEstimate_{};
     char notifyBuffer_[1024]{0};
     size_t pendingNotifyLen_{0};
 

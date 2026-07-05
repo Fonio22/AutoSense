@@ -127,6 +127,11 @@ void ObdBleProtocol::tick(uint32_t nowMs)
     sendTelemetry(nowMs);
 }
 
+void ObdBleProtocol::setRouteEstimate(const ObdRouteEstimate &estimate)
+{
+    routeEstimate_ = estimate;
+}
+
 void ObdBleProtocol::deviceId(char *out, size_t outSize) const
 {
     uint64_t mac = ESP.getEfuseMac();
@@ -380,6 +385,11 @@ void ObdBleProtocol::sendTelemetry(uint32_t nowMs)
     data["throttle"] = hasSample && (sample.validMask & OBD_SAMPLE_THROTTLE) ? sample.throttlePct : 0;
     data["intakeTemp"] = hasSample && (sample.validMask & OBD_SAMPLE_INTAKE_AIR) ? sample.intakeAirC : 0;
     data["validMask"] = hasSample ? sample.validMask : 0;
+    data["routeType"] = obd_route_type_name(routeEstimate_.type);
+    data["routeState"] = obd_route_state_name(routeEstimate_.state);
+    data["routeConfidence"] = routeEstimate_.confidencePct;
+    data["routeScore"] = routeEstimate_.score;
+    data["routeReason"] = routeEstimate_.reason;
     const AnomalyResult &anomaly = obd_anomaly_last_result();
     JsonObject anomalyData = data["anomaly"].to<JsonObject>();
     anomalyData["score"] = anomaly.score;

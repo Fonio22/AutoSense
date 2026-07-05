@@ -388,6 +388,20 @@ Debounce:
 - Con `interval_seconds=10`, una alerta fuerte tarda normalmente unos 30 s de persistencia.
 - Cuando vuelve a normal, baja de severidad gradualmente en vez de saltar directo a normal.
 
+### LED de estado
+
+El LED ya no indica "estoy enviando". Indica salud del sistema:
+
+| Estado | Color | Significado |
+| --- | --- | --- |
+| `NORMAL` | verde | sistema sano |
+| `WATCH` | verde | vigilancia leve, no alarma |
+| `WARNING` | rojo | anomalía detectada |
+| `CRITICAL` | rojo | anomalía crítica |
+| CAN no levantado | rojo | enlace OBD2 caído |
+
+Durante el arranque, el pulso inicial es verde si CAN levanta sin fallo; si no, queda rojo. El heartbeat de 1 Hz usa la severidad ya debounced, no el tráfico de envío.
+
 Tiempo aproximado de aprendizaje default:
 
 | Etapa | Tiempo aproximado |

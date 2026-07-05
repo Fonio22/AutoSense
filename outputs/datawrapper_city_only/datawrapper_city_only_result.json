@@ -1,0 +1,120 @@
+{
+  "artifacts": {
+    "city_csv": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_city_only/city_only_core_20min.csv",
+    "z_csv": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_city_only/city_only_core_20min_zscore.csv",
+    "metric_csvs": {
+      "speed_kmh": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_city_only/speed_kmh_20min.csv",
+      "rpm": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_city_only/rpm_20min.csv",
+      "coolant_c": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_city_only/coolant_c_20min.csv",
+      "engine_load_pct": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_city_only/engine_load_pct_20min.csv",
+      "oil_temp_c": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_city_only/oil_temp_c_20min.csv",
+      "runtime_min": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_city_only/runtime_min_20min.csv",
+      "throttle_pct": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_city_only/throttle_pct_20min.csv",
+      "intake_air_c": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_city_only/intake_air_c_20min.csv",
+      "maf_gps": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_city_only/maf_gps_20min.csv",
+      "fuel_rate_lph": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_city_only/fuel_rate_lph_20min.csv"
+    }
+  },
+  "row_count": 965,
+  "separator_rows": 190,
+  "charts": [
+    {
+      "metric": "speed_kmh",
+      "id": "TeIbX",
+      "title": "VW Passat 2016 - City Only - Speed (km/h)",
+      "type": "d3-lines",
+      "edit_url": "https://app.datawrapper.de/chart/TeIbX/visualize",
+      "data_preview": "timestamp,speed_kmh\n2026-05-05 06:00:00,27.3273\n,",
+      "login_url": "https://app.datawrapper.de/auth/login?token=m3DVkrqdhcZrqGUrApxVpYOjmAIp6DMfiUubwKxydINHN5N1am3sJA8OwNRiw8k9"
+    },
+    {
+      "metric": "rpm",
+      "id": "ijrPX",
+      "title": "VW Passat 2016 - City Only - RPM",
+      "type": "d3-lines",
+      "edit_url": "https://app.datawrapper.de/chart/ijrPX/visualize",
+      "data_preview": "timestamp,rpm\n2026-05-05 06:00:00,2592.3182\n,",
+      "login_url": "https://app.datawrapper.de/auth/login?token=l2UJAGPNvy3DhRSMbNuHZpPSiyKBYsBvMYCdjTkEJ4VDfLMZkLejSjFkclZ7Xv01"
+    },
+    {
+      "metric": "coolant_c",
+      "id": "dbGV7",
+      "title": "VW Passat 2016 - City Only - Coolant (C)",
+      "type": "d3-lines",
+      "edit_url": "https://app.datawrapper.de/chart/dbGV7/visualize",
+      "data_preview": "timestamp,coolant_c\n2026-05-05 06:00:00,56.9818\n,",
+      "login_url": "https://app.datawrapper.de/auth/login?token=gKJNzp20IVnkQ2qqwcbI0K6hO43cfOxdqiO7MAibYoCr3Hfjus4nDvVdd7bloT8T"
+    },
+    {
+      "metric": "engine_load_pct",
+      "id": "dOhrA",
+      "title": "VW Passat 2016 - City Only - Engine Load (%)",
+      "type": "d3-lines",
+      "edit_url": "https://app.datawrapper.de/chart/dOhrA/visualize",
+      "data_preview": "timestamp,engine_load_pct\n2026-05-05 06:00:00,43.2318\n,",
+      "login_url": "https://app.datawrapper.de/auth/login?token=PxdzU6A90VQSk3ytcyakN6NJQdfBTvfnQXFHpGDFxIWOz3bvdaDJWicr0hTc7pYm"
+    },
+    {
+      "metric": "oil_temp_c",
+      "id": "iBgzt",
+      "title": "VW Passat 2016 - City Only - Oil Temp (C)",
+      "type": "d3-lines",
+      "edit_url": "https://app.datawrapper.de/chart/iBgzt/visualize",
+      "data_preview": "timestamp,oil_temp_c\n2026-05-05 06:00:00,42.5773\n,",
+      "login_url": "https://app.datawrapper.de/auth/login?token=tZJjCoe96yi8vOIKkZAn5mOqIxNGN9Gy7ZfN2UWCVsFUKNam5EC8ABUZBy6Ardiw"
+    },
+    {
+      "metric": "runtime_min",
+      "id": "sVFe9",
+      "title": "VW Passat 2016 - City Only - Runtime (min)",
+      "type": "d3-lines",
+      "edit_url": "https://app.datawrapper.de/chart/sVFe9/visualize",
+      "data_preview": "timestamp,runtime_min\n2026-05-05 06:00:00,3.5\n,",
+      "login_url": "https://app.datawrapper.de/auth/login?token=CWTyWyE0nkr1BYL74uyaqfcxupWKynYXkRp89RdMYmWVA5Bsz7C0s4eRVrOPumDk"
+    },
+    {
+      "metric": "throttle_pct",
+      "id": "hN45Y",
+      "title": "VW Passat 2016 - City Only - Throttle (%)",
+      "type": "d3-lines",
+      "edit_url": "https://app.datawrapper.de/chart/hN45Y/visualize",
+      "data_preview": "timestamp,throttle_pct\n2026-05-05 06:00:00,22.4318\n,",
+      "login_url": "https://app.datawrapper.de/auth/login?token=tegYpKDuplzQS8hDw6GO0AVTBwuInHmgtbPdDFBoybJ0rk3tEoyvT9Kfh62aXROe"
+    },
+    {
+      "metric": "intake_air_c",
+      "id": "eQPsl",
+      "title": "VW Passat 2016 - City Only - Intake Air (C)",
+      "type": "d3-lines",
+      "edit_url": "https://app.datawrapper.de/chart/eQPsl/visualize",
+      "data_preview": "timestamp,intake_air_c\n2026-05-05 06:00:00,37.7091\n,",
+      "login_url": "https://app.datawrapper.de/auth/login?token=jUnTfC7bq3IYFSpBmN0RJLjfXieDo6O4sI70o65ldn0x5AyZqB0zaBGpQKKIqU88"
+    },
+    {
+      "metric": "maf_gps",
+      "id": "bzpuV",
+      "title": "VW Passat 2016 - City Only - MAF (g/s)",
+      "type": "d3-lines",
+      "edit_url": "https://app.datawrapper.de/chart/bzpuV/visualize",
+      "data_preview": "timestamp,maf_gps\n2026-05-05 06:00:00,25.2182\n,",
+      "login_url": "https://app.datawrapper.de/auth/login?token=DIylB7yjDi1mXtzCO3umb6wJqbSbLhVYNkPcruu8yrOzD4MwdXTcb77RlPGXIM8l"
+    },
+    {
+      "metric": "fuel_rate_lph",
+      "id": "wkoMZ",
+      "title": "VW Passat 2016 - City Only - Fuel Rate (L/h)",
+      "type": "d3-lines",
+      "edit_url": "https://app.datawrapper.de/chart/wkoMZ/visualize",
+      "data_preview": "timestamp,fuel_rate_lph\n2026-05-05 06:00:00,5.9495\n,",
+      "login_url": "https://app.datawrapper.de/auth/login?token=w1yuiockCQvvYhWkpPkNdsJtq2iKpyJPjyciEAx1mBgjZ5FP4cEkyWzakKxaVueb"
+    }
+  ],
+  "overlay_chart": {
+    "id": "kQtXJ",
+    "title": "VW Passat 2016 - City Only - Z-Score Overlay",
+    "type": "d3-lines",
+    "edit_url": "https://app.datawrapper.de/chart/kQtXJ/visualize",
+    "data_preview": "timestamp,z_speed_kmh,z_rpm,z_coolant_c,z_engine_load_pct,z_oil_temp_c,z_runtime_min,z_throttle_pct,z_intake_air_c,z_maf_gps,z_fuel_rate_lph\n2026-05-05 06:00:00,-0.07919,0.958613,-3.218661,2.199673,-2.698039,-1.2794,1.644917,0.780457,1.69882,1.793494\n,,,,,,,,,,",
+    "login_url": "https://app.datawrapper.de/auth/login?token=zhQSUaSO4aj6qp3TfDR6DWfz6TJ6Y5xB61iqJxB8Uj18EmlU3uDPPPagYaPq5Llj"
+  }
+}

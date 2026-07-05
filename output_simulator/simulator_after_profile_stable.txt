@@ -1,0 +1,312 @@
+AutoSense OBD2 Live  uptime=30s  ONE-SCREEN
+link=USB-CDC+BLE can=UP query=ACTIVE mode=EBOOK route=7DF pids key/bg/q/sup=9/1/10/96
+rate can=31 rsp/s=31 dec/s=29 key/s=20 bg/s=3 guard=0 vag=OFF/IDLE/0
+log=ON seq=1707 rec=1707/274720 every=10s err=0 | vin=-- profile=obd2_simulator
+OBD LIVE (tabla unica: solo valores leidos)
+PID DATO         VALOR        U      HZ   RAW              AGE
+04  LOAD         7.8          pct     2.2  14:00:00:00:00     0s
+05  Coolant      25           C       2.2  41:00:00:00:00     0s
+0B  MAP          204          kPa     2.2  CC:00:00:00:00     0s
+0C  RPM          1333.2               2.5  14:D5:00:00:00     0s
+0D  Speed        241          km/h    2.2  F1:00:00:00:00     0s
+0E  Timing       -35.5        deg     2.2  39:00:00:00:00     0s
+0F  IAT          -37          C       2.2  03:00:00:00:00     0s
+10  MAF          8.48         g/s     2.1  03:50:00:00:00     0s
+11  Throttle     98.4         pct     2.1  FB:00:00:00:00     0s
+2F  Fuel         30.5         pct     2.8  4E:00:00:00:00     0s
+DIAG MIL/DTC --                STD_DTC stored/pending/perm abajo
+DIAG STD  03=none  07=none  0A=none  FF=--  M06=tid=FF raw=46:FF:FF:FF:FF:FF:FF
+ECU ID  MODULO                 CALID                  CVN
+7E8     SN012345678901234      SN012345678901234      534E3031
+No leido OBD: fuel_rate, ambient
+VW/VAG leido (UDS solo lectura)
+ADR NAME       PART/SW              DTC                  NOTE
+Esperando modulos VW/VAG...
+Leido por OBD: Engine (Mode09/Mode01)
+No leido UDS: --
+AutoSense OBD2 Live  uptime=31s  ONE-SCREEN
+link=USB-CDC+BLE can=UP query=ACTIVE mode=EBOOK route=7DF pids key/bg/q/sup=9/1/10/96
+rate can=29 rsp/s=28 dec/s=24 key/s=20 bg/s=3 guard=0 vag=OFF/IDLE/0
+log=ON seq=1707 rec=1707/274720 every=10s err=0 | vin=-- profile=obd2_simulator
+OBD LIVE (tabla unica: solo valores leidos)
+PID DATO         VALOR        U      HZ   RAW              AGE
+04  LOAD         7.8          pct     2.2  14:00:00:00:00     0s
+05  Coolant      25           C       2.2  41:00:00:00:00     0s
+0B  MAP          204          kPa     2.2  CC:00:00:00:00     0s
+0C  RPM          1311.2               2.4  14:7D:00:00:00     0s
+0D  Speed        240          km/h    2.2  F0:00:00:00:00     0s
+0E  Timing       -35.5        deg     2.2  39:00:00:00:00     0s
+0F  IAT          -37          C       2.2  03:00:00:00:00     0s
+10  MAF          8.96         g/s     2.1  03:80:00:00:00     0s
+11  Throttle     98.4         pct     2.1  FB:00:00:00:00     0s
+2F  Fuel         30.5         pct     2.8  4E:00:00:00:00     0s
+DIAG MIL/DTC --                STD_DTC stored/pending/perm abajo
+DIAG STD  03=none  07=none  0A=none  FF=--  M06=tid=FF raw=46:FF:FF:FF:FF:FF:FF
+ECU ID  MODULO                 CALID                  CVN
+7E8     SN012345678901234      SN012345678901234      534E3031
+No leido OBD: fuel_rate, ambient
+VW/VAG leido (UDS solo lectura)
+ADR NAME       PART/SW              DTC                  NOTE
+Esperando modulos VW/VAG...
+Leido por OBD: Engine (Mode09/Mode01)
+No leido UDS: --
+AutoSense OBD2 Live  uptime=32s  ONE-SCREEN
+link=USB-CDC+BLE can=UP query=ACTIVE mode=EBOOK route=7DF pids key/bg/q/sup=9/1/10/96
+rate can=23 rsp/s=23 dec/s=23 key/s=20 bg/s=3 guard=0 vag=OFF/IDLE/0
+log=ON seq=1707 rec=1707/274720 every=10s err=0 | vin=-- profile=obd2_simulator
+OBD LIVE (tabla unica: solo valores leidos)
+PID DATO         VALOR        U      HZ   RAW              AGE
+04  LOAD         7.8          pct     2.2  14:00:00:00:00     0s
+05  Coolant      25           C       2.2  41:00:00:00:00     0s
+0B  MAP          204          kPa     2.2  CC:00:00:00:00     0s
+0C  RPM          1335.7               2.4  14:DF:00:00:00     0s
+0D  Speed        241          km/h    2.2  F1:00:00:00:00     0s
+0E  Timing       -35.5        deg     2.2  39:00:00:00:00     0s
+0F  IAT          -37          C       2.2  03:00:00:00:00     0s
+10  MAF          8.80         g/s     2.1  03:70:00:00:00     0s
+11  Throttle     98.4         pct     2.1  FB:00:00:00:00     0s
+2F  Fuel         30.5         pct     2.8  4E:00:00:00:00     0s
+DIAG MIL/DTC --                STD_DTC stored/pending/perm abajo
+DIAG STD  03=none  07=none  0A=none  FF=--  M06=tid=FF raw=46:FF:FF:FF:FF:FF:FF
+ECU ID  MODULO                 CALID                  CVN
+7E8     SN012345678901234      SN012345678901234      534E3031
+No leido OBD: fuel_rate, ambient
+VW/VAG leido (UDS solo lectura)
+ADR NAME       PART/SW              DTC                  NOTE
+Esperando modulos VW/VAG...
+Leido por OBD: Engine (Mode09/Mode01)
+No leido UDS: --
+AutoSense OBD2 Live  uptime=33s  ONE-SCREEN
+link=USB-CDC+BLE can=UP query=ACTIVE mode=EBOOK route=7DF pids key/bg/q/sup=9/1/10/96
+rate can=23 rsp/s=23 dec/s=23 key/s=20 bg/s=3 guard=0 vag=OFF/IDLE/0
+log=ON seq=1707 rec=1707/274720 every=10s err=0 | vin=-- profile=obd2_simulator
+OBD LIVE (tabla unica: solo valores leidos)
+PID DATO         VALOR        U      HZ   RAW              AGE
+04  LOAD         7.8          pct     2.2  14:00:00:00:00     0s
+05  Coolant      25           C       2.2  41:00:00:00:00     0s
+0B  MAP          204          kPa     2.2  CC:00:00:00:00     0s
+0C  RPM          1328.2               2.3  14:C1:00:00:00     0s
+0D  Speed        241          km/h    2.2  F1:00:00:00:00     0s
+0E  Timing       -35.5        deg     2.2  39:00:00:00:00     0s
+0F  IAT          -37          C       2.2  03:00:00:00:00     0s
+10  MAF          8.64         g/s     2.1  03:60:00:00:00     0s
+11  Throttle     98.4         pct     2.1  FB:00:00:00:00     0s
+2F  Fuel         30.5         pct     2.8  4E:00:00:00:00     0s
+DIAG MIL/DTC --                STD_DTC stored/pending/perm abajo
+DIAG STD  03=none  07=none  0A=none  FF=--  M06=tid=FF raw=46:FF:FF:FF:FF:FF:FF
+ECU ID  MODULO                 CALID                  CVN
+7E8     SN012345678901234      SN012345678901234      534E3031
+No leido OBD: fuel_rate, ambient
+VW/VAG leido (UDS solo lectura)
+ADR NAME       PART/SW              DTC                  NOTE
+Esperando modulos VW/VAG...
+Leido por OBD: Engine (Mode09/Mode01)
+No leido UDS: --
+AutoSense OBD2 Live  uptime=34s  ONE-SCREEN
+link=USB-CDC+BLE can=UP query=ACTIVE mode=EBOOK route=7DF pids key/bg/q/sup=9/1/10/96
+rate can=5 rsp/s=4 dec/s=4 key/s=1 bg/s=0 guard=0 vag=OFF/IDLE/0
+log=ON seq=1708 rec=1708/274720 every=10s err=0 | vin=-- profile=obd2_simulator
+OBD LIVE (tabla unica: solo valores leidos)
+PID DATO         VALOR        U      HZ   RAW              AGE
+04  LOAD         7.8          pct     2.2  14:00:00:00:00     1s
+05  Coolant      25           C       2.2  41:00:00:00:00     1s
+0B  MAP          204          kPa     2.2  CC:00:00:00:00     1s
+0C  RPM          1328.2               2.3  14:C1:00:00:00     1s
+0D  Speed        241          km/h    2.2  F1:00:00:00:00     0s
+0E  Timing       -35.5        deg     2.2  39:00:00:00:00     1s
+0F  IAT          -37          C       2.2  03:00:00:00:00     1s
+10  MAF          8.64         g/s     2.1  03:60:00:00:00     1s
+11  Throttle     98.4         pct     2.1  FB:00:00:00:00     1s
+2F  Fuel         30.5         pct     2.8  4E:00:00:00:00     1s
+DIAG MIL/DTC --                STD_DTC stored/pending/perm abajo
+DIAG STD  03=none  07=none  0A=none  FF=--  M06=tid=FF raw=46:FF:FF:FF:FF:FF:FF
+ECU ID  MODULO                 CALID                  CVN
+7E8     SN012345678901234      SN012345678901234      534E3031
+No leido OBD: fuel_rate, ambient
+VW/VAG leido (UDS solo lectura)
+ADR NAME       PART/SW              DTC                  NOTE
+Esperando modulos VW/VAG...
+Leido por OBD: Engine (Mode09/Mode01)
+No leido UDS: --
+AutoSense OBD2 Live  uptime=35s  ONE-SCREEN
+link=USB-CDC+BLE can=UP query=ACTIVE mode=EBOOK route=7DF pids key/bg/q/sup=9/1/10/96
+rate can=3 rsp/s=3 dec/s=3 key/s=0 bg/s=0 guard=0 vag=OFF/IDLE/0
+log=ON seq=1708 rec=1708/274720 every=10s err=0 | vin=-- profile=obd2_simulator
+OBD LIVE (tabla unica: solo valores leidos)
+PID DATO         VALOR        U      HZ   RAW              AGE
+04  LOAD         7.8          pct     2.2  14:00:00:00:00     2s
+05  Coolant      25           C       2.2  41:00:00:00:00     2s
+0B  MAP          204          kPa     2.2  CC:00:00:00:00     2s
+0C  RPM          1328.2               2.3  14:C1:00:00:00     2s
+0D  Speed        241          km/h    2.2  F1:00:00:00:00     1s
+0E  Timing       -35.5        deg     2.2  39:00:00:00:00     2s
+0F  IAT          -37          C       2.2  03:00:00:00:00     2s
+10  MAF          8.64         g/s     2.1  03:60:00:00:00     2s
+11  Throttle     98.4         pct     2.1  FB:00:00:00:00     2s
+2F  Fuel         30.5         pct     2.8  4E:00:00:00:00     2s
+DIAG MIL/DTC --                STD_DTC stored/pending/perm abajo
+DIAG STD  03=none  07=none  0A=none  FF=--  M06=tid=FF raw=46:FF:FF:FF:FF:FF:FF
+ECU ID  MODULO                 CALID                  CVN
+7E8     SN012345678901234      SN012345678901234      534E3031
+No leido OBD: fuel_rate, ambient
+VW/VAG leido (UDS solo lectura)
+ADR NAME       PART/SW              DTC                  NOTE
+Esperando modulos VW/VAG...
+Leido por OBD: Engine (Mode09/Mode01)
+No leido UDS: --
+AutoSense OBD2 Live  uptime=36s  ONE-SCREEN
+link=USB-CDC+BLE can=UP query=ACTIVE mode=EBOOK route=7DF pids key/bg/q/sup=9/1/10/96
+rate can=31 rsp/s=26 dec/s=24 key/s=17 bg/s=3 guard=0 vag=OFF/IDLE/0
+log=ON seq=1708 rec=1708/274720 every=10s err=0 | vin=-- profile=obd2_simulator
+OBD LIVE (tabla unica: solo valores leidos)
+PID DATO         VALOR        U      HZ   RAW              AGE
+04  LOAD         7.8          pct     1.4  14:00:00:00:00     0s
+05  Coolant      25           C       1.4  41:00:00:00:00     0s
+0B  MAP          204          kPa     1.4  CC:00:00:00:00     0s
+0C  RPM          1328.2               1.8  14:C1:00:00:00     0s
+0D  Speed        241          km/h    1.5  F1:00:00:00:00     0s
+0E  Timing       -35.5        deg     1.4  39:00:00:00:00     0s
+0F  IAT          -37          C       1.3  03:00:00:00:00     0s
+10  MAF          9.28         g/s     1.3  03:A0:00:00:00     0s
+11  Throttle     98.4         pct     1.4  FB:00:00:00:00     0s
+2F  Fuel         30.5         pct     1.8  4E:00:00:00:00     0s
+DIAG MIL/DTC --                STD_DTC stored/pending/perm abajo
+DIAG STD  03=none  07=none  0A=none  FF=--  M06=tid=FF raw=46:FF:FF:FF:FF:FF:FF
+ECU ID  MODULO                 CALID                  CVN
+7E8     SN012345678901234      SN012345678901234      534E3031
+No leido OBD: fuel_rate, ambient
+VW/VAG leido (UDS solo lectura)
+ADR NAME       PART/SW              DTC                  NOTE
+Esperando modulos VW/VAG...
+Leido por OBD: Engine (Mode09/Mode01)
+No leido UDS: --
+AutoSense OBD2 Live  uptime=37s  ONE-SCREEN
+link=USB-CDC+BLE can=UP query=ACTIVE mode=EBOOK route=7DF pids key/bg/q/sup=9/1/10/96
+rate can=23 rsp/s=23 dec/s=23 key/s=20 bg/s=3 guard=0 vag=OFF/IDLE/0
+log=ON seq=1708 rec=1708/274720 every=10s err=0 | vin=-- profile=obd2_simulator
+OBD LIVE (tabla unica: solo valores leidos)
+PID DATO         VALOR        U      HZ   RAW              AGE
+04  LOAD         7.8          pct     1.5  14:00:00:00:00     0s
+05  Coolant      25           C       1.5  41:00:00:00:00     0s
+0B  MAP          204          kPa     1.5  CC:00:00:00:00     0s
+0C  RPM          1330.7               1.8  14:CB:00:00:00     0s
+0D  Speed        241          km/h    1.6  F1:00:00:00:00     0s
+0E  Timing       -35.5        deg     1.5  39:00:00:00:00     0s
+0F  IAT          -37          C       1.5  03:00:00:00:00     0s
+10  MAF          9.60         g/s     1.5  03:C0:00:00:00     0s
+11  Throttle     98.4         pct     1.5  FB:00:00:00:00     0s
+2F  Fuel         30.5         pct     2.1  4E:00:00:00:00     0s
+DIAG MIL/DTC --                STD_DTC stored/pending/perm abajo
+DIAG STD  03=none  07=none  0A=none  FF=--  M06=tid=FF raw=46:FF:FF:FF:FF:FF:FF
+ECU ID  MODULO                 CALID                  CVN
+7E8     SN012345678901234      SN012345678901234      534E3031
+No leido OBD: fuel_rate, ambient
+VW/VAG leido (UDS solo lectura)
+ADR NAME       PART/SW              DTC                  NOTE
+Esperando modulos VW/VAG...
+Leido por OBD: Engine (Mode09/Mode01)
+No leido UDS: --
+AutoSense OBD2 Live  uptime=38s  ONE-SCREEN
+link=USB-CDC+BLE can=UP query=ACTIVE mode=EBOOK route=7DF pids key/bg/q/sup=9/1/10/96
+rate can=22 rsp/s=22 dec/s=22 key/s=20 bg/s=3 guard=0 vag=OFF/IDLE/0
+log=ON seq=1708 rec=1708/274720 every=10s err=0 | vin=-- profile=obd2_simulator
+OBD LIVE (tabla unica: solo valores leidos)
+PID DATO         VALOR        U      HZ   RAW              AGE
+04  LOAD         7.8          pct     1.6  14:00:00:00:00     0s
+05  Coolant      25           C       1.6  41:00:00:00:00     0s
+0B  MAP          204          kPa     1.6  CC:00:00:00:00     0s
+0C  RPM          1335.7               1.9  14:DF:00:00:00     0s
+0D  Speed        240          km/h    1.7  F0:00:00:00:00     0s
+0E  Timing       -35.5        deg     1.6  39:00:00:00:00     0s
+0F  IAT          -37          C       1.6  03:00:00:00:00     0s
+10  MAF          8.48         g/s     1.6  03:50:00:00:00     0s
+11  Throttle     98.4         pct     1.6  FB:00:00:00:00     0s
+2F  Fuel         30.5         pct     2.3  4E:00:00:00:00     0s
+DIAG MIL/DTC --                STD_DTC stored/pending/perm abajo
+DIAG STD  03=none  07=none  0A=none  FF=--  M06=tid=FF raw=46:FF:FF:FF:FF:FF:FF
+ECU ID  MODULO                 CALID                  CVN
+7E8     SN012345678901234      SN012345678901234      534E3031
+No leido OBD: fuel_rate, ambient
+VW/VAG leido (UDS solo lectura)
+ADR NAME       PART/SW              DTC                  NOTE
+Esperando modulos VW/VAG...
+Leido por OBD: Engine (Mode09/Mode01)
+No leido UDS: --
+AutoSense OBD2 Live  uptime=39s  ONE-SCREEN
+link=USB-CDC+BLE can=UP query=ACTIVE mode=EBOOK route=7DF pids key/bg/q/sup=9/1/10/96
+rate can=28 rsp/s=27 dec/s=25 key/s=20 bg/s=2 guard=0 vag=OFF/IDLE/0
+log=ON seq=1708 rec=1708/274720 every=10s err=0 | vin=-- profile=obd2_simulator
+OBD LIVE (tabla unica: solo valores leidos)
+PID DATO         VALOR        U      HZ   RAW              AGE
+04  LOAD         7.8          pct     1.7  14:00:00:00:00     0s
+05  Coolant      25           C       1.8  41:00:00:00:00     0s
+0B  MAP          204          kPa     1.7  CC:00:00:00:00     0s
+0C  RPM          1328.2               2.0  14:C1:00:00:00     0s
+0D  Speed        240          km/h    1.9  F0:00:00:00:00     0s
+0E  Timing       -35.5        deg     1.7  39:00:00:00:00     0s
+0F  IAT          -37          C       1.7  03:00:00:00:00     0s
+10  MAF          8.96         g/s     1.7  03:80:00:00:00     0s
+11  Throttle     98.4         pct     1.7  FB:00:00:00:00     0s
+2F  Fuel         30.5         pct     2.4  4E:00:00:00:00     0s
+DIAG MIL/DTC --                STD_DTC stored/pending/perm abajo
+DIAG STD  03=none  07=none  0A=none  FF=--  M06=tid=FF raw=46:FF:FF:FF:FF:FF:FF
+ECU ID  MODULO                 CALID                  CVN
+7E8     SN012345678901234      SN012345678901234      534E3031
+No leido OBD: fuel_rate, ambient
+VW/VAG leido (UDS solo lectura)
+ADR NAME       PART/SW              DTC                  NOTE
+Esperando modulos VW/VAG...
+Leido por OBD: Engine (Mode09/Mode01)
+No leido UDS: --
+AutoSense OBD2 Live  uptime=40s  ONE-SCREEN
+link=USB-CDC+BLE can=UP query=ACTIVE mode=EBOOK route=7DF pids key/bg/q/sup=9/1/10/96
+rate can=29 rsp/s=29 dec/s=27 key/s=19 bg/s=3 guard=0 vag=OFF/IDLE/0
+log=ON seq=1708 rec=1708/274720 every=10s err=0 | vin=-- profile=obd2_simulator
+OBD LIVE (tabla unica: solo valores leidos)
+PID DATO         VALOR        U      HZ   RAW              AGE
+04  LOAD         7.8          pct     1.8  14:00:00:00:00     0s
+05  Coolant      25           C       1.8  41:00:00:00:00     0s
+0B  MAP          204          kPa     1.8  CC:00:00:00:00     0s
+0C  RPM          1323.5               2.2  14:AE:00:00:00     0s
+0D  Speed        241          km/h    2.1  F1:00:00:00:00     0s
+0E  Timing       -35.5        deg     1.8  39:00:00:00:00     0s
+0F  IAT          -37          C       1.8  03:00:00:00:00     0s
+10  MAF          8.64         g/s     1.8  03:60:00:00:00     0s
+11  Throttle     98.4         pct     1.8  FB:00:00:00:00     0s
+2F  Fuel         30.5         pct     2.5  4E:00:00:00:00     0s
+DIAG MIL/DTC --                STD_DTC stored/pending/perm abajo
+DIAG STD  03=none  07=none  0A=none  FF=--  M06=tid=FF raw=46:FF:FF:FF:FF:FF:FF
+ECU ID  MODULO                 CALID                  CVN
+7E8     SN012345678901234      SN012345678901234      534E3031
+No leido OBD: fuel_rate, ambient
+VW/VAG leido (UDS solo lectura)
+ADR NAME       PART/SW              DTC                  NOTE
+Esperando modulos VW/VAG...
+Leido por OBD: Engine (Mode09/Mode01)
+No leido UDS: --
+AutoSense OBD2 Live  uptime=41s  ONE-SCREEN
+link=USB-CDC+BLE can=UP query=ACTIVE mode=EBOOK route=7DF pids key/bg/q/sup=9/1/10/96
+rate can=23 rsp/s=23 dec/s=23 key/s=20 bg/s=3 guard=0 vag=OFF/IDLE/0
+log=ON seq=1708 rec=1708/274720 every=10s err=0 | vin=-- profile=obd2_simulator
+OBD LIVE (tabla unica: solo valores leidos)
+PID DATO         VALOR        U      HZ   RAW              AGE
+04  LOAD         7.8          pct     1.9  14:00:00:00:00     0s
+05  Coolant      25           C       1.9  41:00:00:00:00     0s
+0B  MAP          204          kPa     1.9  CC:00:00:00:00     0s
+0C  RPM          1328.2               2.2  14:C1:00:00:00     0s
+0D  Speed        241          km/h    2.1  F1:00:00:00:00     0s
+0E  Timing       -35.5        deg     1.9  39:00:00:00:00     0s
+0F  IAT          -37          C       1.9  03:00:00:00:00     0s
+10  MAF          8.32         g/s     1.8  03:40:00:00:00     0s
+11  Throttle     98.4         pct     1.8  FB:00:00:00:00     0s
+2F  Fuel         30.5         pct     2.6  4E:00:00:00:00     0s
+DIAG MIL/DTC --                STD_DTC stored/pending/perm abajo
+DIAG STD  03=none  07=none  0A=none  FF=--  M06=tid=FF raw=46:FF:FF:FF:FF:FF:FF
+ECU ID  MODULO                 CALID                  CVN
+7E8     SN012345678901234      SN012345678901234      534E3031
+No leido OBD: fuel_rate, ambient
+VW/VAG leido (UDS solo lectura)
+ADR NAME       PART/SW              DTC                  NOTE
+Esperando modulos VW/VAG...
+Leido por OBD: Engine (Mode09/Mode01)
+No leido UDS: --

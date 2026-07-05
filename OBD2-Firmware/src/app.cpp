@@ -10,6 +10,7 @@
 #include "obd_binary_logger.h"
 #include "obd_dashboard.h"
 #include "obd_read_only_guard.h"
+#include "obd_route_classifier.h"
 #include "obd_service.h"
 #include "uds_vag_scanner.h"
 #include "vehicle_profile.h"
@@ -36,6 +37,7 @@ struct CanConfig
 ObdService OBD;
 ObdDashboard DASH;
 ObdBinaryLogger LOGGER;
+ObdRouteClassifier ROUTE_CLASSIFIER;
 UdsVagScanner VAG;
 AppRuntimeConfig RUNTIME_CONFIG;
 ProfileManager PROFILES;
@@ -64,6 +66,11 @@ void pulseLed(int pin, int ms)
     digitalWrite(pin, HIGH);
     delay(ms);
     digitalWrite(pin, LOW);
+}
+
+int statusLedPin(bool canReady, AnomalySeverity severity)
+{
+    return (canReady && severity < AnomalySeverity::Warning) ? LED_OK : LED_ERR;
 }
 
 bool startCan(const CanConfig &cfg, uint32_t *startedBaud = nullptr)
@@ -133,8 +140,7 @@ void refreshSecondStats(uint32_t nowMs)
     can_window = 0;
     OBD.clearWindowCounters();
     heartbeat_ms = nowMs;
-
-    pulseLed(can_ok ? LED_OK : LED_ERR, 40);
+    pulseLed(statusLedPin(can_ok, obd_anomaly_last_result().severity), 40);
 }
 
 void configureAnomaly()
@@ -182,6 +188,32 @@ ObdSample makeAnomalySample(uint32_t nowMs, const ObdCompactSample &compact)
     sample.intakeAirC = compact.intakeAirC;
     sample.sparkAdvanceDeg10 = compact.sparkAdvanceDeg10;
     return sample;
+}
+
+ObdRouteInput makeRouteInput(const ObdCompactSample &compact)
+{
+    ObdRouteInput input{};
+    if (compact.validMask & OBD_SAMPLE_SPEED)
+    {
+        input.validMask |= ROUTE_INPUT_SPEED;
+        input.speedKph = compact.speedKph;
+    }
+    if (compact.validMask & OBD_SAMPLE_RPM)
+    {
+        input.validMask |= ROUTE_INPUT_RPM;
+        input.rpm = compact.rpm;
+    }
+    if (compact.validMask & OBD_SAMPLE_ENGINE_LOAD)
+    {
+        input.validMask |= ROUTE_INPUT_ENGINE_LOAD;
+        input.engineLoadPct = compact.engineLoadPct;
+    }
+    if (compact.validMask & OBD_SAMPLE_THROTTLE)
+    {
+        input.validMask |= ROUTE_INPUT_THROTTLE;
+        input.throttlePct = compact.throttlePct;
+    }
+    return input;
 }
 
 void processAnomaly(uint32_t nowMs, const ObdCompactSample &compact)
@@ -252,7 +284,7 @@ void appSetup()
                   RUNTIME_CONFIG.vagExtendedEnabled ? "on" : "off");
 
     initCan();
-    pulseLed(LED_OK, 180);
+    pulseLed(statusLedPin(can_ok, obd_anomaly_last_result().severity), 180);
 }
 
 void appLoop()
@@ -269,6 +301,7 @@ void appLoop()
 
     ObdCompactSample compactSample{};
     OBD.collectCompactSample(nowMs, RUNTIME_CONFIG.loggingMaxSampleAgeSeconds * 1000UL, &compactSample);
+    BLE_PROTO.setRouteEstimate(ROUTE_CLASSIFIER.update(nowMs, makeRouteInput(compactSample)));
     LOGGER.tick(nowMs, compactSample);
     processAnomaly(nowMs, compactSample);
 
