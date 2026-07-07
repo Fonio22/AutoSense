@@ -2378,7 +2378,7 @@
     <bcf:citekey order="2" intorder="2">kalalas2025_ai_driven_monitoring</bcf:citekey>
     <bcf:citekey order="3" intorder="1">michailidis2025_obdii_review</bcf:citekey>
     <bcf:citekey order="4" intorder="1">sae2022_j1978_obdii_scan_tool</bcf:citekey>
-    <bcf:citekey order="4" intorder="2">customobd2025_lector_obd</bcf:citekey>
+    <bcf:citekey order="4" intorder="2">sae2025_j1979_diagnostic_test_modes</bcf:citekey>
     <bcf:citekey order="5" intorder="1">mahale2025_review_predictive_maintenance</bcf:citekey>
     <bcf:citekey order="5" intorder="2">tormos2025_explainable_ai</bcf:citekey>
     <bcf:citekey order="6" intorder="1">zhang2020_iov_edge</bcf:citekey>
@@ -2392,9 +2392,10 @@
     <bcf:citekey order="10" intorder="1">laprensa2025_fallas_autos</bcf:citekey>
     <bcf:citekey order="11" intorder="1">selvaraj2023_advanced_telematics</bcf:citekey>
     <bcf:citekey order="12" intorder="1">kalalas2025_ai_driven_monitoring</bcf:citekey>
-    <bcf:citekey order="13" intorder="1">customobd2025_lector_obd</bcf:citekey>
+    <bcf:citekey order="13" intorder="1">singh2021_obdii_iot</bcf:citekey>
+    <bcf:citekey order="13" intorder="2">dabarera2022_iot_vehicle_management</bcf:citekey>
     <bcf:citekey order="14" intorder="1">tormos2025_explainable_ai</bcf:citekey>
-    <bcf:citekey order="14" intorder="2">wecaria2025_prediccion_averias</bcf:citekey>
+    <bcf:citekey order="14" intorder="2">mahale2025_review_predictive_maintenance</bcf:citekey>
     <bcf:citekey order="15" intorder="1">mahale2025_review_predictive_maintenance</bcf:citekey>
     <bcf:citekey order="16" intorder="1">michailidis2025_obdii_review</bcf:citekey>
     <bcf:citekey order="16" intorder="2">zhang2020_iov_edge</bcf:citekey>
@@ -2550,7 +2551,6 @@
     <bcf:citekey order="97" intorder="2">kalalas2025_ai_driven_monitoring</bcf:citekey>
     <bcf:citekey order="98" intorder="1">mahale2025_review_predictive_maintenance</bcf:citekey>
     <bcf:citekey order="98" intorder="2">tormos2025_explainable_ai</bcf:citekey>
-    <bcf:citekey order="99" intorder="1" nocite="1">*</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="none">

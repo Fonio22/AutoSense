@@ -38,6 +38,43 @@ export type ObdActiveProfile = {
   sha256?: string;
 };
 
+export type ObdLogInfo = {
+  ready: boolean;
+  enabled: boolean;
+  recordSize: number;
+  recordsWritten: number;
+  capacityRecords: number;
+  lastSequence: number;
+};
+
+export type ObdLogExportResult = {
+  recordSize: number;
+  recordCount: number;
+  firstSequence: number;
+  lastSequence: number;
+  sizeBytes: number;
+  base64Data: string;
+};
+
+type ObdLogExportStart = {
+  recordSize?: number;
+  recordCount?: number;
+  firstSequence?: number;
+  lastSequence?: number;
+  done?: boolean;
+};
+
+type ObdLogChunk = {
+  recordSize?: number;
+  recordCount?: number;
+  firstSequence?: number;
+  lastSequence?: number;
+  sentRecords?: number;
+  totalRecords?: number;
+  done?: boolean;
+  payload?: string;
+};
+
 type ObdResponse<T = unknown> = {
   id?: string;
   command?: string;
@@ -260,6 +297,73 @@ export class ObdBleConnection {
   async getActiveProfile() {
     const response = await this.request<ObdActiveProfile>('GET_ACTIVE_PROFILE');
     return response.data ?? {};
+  }
+
+  async getLogInfo() {
+    const response = await this.request<ObdLogInfo>('GET_LOG_INFO');
+    if (!response.data) {
+      throw new Error('GET_LOG_INFO sin payload.');
+    }
+    return response.data;
+  }
+
+  async exportLogSince(afterSequence: number): Promise<ObdLogExportResult> {
+    const start = await this.request<ObdLogExportStart>(
+      'START_LOG_EXPORT',
+      { afterSequence: Math.max(0, Math.floor(afterSequence)) },
+      15000,
+    );
+    const startData = start.data ?? {};
+    const expectedRecords = Math.max(0, Number(startData.recordCount ?? 0));
+    const recordSize = Math.max(1, Number(startData.recordSize ?? 24));
+    let base64Data = '';
+    let receivedRecords = 0;
+    let firstReceivedSequence = 0;
+    let lastReceivedSequence = 0;
+    let done = Boolean(startData.done) || expectedRecords === 0;
+    let emptyChunks = 0;
+
+    try {
+      while (!done && receivedRecords < expectedRecords) {
+        const chunk = await this.request<ObdLogChunk>(
+          'GET_LOG_CHUNK',
+          { maxRecords: 8 },
+          15000,
+        );
+        const data = chunk.data ?? {};
+        const count = Math.max(0, Number(data.recordCount ?? 0));
+        if (data.payload) {
+          base64Data += data.payload;
+        }
+        receivedRecords += count;
+        if (count > 0) {
+          const chunkFirst = Number(data.firstSequence ?? 0);
+          const chunkLast = Number(data.lastSequence ?? 0);
+          if (chunkFirst > 0 && (firstReceivedSequence === 0 || chunkFirst < firstReceivedSequence)) {
+            firstReceivedSequence = chunkFirst;
+          }
+          if (chunkLast > lastReceivedSequence) {
+            lastReceivedSequence = chunkLast;
+          }
+        }
+        done = Boolean(data.done) || receivedRecords >= expectedRecords;
+
+        if (count === 0 && !done && ++emptyChunks > 3) {
+          throw new Error('OBD log export stalled.');
+        }
+      }
+    } finally {
+      await this.request('END_LOG_EXPORT').catch(() => undefined);
+    }
+
+    return {
+      recordSize,
+      recordCount: receivedRecords,
+      firstSequence: firstReceivedSequence || Number(startData.firstSequence ?? 0),
+      lastSequence: lastReceivedSequence || Number(startData.lastSequence ?? afterSequence),
+      sizeBytes: receivedRecords * recordSize,
+      base64Data,
+    };
   }
 
   async applyProfile(profileText: string, profile: VehicleProfile, info: ProfileDownloadInfo) {

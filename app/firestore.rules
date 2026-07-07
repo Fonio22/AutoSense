@@ -332,6 +332,68 @@ service cloud.firestore {
         && (!('endedAt' in data) || data.endedAt == null || data.endedAt is timestamp);
     }
 
+    function isValidObdLogSyncShape(data) {
+      return data.keys().hasOnly([
+          'deviceId',
+          'lastExportId',
+          'lastSyncedSequence',
+          'storagePath',
+          'updatedAt'
+        ])
+        && data.keys().hasAll(['deviceId', 'lastSyncedSequence', 'updatedAt'])
+        && isValidString(data.deviceId, 128)
+        && (!('lastExportId' in data) || isOptionalString(data.lastExportId, 160))
+        && (!('storagePath' in data) || isOptionalString(data.storagePath, 500))
+        && data.lastSyncedSequence is number
+        && data.lastSyncedSequence >= 0
+        && data.lastSyncedSequence <= 4294967295
+        && isRecent(data.updatedAt);
+    }
+
+    function isValidObdLogExportShape(data) {
+      return data.keys().hasOnly([
+          'deviceId',
+          'firstSequence',
+          'lastSequence',
+          'recordCount',
+          'recordSize',
+          'sizeBytes',
+          'source',
+          'storagePath',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'deviceId',
+          'firstSequence',
+          'lastSequence',
+          'recordCount',
+          'recordSize',
+          'sizeBytes',
+          'source',
+          'storagePath',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidString(data.deviceId, 128)
+        && isValidString(data.storagePath, 500)
+        && data.source == 'ble_obdlog_v1'
+        && data.recordSize == 24
+        && data.recordCount is number
+        && data.recordCount > 0
+        && data.recordCount <= 274720
+        && data.firstSequence is number
+        && data.firstSequence > 0
+        && data.lastSequence is number
+        && data.lastSequence >= data.firstSequence
+        && data.lastSequence <= 4294967295
+        && data.sizeBytes is number
+        && data.sizeBytes == data.recordCount * data.recordSize
+        && data.sizeBytes < 10 * 1024 * 1024
+        && isRecent(data.createdAt)
+        && isRecent(data.updatedAt);
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId)
@@ -346,6 +408,20 @@ service cloud.firestore {
         allow read: if isOwner(userId);
         allow create, update: if isOwner(userId)
           && isValidTripShape(request.resource.data);
+        allow delete: if false;
+      }
+
+      match /obdLogSync/{deviceId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && isValidObdLogSyncShape(request.resource.data);
+        allow delete: if false;
+      }
+
+      match /obdLogExports/{exportId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && isValidObdLogExportShape(request.resource.data);
         allow delete: if false;
       }
 

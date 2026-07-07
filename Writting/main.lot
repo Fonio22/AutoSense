@@ -1,36 +1,53 @@
 \babel@toc {spanish}{}\relax 
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {2.1}{\ignorespaces Tipos de información utilizados en el diagnóstico vehicular de AutoSense.}}{14}{table.caption.7}%
-\contentsline {table}{\numberline {2.2}{\ignorespaces Modos OBD2 relevantes para AutoSense.}}{19}{table.caption.10}%
+\contentsline {table}{\numberline {2.1}{\ignorespaces Tipos de información utilizados en el diagnóstico vehicular de AutoSense.}}{15}{table.caption.7}%
+\contentsline {table}{\numberline {2.2}{\ignorespaces Modos OBD-II relevantes para AutoSense.}}{19}{table.caption.10}%
 \contentsline {table}{\numberline {2.3}{\ignorespaces Elementos básicos del protocolo CAN y su relación con AutoSense.}}{22}{table.caption.12}%
 \contentsline {table}{\numberline {2.4}{\ignorespaces PIDs implementados en los perfiles de AutoSense y su uso funcional.}}{25}{table.caption.13}%
-\contentsline {table}{\numberline {2.5}{\ignorespaces Parámetros por defecto del detector de anomalías local.}}{39}{table.caption.18}%
-\contentsline {table}{\numberline {2.6}{\ignorespaces Relación entre los componentes analíticos de AutoSense y el mantenimiento predictivo.}}{42}{table.caption.19}%
-\contentsline {table}{\numberline {2.7}{\ignorespaces Trabajos representativos relacionados con AutoSense.}}{46}{table.caption.20}%
+\contentsline {table}{\numberline {2.5}{\ignorespaces Parámetros por defecto del detector de anomalías local.}}{41}{table.caption.18}%
+\contentsline {table}{\numberline {2.6}{\ignorespaces Relación entre los componentes analíticos de AutoSense y el mantenimiento predictivo.}}{45}{table.caption.19}%
+\contentsline {table}{\numberline {2.7}{\ignorespaces Trabajos representativos relacionados con AutoSense.}}{49}{table.caption.20}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {3.1}{\ignorespaces Fuentes de recolección de datos empleadas en AutoSense.}}{51}{table.caption.21}%
-\contentsline {table}{\numberline {3.2}{\ignorespaces Herramientas principales utilizadas en AutoSense.}}{52}{table.caption.22}%
-\contentsline {table}{\numberline {3.3}{\ignorespaces Criterios de evaluación del sistema AutoSense.}}{56}{table.caption.23}%
+\contentsline {table}{\numberline {3.1}{\ignorespaces Fuentes de recolección de datos empleadas en AutoSense.}}{54}{table.caption.21}%
+\contentsline {table}{\numberline {3.2}{\ignorespaces Herramientas principales utilizadas en AutoSense.}}{56}{table.caption.22}%
+\contentsline {table}{\numberline {3.3}{\ignorespaces Criterios de evaluación del sistema AutoSense.}}{60}{table.caption.23}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {4.1}{\ignorespaces Componentes principales de la arquitectura de AutoSense.}}{61}{table.caption.25}%
-\contentsline {table}{\numberline {4.2}{\ignorespaces Componentes principales del hardware AutoSense.}}{64}{table.caption.27}%
-\contentsline {table}{\numberline {4.3}{\ignorespaces Lista de materiales agrupada del PCB AutoSense.}}{64}{table.4.3}%
-\contentsline {table}{\numberline {4.4}{\ignorespaces Pines OBD-II utilizados por AutoSense.}}{67}{table.caption.28}%
-\contentsline {table}{\numberline {4.5}{\ignorespaces Módulos principales del firmware AutoSense.}}{76}{table.caption.33}%
-\contentsline {table}{\numberline {4.6}{\ignorespaces Servicios permitidos y bloqueados por la política de solo lectura.}}{80}{table.caption.36}%
-\contentsline {table}{\numberline {4.7}{\ignorespaces Intervalos principales de ejecución del firmware.}}{82}{table.caption.37}%
-\contentsline {table}{\numberline {4.8}{\ignorespaces Responsabilidades principales de la aplicación móvil AutoSense.}}{86}{table.caption.39}%
-\contentsline {table}{\numberline {4.9}{\ignorespaces Niveles de almacenamiento utilizados por AutoSense.}}{95}{table.caption.46}%
-\contentsline {table}{\numberline {4.10}{\ignorespaces Estructura del registro binario v1 en la partición \texttt {obdlog}.}}{96}{table.caption.47}%
-\contentsline {table}{\numberline {4.11}{\ignorespaces Comandos principales de interacción BLE entre la app y el ESP32-S3.}}{100}{table.caption.48}%
-\contentsline {table}{\numberline {4.12}{\ignorespaces Componentes del módulo de análisis de datos en AutoSense.}}{107}{table.caption.50}%
-\contentsline {table}{\numberline {4.13}{\ignorespaces Controles de seguridad aplicados en AutoSense.}}{111}{table.caption.51}%
+\contentsline {table}{\numberline {4.1}{\ignorespaces Componentes principales de la arquitectura de AutoSense.}}{66}{table.caption.25}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Componentes principales del hardware AutoSense.}}{69}{table.caption.27}%
+\contentsline {table}{\numberline {4.3}{\ignorespaces Lista de materiales agrupada del PCB AutoSense.}}{69}{table.4.3}%
+\contentsline {table}{\numberline {4.4}{\ignorespaces Pines OBD-II utilizados por AutoSense.}}{72}{table.caption.28}%
+\contentsline {table}{\numberline {4.5}{\ignorespaces Módulos principales del firmware AutoSense.}}{81}{table.caption.33}%
+\contentsline {table}{\numberline {4.6}{\ignorespaces Servicios permitidos y bloqueados por la política de solo lectura.}}{86}{table.caption.36}%
+\contentsline {table}{\numberline {4.7}{\ignorespaces Intervalos principales de ejecución del firmware.}}{88}{table.caption.37}%
+\contentsline {table}{\numberline {4.8}{\ignorespaces Responsabilidades principales de la aplicación móvil AutoSense.}}{93}{table.caption.39}%
+\contentsline {table}{\numberline {4.9}{\ignorespaces Niveles de almacenamiento utilizados por AutoSense.}}{103}{table.caption.46}%
+\contentsline {table}{\numberline {4.10}{\ignorespaces Estructura del registro binario v1 en la partición \texttt {obdlog}.}}{104}{table.caption.47}%
+\contentsline {table}{\numberline {4.11}{\ignorespaces Comandos principales de interacción BLE entre la app y el ESP32-S3.}}{109}{table.caption.48}%
+\contentsline {table}{\numberline {4.12}{\ignorespaces Componentes del módulo de análisis de datos en AutoSense.}}{117}{table.caption.50}%
+\contentsline {table}{\numberline {4.13}{\ignorespaces Controles de seguridad aplicados en AutoSense.}}{121}{table.caption.51}%
+\contentsline {table}{\numberline {4.14}{\ignorespaces Resumen operativo de una sesión AutoSense.}}{124}{table.caption.52}%
 \addvspace {10\p@ }
+\contentsline {table}{\numberline {5.1}{\ignorespaces Escenarios utilizados para la validación de AutoSense.}}{130}{table.caption.56}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces Pruebas funcionales aplicadas a AutoSense.}}{132}{table.caption.57}%
+\contentsline {table}{\numberline {5.3}{\ignorespaces Indicadores de comunicación verificados durante las pruebas.}}{133}{table.caption.58}%
+\contentsline {table}{\numberline {5.4}{\ignorespaces Lecturas Mode 01 observadas en reportes OBD-II de prueba.}}{134}{table.caption.59}%
+\contentsline {table}{\numberline {5.5}{\ignorespaces Modos OBD-II verificados durante las pruebas de lectura.}}{135}{table.caption.60}%
+\contentsline {table}{\numberline {5.6}{\ignorespaces Validación del almacenamiento de datos en AutoSense.}}{137}{table.caption.61}%
+\contentsline {table}{\numberline {5.7}{\ignorespaces Validación visual de pantallas móviles.}}{138}{table.caption.62}%
+\contentsline {table}{\numberline {5.8}{\ignorespaces Indicadores de rendimiento observados durante las pruebas.}}{140}{table.caption.63}%
+\contentsline {table}{\numberline {5.9}{\ignorespaces Resumen estadístico del segmento urbano utilizado en los gráficos de resultados.}}{141}{table.caption.64}%
+\contentsline {table}{\numberline {5.10}{\ignorespaces Discusión técnica de los hallazgos principales.}}{149}{table.caption.71}%
 \addvspace {10\p@ }
+\contentsline {table}{\numberline {6.1}{\ignorespaces Cumplimiento de los objetivos específicos del proyecto.}}{155}{table.caption.72}%
 \addvspace {10\p@ }
+\contentsline {table}{\numberline {A.1}{\ignorespaces Estructura principal del código fuente de AutoSense. Elaboración propia.}}{165}{table.caption.74}%
 \addvspace {10\p@ }
+\contentsline {table}{\numberline {B.1}{\ignorespaces Relación de diagramas principales incluidos en la tesis. Elaboración propia.}}{166}{table.caption.75}%
 \addvspace {10\p@ }
+\contentsline {table}{\numberline {C.1}{\ignorespaces Capturas e imágenes principales utilizadas como evidencia visual. Elaboración propia.}}{167}{table.caption.76}%
 \addvspace {10\p@ }
+\contentsline {table}{\numberline {D.1}{\ignorespaces Resumen de evidencia de pruebas funcionales y de rendimiento. Elaboración propia.}}{168}{table.caption.77}%
+\contentsline {table}{\numberline {D.2}{\ignorespaces Distribución de registros de la campaña de recolección. Elaboración propia.}}{168}{table.caption.78}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }

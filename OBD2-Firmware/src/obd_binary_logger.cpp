@@ -152,6 +152,138 @@ const ObdLogStats &ObdBinaryLogger::stats() const
     return stats_;
 }
 
+bool ObdBinaryLogger::describeExportRange(uint32_t afterSequence, uint32_t untilSequence, ObdLogExportStats *out) const
+{
+    if (!out)
+    {
+        return false;
+    }
+
+    *out = {};
+    out->recordSize = kRecordSize;
+    const esp_partition_t *partition = static_cast<const esp_partition_t *>(partition_);
+    if (!partition || stats_.capacityRecords == 0)
+    {
+        return false;
+    }
+
+    uint8_t *sector = static_cast<uint8_t *>(malloc(kSectorSize));
+    if (!sector)
+    {
+        return false;
+    }
+
+    for (uint32_t sectorIndex = 0; sectorIndex < sectorCount_; sectorIndex++)
+    {
+        if (esp_partition_read(partition, sectorIndex * kSectorSize, sector, kSectorSize) != ESP_OK)
+        {
+            continue;
+        }
+
+        for (uint32_t recordIndex = 0; recordIndex < kRecordsPerSector; recordIndex++)
+        {
+            uint32_t sequence = 0;
+            const uint8_t *record = sector + (recordIndex * kRecordSize);
+            if (!decodeRecordHeader(record, &sequence) || sequence <= afterSequence || sequence > untilSequence)
+            {
+                continue;
+            }
+
+            out->recordCount++;
+            if (out->firstSequence == 0 || sequence < out->firstSequence)
+            {
+                out->firstSequence = sequence;
+            }
+            if (sequence > out->lastSequence)
+            {
+                out->lastSequence = sequence;
+            }
+        }
+    }
+
+    free(sector);
+    return true;
+}
+
+uint32_t ObdBinaryLogger::readExportChunk(uint32_t afterSequence,
+                                          uint32_t untilSequence,
+                                          uint32_t startSlot,
+                                          uint32_t maxRecords,
+                                          uint8_t *out,
+                                          uint32_t outSize,
+                                          uint32_t *nextSlot,
+                                          bool *done,
+                                          uint32_t *firstSequence,
+                                          uint32_t *lastSequence) const
+{
+    const esp_partition_t *partition = static_cast<const esp_partition_t *>(partition_);
+    if (nextSlot)
+    {
+        *nextSlot = startSlot;
+    }
+    if (done)
+    {
+        *done = true;
+    }
+    if (firstSequence)
+    {
+        *firstSequence = 0;
+    }
+    if (lastSequence)
+    {
+        *lastSequence = 0;
+    }
+    if (!partition || !out || maxRecords == 0 || outSize < kRecordSize || stats_.capacityRecords == 0)
+    {
+        return 0;
+    }
+
+    const uint32_t capacityRecords = stats_.capacityRecords;
+    uint32_t slot = startSlot >= capacityRecords ? capacityRecords : startSlot;
+    uint32_t written = 0;
+    uint8_t record[kRecordSize]{0};
+
+    while (slot < capacityRecords && written < maxRecords && ((written + 1) * kRecordSize) <= outSize)
+    {
+        const uint32_t sectorIndex = slot / kRecordsPerSector;
+        const uint32_t recordIndex = slot % kRecordsPerSector;
+        const uint32_t offset = (sectorIndex * kSectorSize) + (recordIndex * kRecordSize);
+        slot++;
+
+        if (esp_partition_read(partition, offset, record, sizeof(record)) != ESP_OK)
+        {
+            continue;
+        }
+
+        uint32_t sequence = 0;
+        if (!decodeRecordHeader(record, &sequence) || sequence <= afterSequence || sequence > untilSequence)
+        {
+            continue;
+        }
+
+        memcpy(out + (written * kRecordSize), record, kRecordSize);
+        written++;
+        if (firstSequence && (*firstSequence == 0 || sequence < *firstSequence))
+        {
+            *firstSequence = sequence;
+        }
+        if (lastSequence && sequence > *lastSequence)
+        {
+            *lastSequence = sequence;
+        }
+    }
+
+    if (nextSlot)
+    {
+        *nextSlot = slot;
+    }
+    if (done)
+    {
+        *done = slot >= capacityRecords;
+    }
+    return written;
+}
+
 void ObdBinaryLogger::scanExistingRecords()
 {
     const esp_partition_t *partition = static_cast<const esp_partition_t *>(partition_);

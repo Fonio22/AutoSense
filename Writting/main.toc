@@ -3,22 +3,22 @@
 \contentsline {chapter}{Agradecimientos}{\es@scroman {ii}}{chapter*.2}%
 \contentsline {chapter}{Resumen}{\es@scroman {iii}}{chapter*.3}%
 \contentsline {chapter}{Abstract}{\es@scroman {iv}}{chapter*.4}%
-\contentsline {chapter}{Índice de figuras}{\es@scroman {xi}}{chapter*.4}%
-\contentsline {chapter}{Índice de tablas}{\es@scroman {xii}}{chapter*.4}%
+\contentsline {chapter}{Índice de figuras}{\es@scroman {xiii}}{chapter*.4}%
+\contentsline {chapter}{Índice de tablas}{\es@scroman {xv}}{chapter*.4}%
 \contentsline {chapter}{Introducción}{1}{chapter*.5}%
 \contentsline {chapter}{\numberline {1}Aspectos generales}{3}{chapter.1}%
 \contentsline {section}{\numberline {1.1}Descripción de la problemática}{3}{section.1.1}%
 \contentsline {section}{\numberline {1.2}Objetivo general}{4}{section.1.2}%
 \contentsline {section}{\numberline {1.3}Objetivos específicos}{4}{section.1.3}%
-\contentsline {section}{\numberline {1.4}Justificación}{4}{section.1.4}%
-\contentsline {section}{\numberline {1.5}Alcance}{5}{section.1.5}%
-\contentsline {section}{\numberline {1.6}Limitaciones}{6}{section.1.6}%
+\contentsline {section}{\numberline {1.4}Justificación}{5}{section.1.4}%
+\contentsline {section}{\numberline {1.5}Alcance}{6}{section.1.5}%
+\contentsline {section}{\numberline {1.6}Limitaciones}{7}{section.1.6}%
 \contentsline {chapter}{\numberline {2}Marco teórico}{8}{chapter.2}%
 \contentsline {section}{\numberline {2.1}Antecedentes}{8}{section.2.1}%
 \contentsline {section}{\numberline {2.2}Diagnóstico vehicular}{11}{section.2.2}%
-\contentsline {section}{\numberline {2.3}Sistema OBD2}{15}{section.2.3}%
+\contentsline {section}{\numberline {2.3}Sistema OBD-II}{15}{section.2.3}%
 \contentsline {subsection}{\numberline {2.3.1}Modos de diagnóstico relevantes}{17}{subsection.2.3.1}%
-\contentsline {subsection}{\numberline {2.3.2}Integración de OBD2 en AutoSense}{19}{subsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.3.2}Integración de OBD-II en AutoSense}{19}{subsection.2.3.2}%
 \contentsline {section}{\numberline {2.4}Protocolo CAN Bus}{20}{section.2.4}%
 \contentsline {section}{\numberline {2.5}PIDs vehiculares}{22}{section.2.5}%
 \contentsline {subsection}{\numberline {2.5.1}Definición y alcance de los PIDs}{23}{subsection.2.5.1}%
@@ -36,104 +36,122 @@
 \contentsline {subsection}{\numberline {2.8.1}Bluetooth Low Energy}{30}{subsection.2.8.1}%
 \contentsline {subsection}{\numberline {2.8.2}USB-CDC}{31}{subsection.2.8.2}%
 \contentsline {subsection}{\numberline {2.8.3}Wi-Fi y sincronización remota}{31}{subsection.2.8.3}%
-\contentsline {section}{\numberline {2.9}Aplicaciones móviles}{32}{section.2.9}%
-\contentsline {subsection}{\numberline {2.9.1}Arquitectura interna de la aplicación}{33}{subsection.2.9.1}%
-\contentsline {subsection}{\numberline {2.9.2}Pantallas y flujo de uso}{34}{subsection.2.9.2}%
-\contentsline {subsection}{\numberline {2.9.3}Compatibilidad y despliegue}{35}{subsection.2.9.3}%
-\contentsline {section}{\numberline {2.10}Inteligencia artificial}{36}{section.2.10}%
-\contentsline {subsection}{\numberline {2.10.1}Arquitectura de la IA local}{36}{subsection.2.10.1}%
-\contentsline {subsection}{\numberline {2.10.2}Baseline estadístico y Z-score}{37}{subsection.2.10.2}%
-\contentsline {subsection}{\numberline {2.10.3}Isolation Forest compacto}{38}{subsection.2.10.3}%
-\contentsline {subsection}{\numberline {2.10.4}Salida interpretada y clasificación de ruta}{40}{subsection.2.10.4}%
-\contentsline {section}{\numberline {2.11}Mantenimiento predictivo}{40}{section.2.11}%
-\contentsline {subsection}{\numberline {2.11.1}Mantenimiento asistido por AutoSense}{41}{subsection.2.11.1}%
-\contentsline {subsection}{\numberline {2.11.2}Seguimiento, persistencia y alcance}{42}{subsection.2.11.2}%
-\contentsline {section}{\numberline {2.12}Trabajos relacionados}{43}{section.2.12}%
-\contentsline {subsection}{\numberline {2.12.1}Edge computing e inteligencia en el vehículo conectado}{43}{subsection.2.12.1}%
-\contentsline {subsection}{\numberline {2.12.2}OBD-II, IoT y diagnóstico conectado}{44}{subsection.2.12.2}%
-\contentsline {subsection}{\numberline {2.12.3}Mantenimiento predictivo e interpretabilidad}{45}{subsection.2.12.3}%
-\contentsline {chapter}{\numberline {3}Marco metodológico}{47}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Tipo de investigación}{47}{section.3.1}%
-\contentsline {section}{\numberline {3.2}Enfoque de la investigación}{47}{section.3.2}%
-\contentsline {section}{\numberline {3.3}Diseño metodológico}{48}{section.3.3}%
-\contentsline {section}{\numberline {3.4}Metodología de desarrollo}{49}{section.3.4}%
-\contentsline {section}{\numberline {3.5}Técnicas de recolección de datos}{49}{section.3.5}%
-\contentsline {section}{\numberline {3.6}Herramientas utilizadas}{51}{section.3.6}%
-\contentsline {section}{\numberline {3.7}Población o entorno de prueba}{52}{section.3.7}%
-\contentsline {section}{\numberline {3.8}Procedimiento metodológico}{53}{section.3.8}%
-\contentsline {section}{\numberline {3.9}Criterios de evaluación}{55}{section.3.9}%
-\contentsline {chapter}{\numberline {4}Desarrollo de la propuesta}{57}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Descripción general del sistema}{57}{section.4.1}%
-\contentsline {section}{\numberline {4.2}Arquitectura del sistema}{58}{section.4.2}%
-\contentsline {subsection}{\numberline {4.2.1}Visión por capas}{58}{subsection.4.2.1}%
-\contentsline {subsection}{\numberline {4.2.2}Flujo de datos y responsabilidades}{59}{subsection.4.2.2}%
-\contentsline {subsection}{\numberline {4.2.3}Persistencia y sincronización}{60}{subsection.4.2.3}%
-\contentsline {section}{\numberline {4.3}Diseño del hardware}{61}{section.4.3}%
-\contentsline {subsection}{\numberline {4.3.1}Referencia de diseño y bloques funcionales}{62}{subsection.4.3.1}%
-\contentsline {subsection}{\numberline {4.3.2}Conexión OBD-II y entrada vehicular}{67}{subsection.4.3.2}%
-\contentsline {subsection}{\numberline {4.3.3}Acondicionamiento CAN y protección del bus}{67}{subsection.4.3.3}%
-\contentsline {subsection}{\numberline {4.3.4}Alimentación y regulación}{68}{subsection.4.3.4}%
-\contentsline {subsection}{\numberline {4.3.5}Núcleo ESP32-S3 y señales de control}{69}{subsection.4.3.5}%
-\contentsline {subsection}{\numberline {4.3.6}USB-C, programación y depuración}{69}{subsection.4.3.6}%
-\contentsline {subsection}{\numberline {4.3.7}Diseño físico de la PCB y proceso de ensamble}{70}{subsection.4.3.7}%
-\contentsline {section}{\numberline {4.4}Diseño del firmware}{74}{section.4.4}%
-\contentsline {subsection}{\numberline {4.4.1}Entorno de compilación y organización del firmware}{75}{subsection.4.4.1}%
-\contentsline {subsection}{\numberline {4.4.2}Secuencia de arranque}{76}{subsection.4.4.2}%
-\contentsline {subsection}{\numberline {4.4.3}Ciclo principal de ejecución}{77}{subsection.4.4.3}%
-\contentsline {subsection}{\numberline {4.4.4}Adquisición OBD-II y planificación de consultas}{78}{subsection.4.4.4}%
-\contentsline {subsection}{\numberline {4.4.5}Gestión de perfiles vehiculares}{79}{subsection.4.4.5}%
-\contentsline {subsection}{\numberline {4.4.6}Política de solo lectura}{80}{subsection.4.4.6}%
-\contentsline {subsection}{\numberline {4.4.7}Compactación, almacenamiento y telemetría}{81}{subsection.4.4.7}%
-\contentsline {subsection}{\numberline {4.4.8}Clasificación de ruta y análisis local}{82}{subsection.4.4.8}%
-\contentsline {subsection}{\numberline {4.4.9}Verificación y herramientas de soporte}{83}{subsection.4.4.9}%
-\contentsline {section}{\numberline {4.5}Diseño de la aplicación móvil}{84}{section.4.5}%
-\contentsline {subsection}{\numberline {4.5.1}Arquitectura de navegación}{84}{subsection.4.5.1}%
-\contentsline {subsection}{\numberline {4.5.2}Gestión de sesión y datos}{85}{subsection.4.5.2}%
-\contentsline {subsection}{\numberline {4.5.3}Pantallas principales}{86}{subsection.4.5.3}%
-\contentsline {subsection}{\numberline {4.5.4}Conexión OBD2 desde la app}{90}{subsection.4.5.4}%
-\contentsline {subsection}{\numberline {4.5.5}Sincronización y persistencia móvil}{92}{subsection.4.5.5}%
-\contentsline {section}{\numberline {4.6}Diseño de almacenamiento de datos}{93}{section.4.6}%
-\contentsline {subsection}{\numberline {4.6.1}Almacenamiento local en el ESP32-S3}{94}{subsection.4.6.1}%
-\contentsline {subsection}{\numberline {4.6.2}Formato binario del historial OBD-II}{95}{subsection.4.6.2}%
-\contentsline {subsection}{\numberline {4.6.3}Persistencia móvil y sincronización remota}{97}{subsection.4.6.3}%
-\contentsline {section}{\numberline {4.7}Interacción del sistema}{98}{section.4.7}%
-\contentsline {subsection}{\numberline {4.7.1}Inicio de sesión y descubrimiento del dispositivo}{98}{subsection.4.7.1}%
-\contentsline {subsection}{\numberline {4.7.2}Identificación del vehículo y aplicación de perfil}{99}{subsection.4.7.2}%
-\contentsline {subsection}{\numberline {4.7.3}Telemetría en vivo y actualización de estado}{100}{subsection.4.7.3}%
-\contentsline {subsection}{\numberline {4.7.4}Manejo de errores y continuidad operativa}{102}{subsection.4.7.4}%
-\contentsline {section}{\numberline {4.8}Módulo de análisis de datos}{102}{section.4.8}%
-\contentsline {subsection}{\numberline {4.8.1}Entrada y preparación de muestras}{103}{subsection.4.8.1}%
-\contentsline {subsection}{\numberline {4.8.2}Análisis local de anomalías}{104}{subsection.4.8.2}%
-\contentsline {subsection}{\numberline {4.8.3}Clasificación de ruta y contexto de conducción}{105}{subsection.4.8.3}%
-\contentsline {subsection}{\numberline {4.8.4}Persistencia del modelo y continuidad}{105}{subsection.4.8.4}%
-\contentsline {subsection}{\numberline {4.8.5}Salida hacia la aplicación móvil}{106}{subsection.4.8.5}%
-\contentsline {section}{\numberline {4.9}Seguridad del sistema}{108}{section.4.9}%
-\contentsline {subsection}{\numberline {4.9.1}Seguridad por capas}{108}{subsection.4.9.1}%
-\contentsline {subsection}{\numberline {4.9.2}Política de solo lectura en el firmware}{109}{subsection.4.9.2}%
-\contentsline {subsection}{\numberline {4.9.3}Validación de perfiles vehiculares}{109}{subsection.4.9.3}%
-\contentsline {subsection}{\numberline {4.9.4}Seguridad en la aplicación móvil}{110}{subsection.4.9.4}%
-\contentsline {subsection}{\numberline {4.9.5}Reglas de acceso en Firebase}{110}{subsection.4.9.5}%
-\contentsline {subsection}{\numberline {4.9.6}Limitaciones y controles pendientes}{112}{subsection.4.9.6}%
-\contentsline {section}{\numberline {4.10}Funcionamiento general}{112}{section.4.10}%
-\contentsline {chapter}{\numberline {5}Pruebas y resultados}{113}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Escenario de pruebas}{113}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Pruebas funcionales}{113}{section.5.2}%
-\contentsline {section}{\numberline {5.3}Pruebas de comunicación}{113}{section.5.3}%
-\contentsline {section}{\numberline {5.4}Pruebas de lectura OBD2}{113}{section.5.4}%
-\contentsline {section}{\numberline {5.5}Pruebas de almacenamiento}{113}{section.5.5}%
-\contentsline {section}{\numberline {5.6}Pruebas de visualización}{113}{section.5.6}%
-\contentsline {section}{\numberline {5.7}Pruebas de rendimiento}{113}{section.5.7}%
-\contentsline {section}{\numberline {5.8}Resultados obtenidos}{113}{section.5.8}%
-\contentsline {section}{\numberline {5.9}Análisis de resultados}{113}{section.5.9}%
-\contentsline {chapter}{\numberline {6}Conclusiones y recomendaciones}{114}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Conclusiones}{114}{section.6.1}%
-\contentsline {section}{\numberline {6.2}Cumplimiento de objetivos}{114}{section.6.2}%
-\contentsline {section}{\numberline {6.3}Recomendaciones}{114}{section.6.3}%
-\contentsline {section}{\numberline {6.4}Trabajos futuros}{114}{section.6.4}%
-\contentsline {chapter}{Referencias bibliográficas}{115}{chapter*.52}%
-\contentsline {chapter}{\numberline {A}Código fuente}{120}{appendix.Alph1}%
-\contentsline {chapter}{\numberline {B}Diagramas del sistema}{121}{appendix.Alph2}%
-\contentsline {chapter}{\numberline {C}Capturas de pantalla}{122}{appendix.Alph3}%
-\contentsline {chapter}{\numberline {D}Tablas de pruebas}{123}{appendix.Alph4}%
-\contentsline {chapter}{\numberline {E}Manual de usuario}{124}{appendix.Alph5}%
-\contentsline {chapter}{\numberline {F}Manual técnico}{125}{appendix.Alph6}%
+\contentsline {section}{\numberline {2.9}Aplicaciones móviles}{34}{section.2.9}%
+\contentsline {subsection}{\numberline {2.9.1}Arquitectura interna de la aplicación}{34}{subsection.2.9.1}%
+\contentsline {subsection}{\numberline {2.9.2}Pantallas y flujo de uso}{36}{subsection.2.9.2}%
+\contentsline {subsection}{\numberline {2.9.3}Compatibilidad y despliegue}{37}{subsection.2.9.3}%
+\contentsline {section}{\numberline {2.10}Inteligencia artificial}{37}{section.2.10}%
+\contentsline {subsection}{\numberline {2.10.1}Arquitectura de la IA local}{38}{subsection.2.10.1}%
+\contentsline {subsection}{\numberline {2.10.2}Baseline estadístico y Z-score}{40}{subsection.2.10.2}%
+\contentsline {subsection}{\numberline {2.10.3}Isolation Forest compacto}{41}{subsection.2.10.3}%
+\contentsline {subsection}{\numberline {2.10.4}Salida interpretada y clasificación de ruta}{42}{subsection.2.10.4}%
+\contentsline {section}{\numberline {2.11}Mantenimiento predictivo}{43}{section.2.11}%
+\contentsline {subsection}{\numberline {2.11.1}Mantenimiento asistido por AutoSense}{43}{subsection.2.11.1}%
+\contentsline {subsection}{\numberline {2.11.2}Seguimiento, persistencia y alcance}{45}{subsection.2.11.2}%
+\contentsline {section}{\numberline {2.12}Trabajos relacionados}{46}{section.2.12}%
+\contentsline {subsection}{\numberline {2.12.1}Edge computing e inteligencia en el vehículo conectado}{46}{subsection.2.12.1}%
+\contentsline {subsection}{\numberline {2.12.2}OBD-II, IoT y diagnóstico conectado}{47}{subsection.2.12.2}%
+\contentsline {subsection}{\numberline {2.12.3}Mantenimiento predictivo e interpretabilidad}{48}{subsection.2.12.3}%
+\contentsline {chapter}{\numberline {3}Marco metodológico}{50}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Tipo de investigación}{50}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Enfoque de la investigación}{50}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Diseño metodológico}{51}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Metodología de desarrollo}{52}{section.3.4}%
+\contentsline {section}{\numberline {3.5}Técnicas de recolección de datos}{53}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Herramientas utilizadas}{55}{section.3.6}%
+\contentsline {section}{\numberline {3.7}Población o entorno de prueba}{56}{section.3.7}%
+\contentsline {section}{\numberline {3.8}Procedimiento metodológico}{57}{section.3.8}%
+\contentsline {section}{\numberline {3.9}Criterios de evaluación}{59}{section.3.9}%
+\contentsline {chapter}{\numberline {4}Desarrollo de la propuesta}{62}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Descripción general del sistema}{62}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Arquitectura del sistema}{63}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Visión por capas}{63}{subsection.4.2.1}%
+\contentsline {subsection}{\numberline {4.2.2}Flujo de datos y responsabilidades}{64}{subsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.2.3}Persistencia y sincronización}{65}{subsection.4.2.3}%
+\contentsline {section}{\numberline {4.3}Diseño del hardware}{66}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}Referencia de diseño y bloques funcionales}{67}{subsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.3.2}Conexión OBD-II y entrada vehicular}{72}{subsection.4.3.2}%
+\contentsline {subsection}{\numberline {4.3.3}Acondicionamiento CAN y protección del bus}{73}{subsection.4.3.3}%
+\contentsline {subsection}{\numberline {4.3.4}Alimentación y regulación}{73}{subsection.4.3.4}%
+\contentsline {subsection}{\numberline {4.3.5}Núcleo ESP32-S3 y señales de control}{74}{subsection.4.3.5}%
+\contentsline {subsection}{\numberline {4.3.6}USB-C, programación y depuración}{75}{subsection.4.3.6}%
+\contentsline {subsection}{\numberline {4.3.7}Diseño físico de la PCB y proceso de ensamble}{75}{subsection.4.3.7}%
+\contentsline {section}{\numberline {4.4}Diseño del firmware}{79}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}Entorno de compilación y organización del firmware}{80}{subsection.4.4.1}%
+\contentsline {subsection}{\numberline {4.4.2}Secuencia de arranque}{81}{subsection.4.4.2}%
+\contentsline {subsection}{\numberline {4.4.3}Ciclo principal de ejecución}{83}{subsection.4.4.3}%
+\contentsline {subsection}{\numberline {4.4.4}Adquisición OBD-II y planificación de consultas}{84}{subsection.4.4.4}%
+\contentsline {subsection}{\numberline {4.4.5}Gestión de perfiles vehiculares}{85}{subsection.4.4.5}%
+\contentsline {subsection}{\numberline {4.4.6}Política de solo lectura}{86}{subsection.4.4.6}%
+\contentsline {subsection}{\numberline {4.4.7}Compactación, almacenamiento y telemetría}{87}{subsection.4.4.7}%
+\contentsline {subsection}{\numberline {4.4.8}Clasificación de ruta y análisis local}{88}{subsection.4.4.8}%
+\contentsline {subsection}{\numberline {4.4.9}Verificación y herramientas de soporte}{89}{subsection.4.4.9}%
+\contentsline {section}{\numberline {4.5}Diseño de la aplicación móvil}{90}{section.4.5}%
+\contentsline {subsection}{\numberline {4.5.1}Arquitectura de navegación}{90}{subsection.4.5.1}%
+\contentsline {subsection}{\numberline {4.5.2}Gestión de sesión y datos}{91}{subsection.4.5.2}%
+\contentsline {subsection}{\numberline {4.5.3}Pantallas principales}{93}{subsection.4.5.3}%
+\contentsline {subsection}{\numberline {4.5.4}Conexión OBD-II desde la app}{97}{subsection.4.5.4}%
+\contentsline {subsection}{\numberline {4.5.5}Sincronización y persistencia móvil}{99}{subsection.4.5.5}%
+\contentsline {section}{\numberline {4.6}Diseño de almacenamiento de datos}{100}{section.4.6}%
+\contentsline {subsection}{\numberline {4.6.1}Almacenamiento local en el ESP32-S3}{101}{subsection.4.6.1}%
+\contentsline {subsection}{\numberline {4.6.2}Formato binario del historial OBD-II}{103}{subsection.4.6.2}%
+\contentsline {subsection}{\numberline {4.6.3}Persistencia móvil y sincronización remota}{105}{subsection.4.6.3}%
+\contentsline {section}{\numberline {4.7}Interacción del sistema}{106}{section.4.7}%
+\contentsline {subsection}{\numberline {4.7.1}Inicio de sesión y descubrimiento del dispositivo}{107}{subsection.4.7.1}%
+\contentsline {subsection}{\numberline {4.7.2}Identificación del vehículo y aplicación de perfil}{107}{subsection.4.7.2}%
+\contentsline {subsection}{\numberline {4.7.3}Telemetría en vivo y actualización de estado}{109}{subsection.4.7.3}%
+\contentsline {subsection}{\numberline {4.7.4}Manejo de errores y continuidad operativa}{110}{subsection.4.7.4}%
+\contentsline {section}{\numberline {4.8}Módulo de análisis de datos}{112}{section.4.8}%
+\contentsline {subsection}{\numberline {4.8.1}Entrada y preparación de muestras}{112}{subsection.4.8.1}%
+\contentsline {subsection}{\numberline {4.8.2}Análisis local de anomalías}{113}{subsection.4.8.2}%
+\contentsline {subsection}{\numberline {4.8.3}Clasificación de ruta y contexto de conducción}{114}{subsection.4.8.3}%
+\contentsline {subsection}{\numberline {4.8.4}Persistencia del modelo y continuidad}{115}{subsection.4.8.4}%
+\contentsline {subsection}{\numberline {4.8.5}Salida hacia la aplicación móvil}{116}{subsection.4.8.5}%
+\contentsline {section}{\numberline {4.9}Seguridad del sistema}{116}{section.4.9}%
+\contentsline {subsection}{\numberline {4.9.1}Seguridad por capas}{118}{subsection.4.9.1}%
+\contentsline {subsection}{\numberline {4.9.2}Política de solo lectura en el firmware}{118}{subsection.4.9.2}%
+\contentsline {subsection}{\numberline {4.9.3}Validación de perfiles vehiculares}{119}{subsection.4.9.3}%
+\contentsline {subsection}{\numberline {4.9.4}Seguridad en la aplicación móvil}{120}{subsection.4.9.4}%
+\contentsline {subsection}{\numberline {4.9.5}Reglas de acceso en Firebase}{120}{subsection.4.9.5}%
+\contentsline {subsection}{\numberline {4.9.6}Limitaciones y controles pendientes}{122}{subsection.4.9.6}%
+\contentsline {section}{\numberline {4.10}Funcionamiento general}{122}{section.4.10}%
+\contentsline {subsection}{\numberline {4.10.1}Secuencia de operación}{123}{subsection.4.10.1}%
+\contentsline {subsection}{\numberline {4.10.2}Estados operativos del sistema}{123}{subsection.4.10.2}%
+\contentsline {subsection}{\numberline {4.10.3}Flujo de información durante una sesión}{125}{subsection.4.10.3}%
+\contentsline {subsection}{\numberline {4.10.4}Condiciones de cierre y continuidad}{125}{subsection.4.10.4}%
+\contentsline {chapter}{\numberline {5}Pruebas y resultados}{126}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Escenario de pruebas}{126}{section.5.1}%
+\contentsline {subsection}{\numberline {5.1.1}Contexto general del escenario}{126}{subsection.5.1.1}%
+\contentsline {subsection}{\numberline {5.1.2}Prueba en vehículo real}{127}{subsection.5.1.2}%
+\contentsline {subsection}{\numberline {5.1.3}Prueba con simulador OBD-II}{129}{subsection.5.1.3}%
+\contentsline {subsection}{\numberline {5.1.4}Evidencia generada durante la campaña}{129}{subsection.5.1.4}%
+\contentsline {section}{\numberline {5.2}Pruebas funcionales}{130}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Pruebas de comunicación}{132}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Pruebas de lectura OBD-II}{134}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Pruebas de almacenamiento}{136}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Pruebas de visualización}{137}{section.5.6}%
+\contentsline {section}{\numberline {5.7}Pruebas de rendimiento}{138}{section.5.7}%
+\contentsline {section}{\numberline {5.8}Resultados obtenidos}{140}{section.5.8}%
+\contentsline {subsection}{\numberline {5.8.1}Comportamiento de la velocidad}{141}{subsection.5.8.1}%
+\contentsline {subsection}{\numberline {5.8.2}Comportamiento de las revoluciones del motor}{142}{subsection.5.8.2}%
+\contentsline {subsection}{\numberline {5.8.3}Temperatura del refrigerante}{143}{subsection.5.8.3}%
+\contentsline {subsection}{\numberline {5.8.4}Carga del motor}{144}{subsection.5.8.4}%
+\contentsline {subsection}{\numberline {5.8.5}Consumo instantáneo}{145}{subsection.5.8.5}%
+\contentsline {subsection}{\numberline {5.8.6}Comparación normalizada mediante Z-score}{146}{subsection.5.8.6}%
+\contentsline {section}{\numberline {5.9}Análisis de resultados}{148}{section.5.9}%
+\contentsline {subsection}{\numberline {5.9.1}Interpretación técnica de las señales}{148}{subsection.5.9.1}%
+\contentsline {subsection}{\numberline {5.9.2}Lectura de la campaña de recolección}{149}{subsection.5.9.2}%
+\contentsline {subsection}{\numberline {5.9.3}Aporte del análisis estadístico e inteligencia artificial}{150}{subsection.5.9.3}%
+\contentsline {subsection}{\numberline {5.9.4}Implicaciones y límites del resultado}{151}{subsection.5.9.4}%
+\contentsline {chapter}{\numberline {6}Conclusiones y recomendaciones}{152}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Conclusiones}{152}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Cumplimiento de objetivos}{154}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Recomendaciones}{156}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Trabajos futuros}{157}{section.6.4}%
+\contentsline {chapter}{Referencias bibliográficas}{160}{chapter*.73}%
+\contentsline {chapter}{\numberline {A}Código fuente}{165}{appendix.Alph1}%
+\contentsline {chapter}{\numberline {B}Diagramas del sistema}{166}{appendix.Alph2}%
+\contentsline {chapter}{\numberline {C}Capturas de pantalla}{167}{appendix.Alph3}%
+\contentsline {chapter}{\numberline {D}Tablas de pruebas}{168}{appendix.Alph4}%
+\contentsline {chapter}{\numberline {E}Manual de usuario}{169}{appendix.Alph5}%
+\contentsline {chapter}{\numberline {F}Manual técnico}{170}{appendix.Alph6}%

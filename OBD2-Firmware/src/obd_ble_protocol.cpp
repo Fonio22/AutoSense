@@ -20,6 +20,7 @@ constexpr const char *kTxUuid = "6f2d0003-5f9b-4b56-9f51-8f7f4a3a1001";
 constexpr uint16_t kMaxChunkBytes = 96;
 constexpr uint32_t kStreamIntervalMs = 1000;
 constexpr uint16_t kMaxSupportedPidsBle = 24;
+constexpr uint32_t kMaxLogRecordsPerChunk = 8;
 
 const char *jsonString(JsonVariantConst value)
 {
@@ -71,6 +72,7 @@ public:
             owner_->lastStreamMs_ = 0;
             owner_->pendingNotifyLen_ = 0;
             owner_->resetTransfer();
+            owner_->resetLogExport();
         }
         BLEDevice::startAdvertising();
         Serial.println("[ble] client disconnected; advertising restarted");
@@ -80,10 +82,11 @@ private:
     ObdBleProtocol *owner_;
 };
 
-void ObdBleProtocol::begin(ProfileManager *profiles, ObdService *obd)
+void ObdBleProtocol::begin(ProfileManager *profiles, ObdService *obd, ObdBinaryLogger *logger)
 {
     profiles_ = profiles;
     obd_ = obd;
+    logger_ = logger;
 
     BLEDevice::init(kDeviceName);
     BLEDevice::setMTU(247);
@@ -258,6 +261,23 @@ void ObdBleProtocol::handleCommand(JsonVariantConst id, const char *command, Jso
     {
         sendSupportedPids(id);
     }
+    else if (strcmp(command, "GET_LOG_INFO") == 0)
+    {
+        sendLogInfo(id);
+    }
+    else if (strcmp(command, "START_LOG_EXPORT") == 0)
+    {
+        startLogExport(id, data);
+    }
+    else if (strcmp(command, "GET_LOG_CHUNK") == 0)
+    {
+        sendLogChunk(id, data);
+    }
+    else if (strcmp(command, "END_LOG_EXPORT") == 0)
+    {
+        resetLogExport();
+        sendResponse(id, command, true);
+    }
     else if (strcmp(command, "START_STREAM") == 0)
     {
         streaming_ = true;
@@ -311,6 +331,126 @@ void ObdBleProtocol::sendDeviceInfo(JsonVariantConst id)
         return;
     }
     queueNotifyText((size_t)len);
+}
+
+void ObdBleProtocol::sendLogInfo(JsonVariantConst id)
+{
+    const ObdLogStats *stats = logger_ ? &logger_->stats() : nullptr;
+    JsonDocument doc;
+    doc["id"] = jsonString(id);
+    doc["command"] = "GET_LOG_INFO";
+    doc["ok"] = true;
+    JsonObject data = doc["data"].to<JsonObject>();
+    data["ready"] = stats ? stats->ready : false;
+    data["enabled"] = stats ? stats->enabled : false;
+    data["recordSize"] = ObdBinaryLogger::kRecordSize;
+    data["recordsWritten"] = stats ? stats->recordsWritten : 0;
+    data["capacityRecords"] = stats ? stats->capacityRecords : 0;
+    data["lastSequence"] = stats ? stats->lastSequence : 0;
+    notifyJson(doc);
+}
+
+void ObdBleProtocol::startLogExport(JsonVariantConst id, JsonVariantConst data)
+{
+    resetLogExport();
+    if (!logger_ || !logger_->stats().ready)
+    {
+        sendResponse(id, "START_LOG_EXPORT", false, "log_unavailable");
+        return;
+    }
+
+    logExportAfterSequence_ = data["afterSequence"] | 0UL;
+    logExportUntilSequence_ = logger_->stats().lastSequence;
+
+    ObdLogExportStats exportStats{};
+    if (!logger_->describeExportRange(logExportAfterSequence_, logExportUntilSequence_, &exportStats))
+    {
+        sendResponse(id, "START_LOG_EXPORT", false, "log_scan_failed");
+        return;
+    }
+
+    logExportActive_ = true;
+    logExportTotalRecords_ = exportStats.recordCount;
+
+    JsonDocument doc;
+    doc["id"] = jsonString(id);
+    doc["command"] = "START_LOG_EXPORT";
+    doc["ok"] = true;
+    JsonObject payload = doc["data"].to<JsonObject>();
+    payload["recordSize"] = exportStats.recordSize;
+    payload["recordCount"] = exportStats.recordCount;
+    payload["firstSequence"] = exportStats.firstSequence;
+    payload["lastSequence"] = exportStats.lastSequence;
+    payload["done"] = exportStats.recordCount == 0;
+    notifyJson(doc);
+}
+
+void ObdBleProtocol::sendLogChunk(JsonVariantConst id, JsonVariantConst data)
+{
+    if (!logExportActive_ || !logger_)
+    {
+        sendResponse(id, "GET_LOG_CHUNK", false, "log_export_not_started");
+        return;
+    }
+
+    uint32_t maxRecords = data["maxRecords"] | kMaxLogRecordsPerChunk;
+    if (maxRecords == 0 || maxRecords > kMaxLogRecordsPerChunk)
+    {
+        maxRecords = kMaxLogRecordsPerChunk;
+    }
+
+    uint8_t raw[kMaxLogRecordsPerChunk * ObdBinaryLogger::kRecordSize]{0};
+    uint32_t nextSlot = logExportNextSlot_;
+    uint32_t firstSequence = 0;
+    uint32_t lastSequence = 0;
+    bool scannedAllSlots = false;
+    uint32_t records = logger_->readExportChunk(logExportAfterSequence_,
+                                                logExportUntilSequence_,
+                                                logExportNextSlot_,
+                                                maxRecords,
+                                                raw,
+                                                sizeof(raw),
+                                                &nextSlot,
+                                                &scannedAllSlots,
+                                                &firstSequence,
+                                                &lastSequence);
+
+    logExportNextSlot_ = nextSlot;
+    logExportSentRecords_ += records;
+    const bool done = scannedAllSlots || logExportSentRecords_ >= logExportTotalRecords_;
+
+    char encoded[280]{0};
+    size_t encodedLen = 0;
+    if (records > 0)
+    {
+        const size_t rawLen = records * ObdBinaryLogger::kRecordSize;
+        int rc = mbedtls_base64_encode((unsigned char *)encoded,
+                                       sizeof(encoded),
+                                       &encodedLen,
+                                       raw,
+                                       rawLen);
+        if (rc != 0 || encodedLen >= sizeof(encoded))
+        {
+            sendResponse(id, "GET_LOG_CHUNK", false, "log_base64_failed");
+            return;
+        }
+        encoded[encodedLen] = '\0';
+    }
+
+    JsonDocument doc;
+    doc["id"] = jsonString(id);
+    doc["command"] = "GET_LOG_CHUNK";
+    doc["ok"] = true;
+    JsonObject payload = doc["data"].to<JsonObject>();
+    payload["recordSize"] = ObdBinaryLogger::kRecordSize;
+    payload["recordCount"] = records;
+    payload["firstSequence"] = firstSequence;
+    payload["lastSequence"] = lastSequence;
+    payload["sentRecords"] = logExportSentRecords_;
+    payload["totalRecords"] = logExportTotalRecords_;
+    payload["done"] = done;
+    payload["payload"] = encoded;
+    notifyJson(doc);
 }
 
 void ObdBleProtocol::sendVin(JsonVariantConst id)
@@ -480,4 +620,14 @@ void ObdBleProtocol::resetTransfer()
     transferSize_ = 0;
     transferExpectedSize_ = 0;
     memset(transferSha256_, 0, sizeof(transferSha256_));
+}
+
+void ObdBleProtocol::resetLogExport()
+{
+    logExportActive_ = false;
+    logExportAfterSequence_ = 0;
+    logExportUntilSequence_ = 0;
+    logExportNextSlot_ = 0;
+    logExportTotalRecords_ = 0;
+    logExportSentRecords_ = 0;
 }

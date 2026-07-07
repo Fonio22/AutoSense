@@ -39,6 +39,7 @@ import {
   type ObdBleConnection,
   type ObdDeviceInfo,
 } from '@/lib/obd/obd-device';
+import { syncObdLogHistory } from '@/lib/obd/obd-log-sync';
 
 type ManualProfile = {
   id: 'generic_obd2' | 'obd2_simulator' | 'vw_passat_2016';
@@ -149,6 +150,7 @@ export default function RealtimePairScreen() {
   const connectionRef = useRef<ObdBleConnection | null>(null);
   const deviceInfoRef = useRef<ObdDeviceInfo | null>(null);
   const autoConnectInFlight = useRef(false);
+  const logSyncInFlight = useRef(false);
   const [flowState, setFlowState] = useState<FlowState>(() => (
     getActiveObdConnection() ? 'applying_profile' : 'connecting_ble'
   ));
@@ -171,13 +173,41 @@ export default function RealtimePairScreen() {
           : 'Conectando por Bluetooth';
   const busyStep = flowState === 'applying_profile' ? 2 : flowState === 'reading_vin' ? 1 : 0;
 
+  async function syncHistoryBeforeLive(
+    connection: ObdBleConnection | null | undefined,
+    deviceInfo?: ObdDeviceInfo | null,
+  ) {
+    if (!firebaseUser?.uid || !connection || logSyncInFlight.current) {
+      return;
+    }
+
+    logSyncInFlight.current = true;
+    setStatusMessage('Sincronizando historial OBD2 del AutoSense...');
+    try {
+      await syncObdLogHistory({
+        cloudSync: profile?.settings?.dataMode !== 'Solo local',
+        connection,
+        deviceInfo,
+        userId: firebaseUser.uid,
+      });
+    } catch (error) {
+      console.warn('[obd] historical log sync failed', error);
+    } finally {
+      logSyncInFlight.current = false;
+    }
+  }
+
   async function enterLiveWithActiveProfile(profileId: ManualProfile['id']) {
     if (!firebaseUser?.uid) {
       return;
     }
 
+    const connection = connectionRef.current ?? getActiveObdConnection();
     setFlowState('applying_profile');
     setStatusMessage(`Perfil activo detectado: ${profileId}. Iniciando datos en vivo...`);
+    const deviceInfo = deviceInfoRef.current ?? await connection?.getDeviceInfo().catch(() => null);
+    deviceInfoRef.current = deviceInfo ?? deviceInfoRef.current;
+    await syncHistoryBeforeLive(connection, deviceInfo);
     await setRealtimeConnectionState(firebaseUser.uid, true, {
       statusLabel: profileId === 'obd2_simulator'
         ? 'Simulador físico conectado'
@@ -243,6 +273,7 @@ export default function RealtimePairScreen() {
     ).catch((error) => {
       console.warn('[obd] vehicle snapshot update failed', error);
     });
+    await syncHistoryBeforeLive(connection, deviceInfo);
     router.push('/realtime/live');
   }
 

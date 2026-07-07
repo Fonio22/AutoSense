@@ -263,7 +263,7 @@ void appSetup()
     configureAnomaly();
     refreshAnomalyIdentity();
 
-    BLE_PROTO.begin(&PROFILES, &OBD);
+    BLE_PROTO.begin(&PROFILES, &OBD, &LOGGER);
 
     Serial.printf("[boot] config=%s profile=%s:%s profile_fs=%s log=%s log_capacity=%lu interval=%lus anomaly=%s/%lus save=%lus min=%lu dashboard=%s/%lums ebook=%s obd_diag=%s vag_ext=%s transport=USB-CDC+BLE\n",
                   config_loaded ? "ini" : "defaults",
