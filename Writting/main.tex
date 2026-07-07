@@ -2091,7 +2091,153 @@ El resultado de esta interacción es un flujo local-first: la adquisición y val
 
 \section{Módulo de análisis de datos}
 
+El módulo de análisis de datos de AutoSense se ubica después de la adquisición OBD-II/CAN, el filtrado de señales y la compactación de muestras realizada por el firmware. Su función no consiste en solicitar nuevos datos al vehículo ni en modificar parámetros de la ECU, sino en interpretar la telemetría ya recolectada para estimar contexto de conducción, detectar desviaciones respecto al comportamiento habitual del automóvil y entregar una salida resumida a la aplicación móvil. Este enfoque mantiene el análisis cerca de la fuente de datos, lo que resulta coherente con arquitecturas de procesamiento en el borde para sistemas vehiculares conectados \cite{zhang2020_iov_edge,kalalas2025_ai_driven_monitoring}.
+
+En el prototipo, el análisis se ejecuta en el ESP32-S3 y se apoya en dos bloques principales: el clasificador de ruta y el detector local de anomalías. El primero interpreta el patrón de velocidad para distinguir escenarios de ciudad y carretera; el segundo compara las señales vehiculares contra una línea base aprendida del propio vehículo. De esta forma, AutoSense no presenta la telemetría como datos aislados, sino como información contextual: una misma variación de RPM, temperatura, carga del motor o voltaje puede tener distinta interpretación si ocurre en ralentí, aceleración, tráfico urbano o conducción sostenida en carretera.
+
+\subsection{Entrada y preparación de muestras}
+
+La entrada del módulo de análisis es la estructura \texttt{ObdCompactSample}, generada por el servicio OBD-II del firmware. Esta estructura concentra únicamente las señales útiles para historial, transmisión BLE y análisis local: RPM, velocidad, temperatura del refrigerante, posición del acelerador, nivel de combustible, carga del motor, presión MAP, flujo MAF, voltaje ECU, temperatura de admisión y avance de encendido cuando están disponibles. Cada muestra incluye además una máscara \texttt{validMask}, que indica qué campos contienen datos recientes y evita que el análisis trate como válidos valores ausentes o vencidos.
+
+Antes de procesar una muestra, el firmware verifica que exista al menos una señal válida y que se haya cumplido el intervalo configurado para inferencia. En la configuración actual, el análisis de anomalías intenta ejecutarse cada 10 segundos, lo cual coincide con la lógica de recolección histórica y reduce el costo de cómputo frente a un análisis en cada paquete BLE. Esta decisión es importante porque el ESP32-S3 también atiende adquisición OBD-II, clasificación de ruta, almacenamiento local, comunicación BLE y dashboard USB-CDC; por tanto, el análisis debe ser periódico, ligero y no bloqueante.
+
+El diseño evita duplicar consultas al vehículo. El mismo dato que alimenta el logger binario y la telemetría en vivo se transforma internamente en una muestra de análisis, conservando la máscara de validez y las magnitudes ya decodificadas. Con esto, el sistema mantiene una separación clara entre adquisición y análisis: la capa OBD-II se encarga de obtener y convertir respuestas, mientras que el módulo analítico evalúa el comportamiento de las señales ya disponibles.
+
+\subsection{Análisis local de anomalías}
+
+El detector de anomalías se implementa en el firmware como un módulo local basado en línea base estadística, Z-score e Isolation Forest ligero. La línea base se construye con el algoritmo de Welford, que permite actualizar promedio y desviación estándar de manera incremental sin guardar todas las muestras anteriores. Esta característica es adecuada para un sistema embebido, porque reduce memoria, evita cálculos costosos sobre historiales completos y permite que el modelo se adapte al vehículo validado durante el uso normal.
+
+La línea base no se maneja como un único promedio global. El firmware conserva estadísticas generales y estadísticas por contexto de conducción: \texttt{IDLE}, \texttt{CRUISING}, \texttt{ACCELERATING}, \texttt{DECELERATING} y \texttt{UNKNOWN}. Cuando el contexto tiene suficientes datos, la comparación se realiza contra ese comportamiento específico; si aún no existe suficiente historial, se usa la línea base global. Este mecanismo evita tratar como anomalía una condición que puede ser normal en un contexto determinado, por ejemplo una variación de RPM durante aceleración o una velocidad estable durante carretera.
+
+Sobre esa línea base se calcula un Z-score por señal. En términos operativos, el firmware mide qué tan lejos se encuentra el valor actual respecto del promedio aprendido para esa señal y contexto. Para reducir falsos positivos, cada señal cuenta con un piso mínimo de desviación estándar; de esa manera, una variable que normalmente varía poco, como el voltaje ECU, no produce alertas exageradas por cambios pequeños. Los Z-score individuales se agregan en un puntaje de 0 a 100, y las señales con mayor desviación quedan registradas como contribuciones principales del evento.
+
+Cuando el sistema ya cuenta con línea base suficiente, también puede usar un Tiny Isolation Forest entrenado localmente con muestras normales y estables. Este modelo está dimensionado para el microcontrolador: utiliza árboles pequeños, profundidad limitada e inferencia sin memoria dinámica. Su función es complementar el Z-score, detectando combinaciones de señales que pueden verse anómalas en conjunto aunque cada variable aislada no alcance un umbral crítico. En la configuración actual, el puntaje final combina 70\% del Z-score y 30\% del Isolation Forest cuando el modelo está listo; antes de ese punto, el sistema utiliza únicamente la salida estadística.
+
+El resultado se traduce en cuatro niveles de severidad: \texttt{NORMAL}, \texttt{WATCH}, \texttt{WARNING} y \texttt{CRITICAL}. Para evitar alertas por eventos aislados, el firmware aplica un mecanismo de \emph{debounce}: una muestra inusual puede elevar el estado a vigilancia, pero una alerta fuerte requiere persistencia dentro de una ventana de inferencias. Con el intervalo actual de 10 segundos, esto significa que una condición debe mantenerse aproximadamente durante varias muestras antes de ser presentada como advertencia mayor. Este criterio mejora la estabilidad de la salida y evita que el usuario reciba alarmas por ruido de sensores o transiciones normales de conducción.
+
+\subsection{Clasificación de ruta y contexto de conducción}
+
+El análisis de datos también incorpora la clasificación de ruta. Este bloque utiliza principalmente velocidad, RPM, carga del motor y posición del acelerador para estimar si el vehículo opera en ciudad, carretera o en un estado intermedio. La clasificación no depende de GPS; se basa en el comportamiento dinámico observado desde la telemetría OBD-II. Por ejemplo, una velocidad promedio alta, pocas detenciones y baja variación de aceleración favorecen la clasificación de carretera, mientras que velocidades bajas, paradas frecuentes y cambios repetidos favorecen la clasificación urbana.
+
+Esta información es relevante porque la campaña de recolección de datos del proyecto contempla conducción real en contextos \texttt{city} y \texttt{highway}. Al separar esos escenarios, AutoSense puede interpretar las muestras con mayor coherencia: el consumo, la carga del motor, la velocidad y los cambios de aceleración no tienen el mismo comportamiento esperado en tráfico urbano que en una ruta sostenida. Además, la etiqueta de ruta facilita el análisis posterior de los datos exportados, ya que permite comparar segmentos por condición de conducción y no solamente por tiempo.
+
+El clasificador trabaja con una ventana temporal y no con una única lectura. Esto reduce cambios bruscos de estado cuando el vehículo atraviesa transiciones cortas, como una salida de carretera, una parada temporal o una aceleración puntual. La salida incluye tipo de ruta, estado interno, nivel de confianza, puntaje y una razón textual breve. Estos campos se transmiten junto con la telemetría y sirven para que la aplicación móvil muestre una interpretación más completa del estado de conducción.
+
+\subsection{Persistencia del modelo y continuidad}
+
+Para que el análisis no empiece desde cero en cada reinicio, el firmware guarda estado local. La línea base estadística se conserva en \texttt{Preferences}, dentro del espacio \texttt{obd\_anom}, mientras que el modelo Tiny Isolation Forest se almacena en LittleFS como \texttt{/anomaly\_iforest.bin}. Este esquema separa datos de configuración y modelo, y permite recuperar el aprendizaje acumulado siempre que el firmware, el perfil vehicular y la identidad del modelo sigan siendo compatibles.
+
+La identidad del análisis se calcula a partir de la versión de firmware, el identificador del perfil y el hash del perfil activo. Si alguno de estos elementos cambia, el módulo invalida el estado anterior y reinicia la línea base. Esta decisión es necesaria porque un modelo aprendido con otro perfil, otro conjunto de señales o una versión distinta del firmware podría producir comparaciones incorrectas. En el caso de AutoSense, el perfil \texttt{vw\_passat\_2016} representa la validación principal; si se aplica un perfil diferente, el detector debe aprender nuevamente el comportamiento normal del vehículo correspondiente.
+
+La persistencia también se realiza por lotes. El estado se guarda cada intervalo configurado, por defecto cada 300 segundos cuando hubo cambios, en lugar de escribir flash después de cada inferencia. Con ello se reduce el desgaste de memoria y se mantiene la operación del sistema dentro de un patrón predecible. Esta estrategia es consistente con el almacenamiento local descrito para el historial OBD-II: se privilegia un formato compacto, una frecuencia controlada y una recuperación suficiente para continuar el análisis.
+
+\subsection{Salida hacia la aplicación móvil}
+
+La aplicación móvil no ejecuta el modelo de anomalías desde cero; consume el resultado resumido que el ESP32-S3 publica por BLE. En el mensaje de telemetría se incluyen el puntaje de anomalía, la severidad, la máscara de área probable, el estado de línea base y el estado del modelo. En paralelo, la telemetría conserva variables como velocidad, RPM, temperatura, voltaje, combustible y carga del motor, por lo que la interfaz puede mostrar tanto el valor medido como la interpretación generada por el análisis local.
+
+El campo de área probable no identifica una pieza dañada. Su función es agrupar la desviación en zonas funcionales como motor, admisión, combustible, sistema eléctrico, temperatura, conducción o sensor. Esta salida es deliberadamente prudente: orienta la revisión y permite priorizar atención, pero no reemplaza un diagnóstico técnico ni garantiza la causa mecánica exacta. En ese sentido, el módulo se alinea con el enfoque de mantenimiento predictivo asistido por datos, donde el valor principal está en detectar patrones anómalos y conservar evidencia para una evaluación posterior \cite{mahale2025_review_predictive_maintenance,tormos2025_explainable_ai}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Componentes del módulo de análisis de datos en AutoSense.}
+\label{tab:data-analysis-module}
+\begin{tabular}{p{0.25\textwidth}p{0.39\textwidth}p{0.27\textwidth}}
+\toprule
+\textbf{Componente} & \textbf{Función} & \textbf{Salida en AutoSense} \\
+\midrule
+Muestra compacta & Agrupa las señales OBD-II decodificadas y marca cuáles están vigentes mediante \texttt{validMask}. & Entrada común para análisis, BLE y registro histórico. \\
+\addlinespace
+Línea base Welford & Calcula promedio y desviación estándar incremental por señal y contexto. & Referencia normal del vehículo para comparar nuevas lecturas. \\
+\addlinespace
+Z-score & Mide la distancia de cada señal respecto a su línea base, con pisos mínimos de desviación. & Puntaje estadístico y señales con mayor desviación. \\
+\addlinespace
+Tiny Isolation Forest & Evalúa combinaciones de señales mediante un modelo local ligero. & Puntaje complementario cuando el modelo está entrenado. \\
+\addlinespace
+Debounce de severidad & Filtra eventos aislados antes de elevar una advertencia fuerte. & Estados \texttt{NORMAL}, \texttt{WATCH}, \texttt{WARNING} y \texttt{CRITICAL}. \\
+\addlinespace
+Clasificador de ruta & Estima ciudad, carretera o estado intermedio según la dinámica de conducción. & Contexto \texttt{city}/\texttt{highway}, confianza y razón de clasificación. \\
+\addlinespace
+Telemetría BLE & Publica el resumen calculado por el ESP32-S3 hacia la aplicación móvil. & Puntaje, severidad, área probable, estado de línea base y estado del modelo. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+En conjunto, el módulo de análisis convierte las lecturas OBD-II en indicadores interpretables sin desplazar la responsabilidad diagnóstica a la nube ni prometer predicciones mecánicas exactas. AutoSense detecta desviaciones, clasifica el contexto de conducción y presenta señales de atención temprana; la confirmación de una falla específica continúa dependiendo de inspección técnica, historial acumulado y contraste con síntomas reales del vehículo.
+
 \section{Seguridad del sistema}
+
+La seguridad de AutoSense se plantea como un conjunto de controles distribuidos entre el firmware, la aplicación móvil y Firebase. La intención principal no es convertir el prototipo en una plataforma de ciberseguridad automotriz completa, sino reducir riesgos concretos durante la lectura vehicular, proteger la información del usuario y evitar que perfiles o comandos no válidos alteren el comportamiento del sistema. Por ello, el diseño prioriza una política de solo lectura sobre OBD-II/CAN, validación estricta de perfiles, autenticación de usuarios en la app y reglas de acceso en la nube.
+
+\subsection{Seguridad por capas}
+
+El sistema aplica seguridad por capas porque cada componente enfrenta riesgos distintos. En el vehículo, el riesgo principal es enviar comandos que modifiquen la ECU, borren información diagnóstica o activen funciones de control. En el ESP32-S3, el riesgo está en aceptar perfiles inválidos o comandos fuera del alcance del prototipo. En la aplicación móvil, el riesgo se relaciona con el acceso no autorizado a datos de usuario, sesión, vehículo y viajes. Finalmente, en Firebase, el riesgo consiste en que un usuario pueda leer o modificar información que no le corresponde.
+
+Esta separación evita depender de un único mecanismo de protección. Aunque la aplicación resuelva y transfiera un perfil, el firmware vuelve a validarlo antes de aplicarlo. Aunque el usuario esté autenticado en Firebase, las reglas de Firestore y Storage vuelven a comprobar que el documento o archivo pertenezca al usuario correcto. Aunque exista un canal BLE operativo, los comandos aceptados por el ESP32-S3 permanecen limitados a información del dispositivo, perfil, telemetría y control del flujo de lectura. Esta redundancia es deliberada y permite que un error en una capa no implique automáticamente una acción insegura sobre el vehículo.
+
+\subsection{Política de solo lectura en el firmware}
+
+El control más importante del firmware es \texttt{ObdReadOnlyGuard}. Todo comando diagnóstico que sale por CAN pasa por esta política antes de ser transmitido. La guardia clasifica los servicios OBD-II y UDS en dos grupos: servicios permitidos de lectura y servicios bloqueados por riesgo de escritura, control o modificación del estado del vehículo. En uso normal, el contador \texttt{guard\_blocked} debe permanecer en cero; si aumenta, el evento se considera una señal de revisión durante las pruebas.
+
+Para OBD-II estándar, el firmware permite los modos \texttt{01}, \texttt{02}, \texttt{03}, \texttt{06}, \texttt{07}, \texttt{09} y \texttt{0A}, asociados a datos actuales, \textit{freeze frame}, DTC almacenados, monitores a bordo, DTC pendientes, información del vehículo y DTC permanentes. En cambio, bloquea \texttt{04}, porque borra o reinicia información de emisiones, y \texttt{08}, porque habilita operaciones de control. Con ello, AutoSense conserva el enfoque de observación y evita que la prueba modifique evidencia diagnóstica del automóvil.
+
+En el caso de UDS, solo se permiten \texttt{19} y \texttt{22}, correspondientes a lectura de información de DTC e identificación por datos. Los servicios asociados a cambio de sesión, reinicio de ECU, borrado de diagnóstico, acceso de seguridad, escritura de datos, control de entradas/salidas, rutinas, descarga, carga, transferencia y escritura de memoria quedan bloqueados. Incluso \texttt{23}, que técnicamente es lectura de memoria, se mantiene fuera del alcance porque implicaría un \textit{dump} de memoria de ECU y no aporta al objetivo del prototipo. La regla práctica es conservadora: si un servicio no está en la lista segura, el firmware lo bloquea.
+
+\subsection{Validación de perfiles vehiculares}
+
+Los perfiles vehiculares son una parte crítica de la seguridad, porque definen qué señales se consultan, con qué frecuencia y mediante qué fórmulas se interpretan. AutoSense no acepta un perfil únicamente porque la aplicación lo envíe por BLE. Antes de transferirlo, la app valida el esquema, el tamaño y los campos permitidos; después, el ESP32-S3 repite la validación antes de guardarlo como \texttt{/active\_profile.json} y aplicarlo al plan de sondeo.
+
+La validación incluye un límite máximo de 16 KB, JSON válido, \texttt{schemaVersion} soportado, identificador y versión de perfil, bus \texttt{CAN}, señales presentes, PIDs en formato hexadecimal y fórmulas incluidas en una lista permitida. Además, el perfil descargado se contrasta con el hash SHA-256 esperado. Si el contenido recibido no coincide con el hash, si excede el tamaño máximo o si incluye una fórmula no permitida, el firmware rechaza la aplicación del perfil.
+
+El perfil también se restringe por seguridad diagnóstica. En la app, los modos OBD permitidos para señales son \texttt{01} y \texttt{09}, mientras que modos como \texttt{04} y \texttt{08} quedan bloqueados. Para UDS extendido, solo se aceptan servicios de lectura permitidos. Esta doble validación evita que un perfil manipulado convierta la capa de configuración en una vía para enviar comandos de escritura o control al vehículo.
+
+\subsection{Seguridad en la aplicación móvil}
+
+La aplicación móvil utiliza Firebase Auth para el acceso de usuario mediante correo y contraseña o cuenta de Google. El estado de autenticación se centraliza en \texttt{SessionProvider}, que determina si el usuario puede ingresar al grupo de rutas autenticadas. Si no existe sesión válida, la navegación redirige al flujo de acceso; si ya existe sesión, se permite entrar a las pantallas de inicio, tiempo real, perfil, vehículo, alertas, eficiencia y viajes.
+
+En dispositivos móviles, la sesión de Firebase se persiste mediante SecureStore de Expo. Esto evita manejar la sesión como texto plano dentro de almacenamiento ordinario de la aplicación y permite que el usuario conserve acceso entre aperturas sin volver a escribir credenciales. El mismo mecanismo se utiliza para conservar la sesión activa de viaje, de modo que el seguimiento pueda recuperarse o cerrarse de forma consistente después de reinicios de la app.
+
+Los cambios sensibles de cuenta se manejan con controles adicionales. Para modificar correo o contraseña en cuentas basadas en contraseña, la app solicita reautenticación con la credencial actual antes de aplicar el cambio. Para cuentas de Google, la app no permite cambiar contraseña desde esa pantalla porque la autenticación depende del proveedor externo. Además, la actualización de correo se realiza mediante verificación previa, evitando cambiar el identificador principal sin confirmación del usuario.
+
+\subsection{Reglas de acceso en Firebase}
+
+Firestore está organizado alrededor de documentos de usuario en la colección \texttt{users} y subcolecciones como \texttt{trips}. Las reglas permiten lectura y escritura solo cuando el usuario autenticado coincide con el identificador del documento. También se validan campos obligatorios, tipos, rangos numéricos, formatos de correo y marcas de tiempo recientes. Campos inmutables como \texttt{uid}, \texttt{email} y \texttt{createdAt} no pueden modificarse durante una actualización ordinaria, y la eliminación de documentos de usuario o viajes queda bloqueada.
+
+Las reglas también restringen colecciones auxiliares. Los dispositivos solo pueden leerse si pertenecen al usuario autenticado, los perfiles vehiculares publicados son de lectura autenticada y las aplicaciones de perfil solo se leen cuando corresponden al usuario. La escritura directa sobre dispositivos, perfiles vehiculares, aplicaciones de perfil y cachés de VIN no se permite desde el cliente. Ese diseño concentra cambios sensibles en servicios controlados, como las funciones que resuelven perfiles o registran la aplicación de un perfil vehicular.
+
+En Firebase Storage se aplica una política similar. Las imágenes de perfil se almacenan bajo la ruta del usuario y solo pueden leerse o escribirse por ese mismo usuario autenticado. Además, el archivo debe corresponder a una imagen y respetar el tamaño máximo configurado. Los perfiles vehiculares se publican bajo la ruta \texttt{vehicle-profiles} por identificador y versión; la app puede leerlos si el usuario está autenticado, pero la escritura queda bloqueada desde el cliente. Cualquier ruta no contemplada queda cerrada por defecto.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Controles de seguridad aplicados en AutoSense.}
+\label{tab:system-security-controls}
+\begin{tabular}{p{0.23\textwidth}p{0.39\textwidth}p{0.29\textwidth}}
+\toprule
+\textbf{Capa} & \textbf{Control aplicado} & \textbf{Riesgo mitigado} \\
+\midrule
+Firmware OBD-II/CAN & Guardia \texttt{ObdReadOnlyGuard} con lista de servicios seguros. & Envío de comandos de borrado, control, escritura o reprogramación. \\
+\addlinespace
+Perfil vehicular & Validación de tamaño, SHA-256, JSON, bus, modos, servicios y fórmulas permitidas. & Aplicación de perfiles alterados o fuera del alcance del prototipo. \\
+\addlinespace
+BLE operativo & Comandos limitados a información, transferencia de perfil y telemetría. & Exposición de funciones no necesarias para lectura y monitoreo. \\
+\addlinespace
+Aplicación móvil & Firebase Auth, rutas protegidas y sesión en \texttt{SecureStore}. & Acceso no autenticado a pantallas y datos del usuario. \\
+\addlinespace
+Firestore & Reglas por propietario, validación de esquema, rangos y bloqueo de eliminación. & Lectura o escritura cruzada entre usuarios y datos mal formados. \\
+\addlinespace
+Storage & Avatares por usuario y perfiles vehiculares de solo lectura autenticada. & Escritura arbitraria de archivos o modificación directa de perfiles publicados. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Limitaciones y controles pendientes}
+
+La seguridad actual debe entenderse dentro del alcance de un prototipo académico. El enlace BLE implementado no se documenta como un canal cifrado ni como un canal autenticado por token de usuario dentro del firmware. La protección principal del ESP32-S3 se basa en reducir el conjunto de comandos disponibles, validar estrictamente los perfiles recibidos y mantener la comunicación con el vehículo en modo de solo lectura. Por tanto, si una versión futura requiere operación en ambientes no controlados, convendría agregar emparejamiento/autorización BLE más estricta, control de dispositivo vinculado y verificación de sesión antes de aceptar comandos de configuración.
+
+También quedan como mejora futura políticas más completas de retención y exportación de historial. El sistema ya evita escrituras no autorizadas en Firebase y limita la eliminación directa desde el cliente, pero una versión de producción debería definir con precisión cuánto tiempo se conservan viajes, telemetría histórica, perfiles aplicados y evidencia de diagnóstico. Esta decisión no afecta la validación funcional del prototipo, pero sí sería necesaria para una operación prolongada con múltiples usuarios.
+
+En síntesis, la seguridad de AutoSense se apoya en controles concretos y verificables: lectura vehicular no invasiva, perfiles validados, sesión móvil autenticada y reglas remotas restrictivas. El sistema no afirma resolver todos los riesgos de ciberseguridad automotriz, pero sí establece una base prudente para recolectar y analizar datos sin modificar el vehículo ni exponer información de usuario fuera de su cuenta.
 
 \section{Funcionamiento general}
 

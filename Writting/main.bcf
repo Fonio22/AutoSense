@@ -2546,7 +2546,11 @@
     <bcf:citekey order="95" intorder="2">sae2025_j1979_diagnostic_test_modes</bcf:citekey>
     <bcf:citekey order="96" intorder="1">expo2026_sdk_support</bcf:citekey>
     <bcf:citekey order="96" intorder="2">expo2026_development_build</bcf:citekey>
-    <bcf:citekey order="97" intorder="1" nocite="1">*</bcf:citekey>
+    <bcf:citekey order="97" intorder="1">zhang2020_iov_edge</bcf:citekey>
+    <bcf:citekey order="97" intorder="2">kalalas2025_ai_driven_monitoring</bcf:citekey>
+    <bcf:citekey order="98" intorder="1">mahale2025_review_predictive_maintenance</bcf:citekey>
+    <bcf:citekey order="98" intorder="2">tormos2025_explainable_ai</bcf:citekey>
+    <bcf:citekey order="99" intorder="1" nocite="1">*</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="none">
