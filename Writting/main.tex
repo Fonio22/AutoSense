@@ -105,13 +105,14 @@
 \newcommand{\cedula}{8-980-821}
 \newcommand{\asesor}{DR. LUIYIANA DEL C. PÉREZ.}
 \newcommand{\lugar}{PANAMÁ}
-\newcommand{\fecha}{2025}
+\newcommand{\fecha}{2026}
 
 \begin{document}
 
 % =========================
 % PORTADA
 % =========================
+\hypersetup{pageanchor=false}
 \begin{titlepage}
     \centering
 
@@ -146,6 +147,8 @@
     {\fecha \par}
 
 \end{titlepage}
+\clearpage
+\hypersetup{pageanchor=true}
 
 % =========================
 % PÁGINAS PRELIMINARES
@@ -244,9 +247,9 @@ En este escenario, resulta pertinente un monitoreo inteligente apoyado por IoT e
 Por lo tanto, el problema radica en cómo aprovechar la infraestructura existente en los vehículos, especialmente el puerto OBD-II y sus sensores asociados, para brindar al conductor una supervisión accesible y alertas tempranas en tiempo real. Los vehículos compatibles con OBD-II pueden beneficiarse de un sistema que convierta datos disponibles en información útil para la conducción y el mantenimiento, siempre que expongan señales suficientes para el perfil aplicado \cite{mahale2025_review_predictive_maintenance}.
 
 \section{Objetivo general}
-Diseñar e implementar una arquitectura IoT vehicular con procesamiento en el borde (Edge Computing) e integración de algoritmos de inteligencia artificial, que permita el diagnóstico en tiempo real de parámetros críticos del vehículo mediante la interfaz OBD-II, con visualización de datos a través de una aplicación móvil y capacidad de expansión a funciones de control remoto.
+Diseñar e implementar una arquitectura IoT vehicular con procesamiento en el borde e inteligencia artificial ligera para monitorear en tiempo real parámetros críticos disponibles por OBD-II/CAN, registrar historial operativo, detectar desviaciones y visualizar la información mediante una aplicación móvil.
 
-Para mantener la coherencia con el alcance validado, en esta tesis el diagnóstico se interpreta como monitoreo, lectura de parámetros, detección de desviaciones y generación de alertas tempranas. La expansión hacia funciones de control remoto se conserva como posibilidad arquitectónica y línea futura, no como una función activa implementada sobre el vehículo real.
+Para mantener la coherencia con el alcance validado, en esta tesis el diagnóstico se interpreta como monitoreo, lectura de parámetros, detección de desviaciones y generación de alertas tempranas. Las funciones de control remoto o interacción activa con el vehículo se conservan únicamente como línea futura, no como una función implementada ni validada sobre el vehículo real.
 \section{Objetivos específicos}
 
 \begin{enumerate}
@@ -294,6 +297,8 @@ La propuesta presenta limitaciones derivadas tanto de la diversidad de plataform
     \item La validación se limita a unidades compatibles y a escenarios controlados, por lo que el desempeño debe confirmarse antes de extenderlo a otros modelos.
     \item Las alertas generadas tienen carácter orientativo y no sustituyen un diagnóstico mecánico especializado.
     \item La sincronización de historial y perfiles depende de la disponibilidad de conectividad y de los servicios configurados en Firebase.
+    \item El módulo de inteligencia artificial fue validado como detección de desviaciones sobre datos reales de operación normal y escenarios de simulación, no como clasificador de fallas mecánicas reales etiquetadas.
+    \item Las métricas de latencia extremo a extremo, pérdida de paquetes BLE y tiempo de sincronización histórica requieren instrumentación adicional para una evaluación de rendimiento más estricta.
 \end{itemize}
 
 Por estas razones, los resultados deben interpretarse como evidencia de funcionamiento del prototipo dentro de un entorno acotado, no como una cobertura universal de la totalidad del parque automotor.
@@ -2601,7 +2606,7 @@ En los reportes del dashboard USB-CDC se observó el estado \path{log=ON}, con s
 
 La exportación \path{obdlog.csv} permitió revisar el formato de salida del historial. El archivo contiene campos como \path{sequence}, \path{uptime_seconds}, \path{valid_mask}, \path{rpm}, \path{speed_kph}, \path{coolant_c}, \path{throttle_pct}, \path{fuel_level_pct}, \path{engine_load_pct}, \path{map_kpa}, \path{maf_gps} y \path{ecu_voltage_v}. La presencia de \path{valid_mask} es relevante porque no todas las señales están disponibles en cada muestra; por tanto, el registro conserva cuáles magnitudes fueron válidas y evita interpretar espacios vacíos como mediciones reales.
 
-En la capa móvil se verificó que la aplicación dispone de persistencia de sesión y mecanismos para conservar estado de viaje, perfil activo y datos asociados al usuario. Además, el repositorio incorpora el flujo de sincronización histórica del \texttt{obdlog}: al conectarse por BLE, la app consulta el último contador respaldado, descarga solo los registros nuevos, guarda un archivo binario local y lo sube a Firebase Storage cuando el modo de datos permite sincronización en la nube. Firestore mantiene el índice de exportación y el cursor de secuencia, de modo que una reconexión posterior no repite registros ya sincronizados. La prueba documenta la implementación del flujo y sus reglas de acceso; la evidencia operacional completa debe registrarse con el archivo \texttt{.bin}, el objeto en Storage y el documento de índice generado por Firestore durante una sesión de exportación.
+En la capa móvil se verificó que la aplicación dispone de persistencia de sesión y mecanismos para conservar estado de viaje, perfil activo y datos asociados al usuario. Además, el repositorio incorpora el flujo de sincronización histórica del \texttt{obdlog}: al conectarse por BLE, la app consulta el último contador respaldado, descarga solo los registros nuevos, guarda un archivo binario local y lo sube a Firebase Storage cuando el modo de datos permite sincronización en la nube. Firestore mantiene el índice de exportación y el cursor de secuencia, de modo que una reconexión posterior no repite registros ya sincronizados. Esta etapa queda documentada como validación de integración de software y reglas de acceso; para considerarla validación operacional completa se requiere adjuntar el archivo \texttt{.bin}, el objeto creado en Storage y el documento de índice generado por Firestore durante una sesión de exportación.
 
 \begin{table}[H]
 \centering
@@ -2620,7 +2625,7 @@ Capacidad local & Espacio suficiente para campaña prolongada antes de sobrescri
 \addlinespace
 Aplicación móvil & Persistencia de sesión, viaje activo y perfil de vehículo. & Uso de SecureStore, caché de perfil y flujo de viaje en la app. & Verificado. \\
 \addlinespace
-Firebase & Respaldo histórico en nube. & Código de exportación BLE incremental, reglas de Storage por usuario y cursor en Firestore. & En código. \\
+Firebase & Respaldo histórico en nube. & Código de exportación BLE incremental, reglas de Storage por usuario y cursor en Firestore. & Integrado; evidencia operacional pendiente. \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -2692,7 +2697,7 @@ Capacidad de historial & 274720 registros & Contador de capacidad del firmware. 
 \addlinespace
 Latencia extremo a extremo & No medida con instrumento dedicado & Pruebas funcionales sin cronometraje certificado. & Pendiente. \\
 \addlinespace
-Tiempo de sincronización histórica & No medido en campaña completa & Flujo implementado en app, firmware y reglas Firebase. & Pendiente. \\
+Tiempo de sincronización histórica & No medido en campaña completa & Flujo implementado en app, firmware y reglas Firebase; falta medición con exportación completa documentada. & Pendiente. \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -2964,7 +2969,7 @@ Diseñar un sistema de adquisición de datos vehiculares mediante lectura de par
 \addlinespace
 Implementar un módulo de análisis de datos vehiculares que identifique variaciones anómalas y genere alertas tempranas. & El firmware incorporó línea base estadística con Welford, Z-score por señal, Tiny Isolation Forest, combinación ponderada de puntajes, debounce y severidades \path{NORMAL}, \path{WATCH}, \path{WARNING} y \path{CRITICAL}. & Cumplido como detección de desviaciones, no como diagnóstico mecánico definitivo. \\
 \addlinespace
-Implementar un entorno en la nube para almacenamiento estructurado, consultas históricas, visualización remota y respaldo. & La solución integró Firebase Auth, Firestore, Functions y Storage para usuario, vehículo, perfiles, estado, alertas y respaldo histórico. El ESP32-S3 conserva historial local en \path{obdlog}; la app incluye descarga incremental por BLE, archivo binario local, respaldo en Firebase Storage e índice con cursor en Firestore. & Cumplido en implementación; requiere evidencia operacional extendida para exportaciones completas. \\
+Implementar un entorno en la nube para almacenamiento estructurado, consultas históricas, visualización remota y respaldo. & La solución integró Firebase Auth, Firestore, Functions y Storage para usuario, vehículo, perfiles, estado, alertas y respaldo histórico. El ESP32-S3 conserva historial local en \path{obdlog}; la app incluye descarga incremental por BLE, archivo binario local, respaldo en Firebase Storage e índice con cursor en Firestore. & Cumplido en implementación; validación operacional parcial para exportaciones completas. \\
 \addlinespace
 Diseñar e integrar una aplicación móvil multiplataforma para visualizar estado, alertas e historial. & Se desarrolló una aplicación React Native/Expo con sesión autenticada, pantallas de inicio, eficiencia, alertas, tiempo real, perfil, vehículo y vistas de detalle. La app recibe telemetría por BLE, presenta datos en vivo y organiza información del usuario y vehículo. & Cumplido dentro de la versión funcional del prototipo. \\
 \addlinespace
@@ -3053,6 +3058,23 @@ El repositorio público del proyecto está disponible en \url{https://github.com
 
 La versión compilada del firmware fue verificada mediante PlatformIO y la aplicación móvil mediante verificación estática de TypeScript. Las pruebas funcionales del resolutor de perfiles se ejecutaron sobre los casos de Volkswagen Passat 2016, perfil genérico y simulador OBD-II.
 
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{Comandos principales para replicar la verificación del proyecto. Elaboración propia.}
+\label{tab:anexo-comandos}
+\begin{tabular}{@{}p{0.22\textwidth}p{0.28\textwidth}p{0.18\textwidth}p{0.22\textwidth}@{}}
+\toprule
+\textbf{Componente} & \textbf{Directorio} & \textbf{Comando} & \textbf{Propósito} \\
+\midrule
+Firmware & \path{OBD2-Firmware} & \texttt{pio run} & Compilar el firmware del ESP32-S3. \\
+Aplicación móvil & \path{app} & \texttt{npx tsc --noEmit} & Verificar tipos de TypeScript. \\
+Pruebas de perfiles & \path{app/functions/test} & \texttt{node --test *.mjs} & Validar resolución de perfiles vehiculares. \\
+Documento LaTeX & \path{Writting} & \texttt{latexmk -pdf main.tex} & Regenerar el PDF de la tesis. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \chapter{Tablas de pruebas}
 
 Las tablas siguientes consolidan la evidencia técnica usada para validar el sistema. Los valores provienen de reportes generados por el firmware, del dashboard USB-CDC, de la aplicación móvil y del archivo Excel de salida.
@@ -3122,6 +3144,7 @@ Las alertas mostradas por AutoSense tienen carácter orientativo. El sistema ayu
     \item Compilar con \path{pio run}.
     \item Cargar firmware y sistema de archivos según la placa usada.
     \item Abrir el monitor serial USB-CDC para confirmar arranque, perfil activo, estado CAN y dashboard.
+    \item Confirmar que el dashboard reporte \texttt{can=UP}, respuestas por segundo, decodificaciones por segundo, logger activo y \texttt{guard=0}.
 \end{enumerate}
 
 \section*{Aplicación móvil}
@@ -3132,6 +3155,7 @@ Las alertas mostradas por AutoSense tienen carácter orientativo. El sistema ayu
     \item Ejecutar la verificación TypeScript con \path{npx tsc --noEmit}.
     \item Usar un development build de Expo, ya que BLE nativo no funciona dentro de Expo Go.
     \item Validar inicio de sesión, conexión BLE, perfil vehicular y telemetría en vivo.
+    \item Para una prueba en iOS, ejecutar la aplicación en simulador o dispositivo físico mediante el flujo de desarrollo de Expo y confirmar que el módulo BLE esté disponible en el build nativo.
 \end{enumerate}
 
 \section*{Firebase}
@@ -3141,6 +3165,7 @@ Las alertas mostradas por AutoSense tienen carácter orientativo. El sistema ayu
     \item Confirmar que cada usuario solo acceda a sus documentos, perfiles permitidos y archivos históricos.
     \item Verificar que los perfiles vehiculares estén disponibles en Storage y que Functions resuelva el perfil esperado.
     \item Para sincronización histórica, confirmar el documento de cursor, el archivo binario exportado y el índice de exportación.
+    \item Registrar como evidencia la ruta del objeto en Storage, el rango de secuencia exportado y el documento Firestore asociado.
 \end{enumerate}
 
 \section*{Verificación mínima}

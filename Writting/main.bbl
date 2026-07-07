@@ -438,9 +438,45 @@
       \field{year}{2023}
       \field{dateera}{ce}
     \endentry
-    \entry{laprensa2025_fallas_vehiculos}{online}{}{}
+    \entry{nhtsa2018_critical_reasons_crashes}{report}{}{}
+      \name{author}{1}{}{%
+        {{hash=4cd4b81eac3caf7f23b51ec2f54c0558}{%
+           family={{National Highway Traffic Safety Administration}},
+           familyi={N\bibinitperiod}}}%
+      }
+      \list{institution}{1}{%
+        {U.S. Department of Transportation}%
+      }
+      \strng{namehash}{4cd4b81eac3caf7f23b51ec2f54c0558}
+      \strng{fullhash}{4cd4b81eac3caf7f23b51ec2f54c0558}
+      \strng{fullhashraw}{4cd4b81eac3caf7f23b51ec2f54c0558}
+      \strng{bibnamehash}{4cd4b81eac3caf7f23b51ec2f54c0558}
+      \strng{authorbibnamehash}{4cd4b81eac3caf7f23b51ec2f54c0558}
+      \strng{authornamehash}{4cd4b81eac3caf7f23b51ec2f54c0558}
+      \strng{authorfullhash}{4cd4b81eac3caf7f23b51ec2f54c0558}
+      \strng{authorfullhashraw}{4cd4b81eac3caf7f23b51ec2f54c0558}
       \field{sortinit}{9}
       \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{number}{DOT HS 812 506}
+      \field{title}{Critical Reasons for Crashes Investigated in the National Motor Vehicle Crash Causation Survey}
+      \field{type}{techreport}
+      \field{urlday}{7}
+      \field{urlmonth}{7}
+      \field{urlyear}{2026}
+      \field{year}{2018}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://crashstats.nhtsa.dot.gov/Api/Public/ViewPublication/812506
+      \endverb
+      \verb{url}
+      \verb https://crashstats.nhtsa.dot.gov/Api/Public/ViewPublication/812506
+      \endverb
+    \endentry
+    \entry{laprensa2025_fallas_vehiculos}{online}{}{}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{labeltitlesource}{title}
       \field{title}{Fallas mecánicas en vehículos: Principales causas de accidentes}
       \field{urlday}{23}
@@ -1209,6 +1245,76 @@
       \verb https://docs.expo.dev/develop/development-builds/create-a-build/
       \endverb
     \endentry
+    \entry{welford1962_corrected_sums}{article}{}{}
+      \name{author}{1}{}{%
+        {{hash=fb43003f9f469d35fb8470d7423e1b97}{%
+           family={Welford},
+           familyi={W\bibinitperiod},
+           given={B.\bibnamedelimi P.},
+           giveni={B\bibinitperiod\bibinitdelim P\bibinitperiod}}}%
+      }
+      \strng{namehash}{fb43003f9f469d35fb8470d7423e1b97}
+      \strng{fullhash}{fb43003f9f469d35fb8470d7423e1b97}
+      \strng{fullhashraw}{fb43003f9f469d35fb8470d7423e1b97}
+      \strng{bibnamehash}{fb43003f9f469d35fb8470d7423e1b97}
+      \strng{authorbibnamehash}{fb43003f9f469d35fb8470d7423e1b97}
+      \strng{authornamehash}{fb43003f9f469d35fb8470d7423e1b97}
+      \strng{authorfullhash}{fb43003f9f469d35fb8470d7423e1b97}
+      \strng{authorfullhashraw}{fb43003f9f469d35fb8470d7423e1b97}
+      \field{sortinit}{5}
+      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Technometrics}
+      \field{number}{3}
+      \field{title}{Note on a Method for Calculating Corrected Sums of Squares and Products}
+      \field{volume}{4}
+      \field{year}{1962}
+      \field{pages}{419\bibrangedash 420}
+      \range{pages}{2}
+      \verb{doi}
+      \verb 10.1080/00401706.1962.10490022
+      \endverb
+    \endentry
+    \entry{liu2008_isolation_forest}{inproceedings}{}{}
+      \name{author}{3}{}{%
+        {{hash=231b376c1eeea575643f44deb86338c4}{%
+           family={Liu},
+           familyi={L\bibinitperiod},
+           given={Fei\bibnamedelima Tony},
+           giveni={F\bibinitperiod\bibinitdelim T\bibinitperiod}}}%
+        {{hash=9bc17f24d02724c02d418a27dfea50bb}{%
+           family={Ting},
+           familyi={T\bibinitperiod},
+           given={Kai\bibnamedelima Ming},
+           giveni={K\bibinitperiod\bibinitdelim M\bibinitperiod}}}%
+        {{hash=6b1a37e820a730061851a81dcca2d154}{%
+           family={Zhou},
+           familyi={Z\bibinitperiod},
+           given={Zhi-Hua},
+           giveni={Z\bibinithyphendelim H\bibinitperiod}}}%
+      }
+      \strng{namehash}{facf64454d5633117a12faa599e65058}
+      \strng{fullhash}{b38d2601a5a1a63e9c41ca76b68a2df4}
+      \strng{fullhashraw}{b38d2601a5a1a63e9c41ca76b68a2df4}
+      \strng{bibnamehash}{b38d2601a5a1a63e9c41ca76b68a2df4}
+      \strng{authorbibnamehash}{b38d2601a5a1a63e9c41ca76b68a2df4}
+      \strng{authornamehash}{facf64454d5633117a12faa599e65058}
+      \strng{authorfullhash}{b38d2601a5a1a63e9c41ca76b68a2df4}
+      \strng{authorfullhashraw}{b38d2601a5a1a63e9c41ca76b68a2df4}
+      \field{sortinit}{5}
+      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{2008 Eighth IEEE International Conference on Data Mining}
+      \field{title}{Isolation Forest}
+      \field{year}{2008}
+      \field{pages}{413\bibrangedash 422}
+      \range{pages}{10}
+      \verb{doi}
+      \verb 10.1109/ICDM.2008.17
+      \endverb
+    \endentry
     \entry{mrdiy2026_esp32_can_shield_v12}{online}{}{}
       \name{author}{1}{}{%
         {{hash=43b598b79314c780a7a86c0e79fb4aa9}{%
@@ -1223,8 +1329,8 @@
       \strng{authornamehash}{43b598b79314c780a7a86c0e79fb4aa9}
       \strng{authorfullhash}{43b598b79314c780a7a86c0e79fb4aa9}
       \strng{authorfullhashraw}{43b598b79314c780a7a86c0e79fb4aa9}
-      \field{sortinit}{8}
-      \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{note}{Reference design and product documentation}
@@ -1255,8 +1361,8 @@
       \strng{authorfullhash}{c823732636c3fca8652a18a68c2391eb}
       \strng{authorfullhashraw}{c823732636c3fca8652a18a68c2391eb}
       \field{extraname}{4}
-      \field{sortinit}{8}
-      \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{note}{Standard}

@@ -906,6 +906,14 @@ INPUT ./Figures/datawrapper_zscore_overlay.png
 INPUT ./Figures/datawrapper_zscore_overlay.png
 INPUT ./Figures/datawrapper_zscore_overlay.png
 INPUT ./Figures/datawrapper_zscore_overlay.png
+INPUT ./Figures/ai_zscore_deviation_index.png
+INPUT ./Figures/ai_zscore_deviation_index.png
+INPUT ./Figures/ai_zscore_deviation_index.png
+INPUT ./Figures/ai_zscore_deviation_index.png
+INPUT ./Figures/ai_zscore_deviation_index.png
+INPUT /usr/local/texlive/2026/texmf-dist/fonts/tfm/adobe/helvetic/phvro8t.tfm
+INPUT /usr/local/texlive/2026/texmf-dist/fonts/vf/adobe/helvetic/phvro8t.vf
+INPUT /usr/local/texlive/2026/texmf-dist/fonts/tfm/adobe/helvetic/phvro8r.tfm
 INPUT main.aux
 INPUT ./main.out
 INPUT ./main.out
