@@ -150,8 +150,6 @@
 \contentsline {section}{\numberline {6.4}Trabajos futuros}{157}{section.6.4}%
 \contentsline {chapter}{Referencias bibliográficas}{160}{chapter*.73}%
 \contentsline {chapter}{\numberline {A}Código fuente}{165}{appendix.Alph1}%
-\contentsline {chapter}{\numberline {B}Diagramas del sistema}{166}{appendix.Alph2}%
-\contentsline {chapter}{\numberline {C}Capturas de pantalla}{167}{appendix.Alph3}%
-\contentsline {chapter}{\numberline {D}Tablas de pruebas}{168}{appendix.Alph4}%
-\contentsline {chapter}{\numberline {E}Manual de usuario}{169}{appendix.Alph5}%
-\contentsline {chapter}{\numberline {F}Manual técnico}{170}{appendix.Alph6}%
+\contentsline {chapter}{\numberline {B}Tablas de pruebas}{166}{appendix.Alph2}%
+\contentsline {chapter}{\numberline {C}Manual de usuario}{167}{appendix.Alph3}%
+\contentsline {chapter}{\numberline {D}Manual técnico}{168}{appendix.Alph4}%

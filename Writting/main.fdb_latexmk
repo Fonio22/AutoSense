@@ -1,12 +1,12 @@
 # Fdb version 4
-["biber main"] 1783438256.23983 "main.bcf" "main.bbl" "main" 1783438840.97971 0
+["biber main"] 1783438256.23983 "main.bcf" "main.bbl" "main" 1783439430.02343 0
   "Reference/references.bib" 1783384036.16561 13639 e7d64037095cc3cde036a4041f83228c ""
-  "main.bcf" 1783438840.8194 123012 435925179bb53206a67ec57d2808b7da "pdflatex"
+  "main.bcf" 1783439429.86751 123012 435925179bb53206a67ec57d2808b7da "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1783438837.91791 "main.tex" "main.pdf" "main" 1783438840.98 0
+["pdflatex"] 1783439427.17694 "main.tex" "main.pdf" "main" 1783439430.02369 0
   "/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -255,14 +255,14 @@
   "Figures/test_autosense_adapter_powered.jpg" 1783427021.28258 830506 68c813364d6e27209c3d152db7aa3ecf ""
   "Figures/test_obd_simulator_generic.jpg" 1783427897.57537 682227 92d0d0daa51d735057c45370bbaee543 ""
   "Figures/test_real_passat_2016.jpg" 1783427021.68012 671380 a8e2dc45c1f0396892e6c8bf7e600c27 ""
-  "main.aux" 1783438840.80146 70779 549a9bd4493abdd310718301d3876c83 "pdflatex"
+  "main.aux" 1783439429.84913 69677 b3123faa7b6abd63c50c07f68024fd41 "pdflatex"
   "main.bbl" 1783438257.81552 57846 98f6c36051abea0511388b6adfa69fe8 "biber main"
-  "main.lof" 1783438840.82013 6373 b6e5a857887a492aff75e24ce9af9b39 "pdflatex"
-  "main.lot" 1783438840.82015 5845 7dfff4ac8fce497cdad382004124fd0a "pdflatex"
-  "main.out" 1783438840.81842 32563 0560f05ed6de8d3e31a2163897e08941 "pdflatex"
-  "main.run.xml" 1783438840.82002 2412 a14d7b0021cfb58933eab0e0321f79a4 "pdflatex"
-  "main.tex" 1783438798.91534 361625 475d7a75f4f96818ff68d27e89c47caa ""
-  "main.toc" 1783438840.82008 14899 40ab08e6af8db67ca3817e27f2bd5843 "pdflatex"
+  "main.lof" 1783439429.86824 6333 2577a385af45230f39303482ead41b73 "pdflatex"
+  "main.lot" 1783439429.86828 5478 d3da7dac501af2bfce674a23c3777a8c "pdflatex"
+  "main.out" 1783439429.86643 32246 4c9a8d074422961e34eea9176beaba35 "pdflatex"
+  "main.run.xml" 1783439429.86813 2412 a14d7b0021cfb58933eab0e0321f79a4 "pdflatex"
+  "main.tex" 1783439413.11123 358631 35a07c1f663c98c0c90a9ea831f2074f ""
+  "main.toc" 1783439429.8682 14732 ef8ea10a82f26b7702282b0cf51cd18e "pdflatex"
   (generated)
   "main.aux"
   "main.bcf"

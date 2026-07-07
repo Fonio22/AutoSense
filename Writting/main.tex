@@ -2995,52 +2995,6 @@ El repositorio público del proyecto está disponible en \url{https://github.com
 
 La versión compilada del firmware fue verificada mediante PlatformIO y la aplicación móvil mediante verificación estática de TypeScript. Las pruebas funcionales del resolutor de perfiles se ejecutaron sobre los casos de Volkswagen Passat 2016, perfil genérico y simulador OBD-II.
 
-\chapter{Diagramas del sistema}
-
-Los diagramas incluidos en el documento se agrupan por nivel de abstracción. Esta separación permite ubicar rápidamente qué figura explica el flujo general, la arquitectura, la comunicación, el firmware, el almacenamiento y la interacción entre componentes.
-
-\begin{table}[H]
-\centering
-\scriptsize
-\caption{Relación de diagramas principales incluidos en la tesis. Elaboración propia.}
-\label{tab:anexo-diagramas}
-\begin{tabular}{@{}p{0.20\textwidth}p{0.33\textwidth}p{0.37\textwidth}@{}}
-\toprule
-\textbf{Capítulo} & \textbf{Diagrama} & \textbf{Propósito} \\
-\midrule
-Capítulo 2 & Diagnóstico vehicular, OBD-II, CAN, IoT, comunicaciones e IA & Explicar fundamentos técnicos usados por AutoSense. \\
-Capítulo 4 & Arquitectura lógica del sistema & Presentar la relación vehículo, ESP32-S3, app móvil, Firebase y almacenamiento. \\
-Capítulo 4 & Esquemático, PCB y proceso de ensamble & Documentar el diseño físico del adaptador AutoSense. \\
-Capítulo 4 & Flujo de firmware y ejecución de \texttt{appLoop()} & Explicar el comportamiento interno del firmware embebido. \\
-Capítulo 4 & Persistencia, interacción y seguridad & Mostrar cómo se conservan datos, cómo interactúan las capas y qué controles se aplican. \\
-Capítulo 5 & Escenarios y gráficos de resultados & Evidenciar pruebas, señales capturadas y comportamiento durante la campaña. \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\chapter{Capturas de pantalla}
-
-Las capturas de pantalla utilizadas en el documento corresponden a la aplicación móvil ejecutada en entorno iOS de prueba, a fotografías del hardware y a evidencia visual de los escenarios de validación. Todas las imágenes de hardware, vehículo, simulador y aplicación fueron tratadas como material propio del proyecto.
-
-\begin{table}[H]
-\centering
-\scriptsize
-\caption{Capturas e imágenes principales utilizadas como evidencia visual. Elaboración propia.}
-\label{tab:anexo-capturas}
-\begin{tabular}{@{}p{0.28\textwidth}p{0.30\textwidth}p{0.32\textwidth}@{}}
-\toprule
-\textbf{Archivo} & \textbf{Tipo de evidencia} & \textbf{Uso en la tesis} \\
-\midrule
-\path{mobile_login.png}, \path{mobile_register.png}, \path{mobile_recovery.png} & Flujo de acceso & Diseño de aplicación móvil. \\
-\path{mobile_home.png}, \path{mobile_efficiency.png}, \path{mobile_alerts.png} & Pantallas principales & Visualización de estado, eficiencia y avisos. \\
-\path{mobile_realtime_pairing.png}, \path{mobile_realtime_live.png} & Conexión OBD-II & Emparejamiento BLE y telemetría en vivo. \\
-\path{hardware_pcb_empty.jpg}, \path{hardware_pcb_esp32_mount.jpg}, \path{hardware_pcb_final_assembly.jpg} & Proceso de hardware & Ensamble y validación física del PCB. \\
-\path{test_real_passat_2016.jpg} & Vehículo real & Escenario de recolección en Volkswagen Passat 2016. \\
-\path{test_obd_simulator_generic.jpg} & Simulador OBD-II & Prueba controlada de parámetros vehiculares. \\
-\bottomrule
-\end{tabular}
-\end{table}
-
 \chapter{Tablas de pruebas}
 
 Las tablas siguientes consolidan la evidencia técnica usada para validar el sistema. Los valores provienen de reportes generados por el firmware, del dashboard USB-CDC, de la aplicación móvil y del archivo Excel de salida.
