@@ -244,34 +244,36 @@
       \verb https://saemobilus.sae.org/standards/j1978_202205-obd-ii-scan-tool
       \endverb
     \endentry
-    \entry{customobd2025_lector_obd}{online}{}{}
+    \entry{sae2025_j1979_diagnostic_test_modes}{online}{}{}
       \name{author}{1}{}{%
-        {{hash=2650ffb8dbd4e204356bd421b625ed69}{%
-           family={{C. OBD}},
-           familyi={C\bibinitperiod}}}%
+        {{hash=c823732636c3fca8652a18a68c2391eb}{%
+           family={{SAE International}},
+           familyi={S\bibinitperiod}}}%
       }
-      \strng{namehash}{2650ffb8dbd4e204356bd421b625ed69}
-      \strng{fullhash}{2650ffb8dbd4e204356bd421b625ed69}
-      \strng{fullhashraw}{2650ffb8dbd4e204356bd421b625ed69}
-      \strng{bibnamehash}{2650ffb8dbd4e204356bd421b625ed69}
-      \strng{authorbibnamehash}{2650ffb8dbd4e204356bd421b625ed69}
-      \strng{authornamehash}{2650ffb8dbd4e204356bd421b625ed69}
-      \strng{authorfullhash}{2650ffb8dbd4e204356bd421b625ed69}
-      \strng{authorfullhashraw}{2650ffb8dbd4e204356bd421b625ed69}
+      \strng{namehash}{c823732636c3fca8652a18a68c2391eb}
+      \strng{fullhash}{c823732636c3fca8652a18a68c2391eb}
+      \strng{fullhashraw}{c823732636c3fca8652a18a68c2391eb}
+      \strng{bibnamehash}{c823732636c3fca8652a18a68c2391eb}
+      \strng{authorbibnamehash}{c823732636c3fca8652a18a68c2391eb}
+      \strng{authornamehash}{c823732636c3fca8652a18a68c2391eb}
+      \strng{authorfullhash}{c823732636c3fca8652a18a68c2391eb}
+      \strng{authorfullhashraw}{c823732636c3fca8652a18a68c2391eb}
+      \field{extraname}{2}
       \field{sortinit}{4}
       \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{title}{Lector de códigos de diagnóstico OBD, ¿Qué es?}
-      \field{urlday}{24}
-      \field{urlmonth}{6}
-      \field{urlyear}{2025}
+      \field{note}{Standard}
+      \field{title}{J1979: E/E Diagnostic Test Modes}
+      \field{urlday}{5}
+      \field{urlmonth}{7}
+      \field{urlyear}{2026}
       \field{urldateera}{ce}
       \verb{urlraw}
-      \verb https://customobd.com/lector-de-codigos-de-diagnostico-obd/
+      \verb https://www.sae.org/standards/j1979-e-e-diagnostic-test-modes
       \endverb
       \verb{url}
-      \verb https://customobd.com/lector-de-codigos-de-diagnostico-obd/
+      \verb https://www.sae.org/standards/j1979-e-e-diagnostic-test-modes
       \endverb
     \endentry
     \entry{mahale2025_review_predictive_maintenance}{article}{}{}
@@ -436,9 +438,45 @@
       \field{year}{2023}
       \field{dateera}{ce}
     \endentry
-    \entry{laprensa2025_fallas_vehiculos}{online}{}{}
+    \entry{nhtsa2018_critical_reasons_crashes}{report}{}{}
+      \name{author}{1}{}{%
+        {{hash=4cd4b81eac3caf7f23b51ec2f54c0558}{%
+           family={{National Highway Traffic Safety Administration}},
+           familyi={N\bibinitperiod}}}%
+      }
+      \list{institution}{1}{%
+        {U.S. Department of Transportation}%
+      }
+      \strng{namehash}{4cd4b81eac3caf7f23b51ec2f54c0558}
+      \strng{fullhash}{4cd4b81eac3caf7f23b51ec2f54c0558}
+      \strng{fullhashraw}{4cd4b81eac3caf7f23b51ec2f54c0558}
+      \strng{bibnamehash}{4cd4b81eac3caf7f23b51ec2f54c0558}
+      \strng{authorbibnamehash}{4cd4b81eac3caf7f23b51ec2f54c0558}
+      \strng{authornamehash}{4cd4b81eac3caf7f23b51ec2f54c0558}
+      \strng{authorfullhash}{4cd4b81eac3caf7f23b51ec2f54c0558}
+      \strng{authorfullhashraw}{4cd4b81eac3caf7f23b51ec2f54c0558}
       \field{sortinit}{9}
       \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{number}{DOT HS 812 506}
+      \field{title}{Critical Reasons for Crashes Investigated in the National Motor Vehicle Crash Causation Survey}
+      \field{type}{techreport}
+      \field{urlday}{7}
+      \field{urlmonth}{7}
+      \field{urlyear}{2026}
+      \field{year}{2018}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://crashstats.nhtsa.dot.gov/Api/Public/ViewPublication/812506
+      \endverb
+      \verb{url}
+      \verb https://crashstats.nhtsa.dot.gov/Api/Public/ViewPublication/812506
+      \endverb
+    \endentry
+    \entry{laprensa2025_fallas_vehiculos}{online}{}{}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
       \field{labeltitlesource}{title}
       \field{title}{Fallas mecánicas en vehículos: Principales causas de accidentes}
       \field{urlday}{23}
@@ -483,20 +521,98 @@
       \verb https://www.laprensa.hn/autos/fallas-mecanicas-vehiculos-principales-causas-accidentes-automovilisticos-KH25336408
       \endverb
     \endentry
-    \entry{wecaria2025_prediccion_averias}{online}{}{}
+    \entry{singh2021_obdii_iot}{inproceedings}{}{}
+      \name{author}{3}{}{%
+        {{hash=03cc03631be107e2fc43b9c719674287}{%
+           family={Singh},
+           familyi={S\bibinitperiod},
+           given={Siddhanta\bibnamedelima Kumar},
+           giveni={S\bibinitperiod\bibinitdelim K\bibinitperiod}}}%
+        {{hash=69970575659652f1ed4a9205ac66956e}{%
+           family={Singh},
+           familyi={S\bibinitperiod},
+           given={Ajay\bibnamedelima Kumar},
+           giveni={A\bibinitperiod\bibinitdelim K\bibinitperiod}}}%
+        {{hash=83bef391574c5295c72f752eb58fd462}{%
+           family={Sharma},
+           familyi={S\bibinitperiod},
+           given={Anand},
+           giveni={A\bibinitperiod}}}%
+      }
+      \strng{namehash}{5cfe67b29c5146336164d475d007e092}
+      \strng{fullhash}{915466e5b86ae70e470107803d12c206}
+      \strng{fullhashraw}{915466e5b86ae70e470107803d12c206}
+      \strng{bibnamehash}{915466e5b86ae70e470107803d12c206}
+      \strng{authorbibnamehash}{915466e5b86ae70e470107803d12c206}
+      \strng{authornamehash}{5cfe67b29c5146336164d475d007e092}
+      \strng{authorfullhash}{915466e5b86ae70e470107803d12c206}
+      \strng{authorfullhashraw}{915466e5b86ae70e470107803d12c206}
       \field{sortinit}{1}
       \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{title}{Wecaria, rentabiliza tu taller y fideliza tus clientes}
-      \field{urlday}{24}
-      \field{urlmonth}{6}
-      \field{urlyear}{2025}
-      \field{urldateera}{ce}
+      \field{booktitle}{Proceedings of the International Semantic Intelligence Conference 2021}
+      \field{series}{CEUR Workshop Proceedings}
+      \field{title}{OBD-II Based Intelligent Vehicular Diagnostic System Using IoT}
+      \field{volume}{2786}
+      \field{year}{2021}
+      \field{dateera}{ce}
+      \field{pages}{511\bibrangedash 515}
+      \range{pages}{5}
       \verb{urlraw}
-      \verb https://www.wecaria.com/post/prediccion-de-averias-mediante-analisis-de-datos
+      \verb https://ceur-ws.org/Vol-2786/Paper60.pdf
       \endverb
       \verb{url}
-      \verb https://www.wecaria.com/post/prediccion-de-averias-mediante-analisis-de-datos
+      \verb https://ceur-ws.org/Vol-2786/Paper60.pdf
+      \endverb
+    \endentry
+    \entry{dabarera2022_iot_vehicle_management}{inproceedings}{}{}
+      \name{author}{4}{}{%
+        {{hash=99894ab4c0fc9d22bda08e41888cb418}{%
+           family={Dabarera},
+           familyi={D\bibinitperiod},
+           given={W.\bibnamedelimi N.\bibnamedelimi S.},
+           giveni={W\bibinitperiod\bibinitdelim N\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
+        {{hash=5b087b5109f3a74c38c453202c0a1670}{%
+           family={Jayatilake},
+           familyi={J\bibinitperiod},
+           given={N.\bibnamedelimi T.},
+           giveni={N\bibinitperiod\bibinitdelim T\bibinitperiod}}}%
+        {{hash=5c434e02da5a004251c2bdb8166c6e2c}{%
+           family={Jayathissa},
+           familyi={J\bibinitperiod},
+           given={R.\bibnamedelimi H.\bibnamedelimi N.\bibnamedelimi S.},
+           giveni={R\bibinitperiod\bibinitdelim H\bibinitperiod\bibinitdelim N\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
+        {{hash=7c41920318a427b2e5b3219ce04fcd2d}{%
+           family={Weerawardane},
+           familyi={W\bibinitperiod},
+           given={Thushara},
+           giveni={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{02e4fb038ca3e5c3a6930d5939872646}
+      \strng{fullhash}{761aeaa6c7491f42bc2b1ade083827e8}
+      \strng{fullhashraw}{761aeaa6c7491f42bc2b1ade083827e8}
+      \strng{bibnamehash}{761aeaa6c7491f42bc2b1ade083827e8}
+      \strng{authorbibnamehash}{761aeaa6c7491f42bc2b1ade083827e8}
+      \strng{authornamehash}{02e4fb038ca3e5c3a6930d5939872646}
+      \strng{authorfullhash}{761aeaa6c7491f42bc2b1ade083827e8}
+      \strng{authorfullhashraw}{761aeaa6c7491f42bc2b1ade083827e8}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of the 15th International Research Conference, General Sir John Kotelawala Defence University}
+      \field{month}{9}
+      \field{title}{Towards an IoT-Based Vehicle Management System for Vehicle Tracking and Vehicle Diagnostics with OBD2 Telematics}
+      \field{year}{2022}
+      \field{dateera}{ce}
+      \field{pages}{124\bibrangedash 131}
+      \range{pages}{8}
+      \verb{urlraw}
+      \verb http://ir.kdu.ac.lk/handle/345/5906
+      \endverb
+      \verb{url}
+      \verb http://ir.kdu.ac.lk/handle/345/5906
       \endverb
     \endentry
     \entry{shafi2018_vehicle_remote_health}{article}{}{}
@@ -553,100 +669,6 @@
       \endverb
       \verb{url}
       \verb https://onlinelibrary.wiley.com/doi/10.1155/2018/8061514
-      \endverb
-    \endentry
-    \entry{singh2021_obdii_iot}{inproceedings}{}{}
-      \name{author}{3}{}{%
-        {{hash=03cc03631be107e2fc43b9c719674287}{%
-           family={Singh},
-           familyi={S\bibinitperiod},
-           given={Siddhanta\bibnamedelima Kumar},
-           giveni={S\bibinitperiod\bibinitdelim K\bibinitperiod}}}%
-        {{hash=69970575659652f1ed4a9205ac66956e}{%
-           family={Singh},
-           familyi={S\bibinitperiod},
-           given={Ajay\bibnamedelima Kumar},
-           giveni={A\bibinitperiod\bibinitdelim K\bibinitperiod}}}%
-        {{hash=83bef391574c5295c72f752eb58fd462}{%
-           family={Sharma},
-           familyi={S\bibinitperiod},
-           given={Anand},
-           giveni={A\bibinitperiod}}}%
-      }
-      \strng{namehash}{5cfe67b29c5146336164d475d007e092}
-      \strng{fullhash}{915466e5b86ae70e470107803d12c206}
-      \strng{fullhashraw}{915466e5b86ae70e470107803d12c206}
-      \strng{bibnamehash}{915466e5b86ae70e470107803d12c206}
-      \strng{authorbibnamehash}{915466e5b86ae70e470107803d12c206}
-      \strng{authornamehash}{5cfe67b29c5146336164d475d007e092}
-      \strng{authorfullhash}{915466e5b86ae70e470107803d12c206}
-      \strng{authorfullhashraw}{915466e5b86ae70e470107803d12c206}
-      \field{sortinit}{2}
-      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{booktitle}{Proceedings of the International Semantic Intelligence Conference 2021}
-      \field{series}{CEUR Workshop Proceedings}
-      \field{title}{OBD-II Based Intelligent Vehicular Diagnostic System Using IoT}
-      \field{volume}{2786}
-      \field{year}{2021}
-      \field{dateera}{ce}
-      \field{pages}{511\bibrangedash 515}
-      \range{pages}{5}
-      \verb{urlraw}
-      \verb https://ceur-ws.org/Vol-2786/Paper60.pdf
-      \endverb
-      \verb{url}
-      \verb https://ceur-ws.org/Vol-2786/Paper60.pdf
-      \endverb
-    \endentry
-    \entry{dabarera2022_iot_vehicle_management}{inproceedings}{}{}
-      \name{author}{4}{}{%
-        {{hash=99894ab4c0fc9d22bda08e41888cb418}{%
-           family={Dabarera},
-           familyi={D\bibinitperiod},
-           given={W.\bibnamedelimi N.\bibnamedelimi S.},
-           giveni={W\bibinitperiod\bibinitdelim N\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
-        {{hash=5b087b5109f3a74c38c453202c0a1670}{%
-           family={Jayatilake},
-           familyi={J\bibinitperiod},
-           given={N.\bibnamedelimi T.},
-           giveni={N\bibinitperiod\bibinitdelim T\bibinitperiod}}}%
-        {{hash=5c434e02da5a004251c2bdb8166c6e2c}{%
-           family={Jayathissa},
-           familyi={J\bibinitperiod},
-           given={R.\bibnamedelimi H.\bibnamedelimi N.\bibnamedelimi S.},
-           giveni={R\bibinitperiod\bibinitdelim H\bibinitperiod\bibinitdelim N\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
-        {{hash=7c41920318a427b2e5b3219ce04fcd2d}{%
-           family={Weerawardane},
-           familyi={W\bibinitperiod},
-           given={Thushara},
-           giveni={T\bibinitperiod}}}%
-      }
-      \strng{namehash}{02e4fb038ca3e5c3a6930d5939872646}
-      \strng{fullhash}{761aeaa6c7491f42bc2b1ade083827e8}
-      \strng{fullhashraw}{761aeaa6c7491f42bc2b1ade083827e8}
-      \strng{bibnamehash}{761aeaa6c7491f42bc2b1ade083827e8}
-      \strng{authorbibnamehash}{761aeaa6c7491f42bc2b1ade083827e8}
-      \strng{authornamehash}{02e4fb038ca3e5c3a6930d5939872646}
-      \strng{authorfullhash}{761aeaa6c7491f42bc2b1ade083827e8}
-      \strng{authorfullhashraw}{761aeaa6c7491f42bc2b1ade083827e8}
-      \field{sortinit}{2}
-      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{booktitle}{Proceedings of the 15th International Research Conference, General Sir John Kotelawala Defence University}
-      \field{month}{9}
-      \field{title}{Towards an IoT-Based Vehicle Management System for Vehicle Tracking and Vehicle Diagnostics with OBD2 Telematics}
-      \field{year}{2022}
-      \field{dateera}{ce}
-      \field{pages}{124\bibrangedash 131}
-      \range{pages}{8}
-      \verb{urlraw}
-      \verb http://ir.kdu.ac.lk/handle/345/5906
-      \endverb
-      \verb{url}
-      \verb http://ir.kdu.ac.lk/handle/345/5906
       \endverb
     \endentry
     \entry{meseguer2017_drivingstyles}{article}{}{}
@@ -864,38 +886,6 @@
       \endverb
       \verb{url}
       \verb https://www.epa.gov/sites/default/files/2016-09/documents/otaq-national-internet-based-on-board-diagnostics-obd-_information-_exchange-fy2016.pdf
-      \endverb
-    \endentry
-    \entry{sae2025_j1979_diagnostic_test_modes}{online}{}{}
-      \name{author}{1}{}{%
-        {{hash=c823732636c3fca8652a18a68c2391eb}{%
-           family={{SAE International}},
-           familyi={S\bibinitperiod}}}%
-      }
-      \strng{namehash}{c823732636c3fca8652a18a68c2391eb}
-      \strng{fullhash}{c823732636c3fca8652a18a68c2391eb}
-      \strng{fullhashraw}{c823732636c3fca8652a18a68c2391eb}
-      \strng{bibnamehash}{c823732636c3fca8652a18a68c2391eb}
-      \strng{authorbibnamehash}{c823732636c3fca8652a18a68c2391eb}
-      \strng{authornamehash}{c823732636c3fca8652a18a68c2391eb}
-      \strng{authorfullhash}{c823732636c3fca8652a18a68c2391eb}
-      \strng{authorfullhashraw}{c823732636c3fca8652a18a68c2391eb}
-      \field{extraname}{2}
-      \field{sortinit}{3}
-      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{note}{Standard}
-      \field{title}{J1979: E/E Diagnostic Test Modes}
-      \field{urlday}{5}
-      \field{urlmonth}{7}
-      \field{urlyear}{2026}
-      \field{urldateera}{ce}
-      \verb{urlraw}
-      \verb https://www.sae.org/standards/j1979-e-e-diagnostic-test-modes
-      \endverb
-      \verb{url}
-      \verb https://www.sae.org/standards/j1979-e-e-diagnostic-test-modes
       \endverb
     \endentry
     \entry{epa2016_vehicle_emissions_obd}{online}{}{}
@@ -1159,36 +1149,328 @@
       \verb https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-guides/usb-otg-console.html
       \endverb
     \endentry
-    \entry{researchgate2025_obdii_iot}{online}{}{}
+    \entry{espressif2026_esp32s3_ble_overview}{online}{}{}
       \name{author}{1}{}{%
-        {{hash=9c71ca0e8ac5da7336ffa149007898f9}{%
-           family={{ResearchGate}},
-           familyi={R\bibinitperiod}}}%
+        {{hash=66589871a3c3f27bcbf3891133af42b1}{%
+           family={{Espressif Systems}},
+           familyi={E\bibinitperiod}}}%
       }
-      \strng{namehash}{9c71ca0e8ac5da7336ffa149007898f9}
-      \strng{fullhash}{9c71ca0e8ac5da7336ffa149007898f9}
-      \strng{fullhashraw}{9c71ca0e8ac5da7336ffa149007898f9}
-      \strng{bibnamehash}{9c71ca0e8ac5da7336ffa149007898f9}
-      \strng{authorbibnamehash}{9c71ca0e8ac5da7336ffa149007898f9}
-      \strng{authornamehash}{9c71ca0e8ac5da7336ffa149007898f9}
-      \strng{authorfullhash}{9c71ca0e8ac5da7336ffa149007898f9}
-      \strng{authorfullhashraw}{9c71ca0e8ac5da7336ffa149007898f9}
-      \field{sortinit}{7}
-      \field{sortinithash}{108d0be1b1bee9773a1173443802c0a3}
+      \strng{namehash}{66589871a3c3f27bcbf3891133af42b1}
+      \strng{fullhash}{66589871a3c3f27bcbf3891133af42b1}
+      \strng{fullhashraw}{66589871a3c3f27bcbf3891133af42b1}
+      \strng{bibnamehash}{66589871a3c3f27bcbf3891133af42b1}
+      \strng{authorbibnamehash}{66589871a3c3f27bcbf3891133af42b1}
+      \strng{authornamehash}{66589871a3c3f27bcbf3891133af42b1}
+      \strng{authorfullhash}{66589871a3c3f27bcbf3891133af42b1}
+      \strng{authorfullhashraw}{66589871a3c3f27bcbf3891133af42b1}
+      \field{extraname}{3}
+      \field{sortinit}{5}
+      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{note}{PDF}
-      \field{title}{{OBD-II} based Intelligent Vehicular Diagnostic System using {IoT}}
-      \field{urlday}{27}
+      \field{note}{Technical documentation}
+      \field{title}{Introduction - ESP32-S3 - Bluetooth Low Energy}
+      \field{urlday}{5}
       \field{urlmonth}{7}
-      \field{urlyear}{2025}
+      \field{urlyear}{2026}
       \field{urldateera}{ce}
-      \true{nocite}
       \verb{urlraw}
-      \verb https://www.researchgate.net/publication/368849669_OBD_-_II_based_Intelligent_Vehicular_Diagnostic_System_using_IoT
+      \verb https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-guides/ble/overview.html
       \endverb
       \verb{url}
-      \verb https://www.researchgate.net/publication/368849669_OBD_-_II_based_Intelligent_Vehicular_Diagnostic_System_using_IoT
+      \verb https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-guides/ble/overview.html
+      \endverb
+    \endentry
+    \entry{expo2026_sdk_support}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=c29f23f279126757ba18ec74d0d27cfa}{%
+           family={{Expo}},
+           familyi={E\bibinitperiod}}}%
+      }
+      \strng{namehash}{c29f23f279126757ba18ec74d0d27cfa}
+      \strng{fullhash}{c29f23f279126757ba18ec74d0d27cfa}
+      \strng{fullhashraw}{c29f23f279126757ba18ec74d0d27cfa}
+      \strng{bibnamehash}{c29f23f279126757ba18ec74d0d27cfa}
+      \strng{authorbibnamehash}{c29f23f279126757ba18ec74d0d27cfa}
+      \strng{authornamehash}{c29f23f279126757ba18ec74d0d27cfa}
+      \strng{authorfullhash}{c29f23f279126757ba18ec74d0d27cfa}
+      \strng{authorfullhashraw}{c29f23f279126757ba18ec74d0d27cfa}
+      \field{extraname}{1}
+      \field{sortinit}{5}
+      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Expo Documentation}
+      \field{title}{FAQ: What versions of Android and iOS are supported by the Expo SDK?}
+      \field{urlday}{5}
+      \field{urlmonth}{7}
+      \field{urlyear}{2026}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://docs.expo.dev/faq/
+      \endverb
+      \verb{url}
+      \verb https://docs.expo.dev/faq/
+      \endverb
+    \endentry
+    \entry{expo2026_development_build}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=c29f23f279126757ba18ec74d0d27cfa}{%
+           family={{Expo}},
+           familyi={E\bibinitperiod}}}%
+      }
+      \strng{namehash}{c29f23f279126757ba18ec74d0d27cfa}
+      \strng{fullhash}{c29f23f279126757ba18ec74d0d27cfa}
+      \strng{fullhashraw}{c29f23f279126757ba18ec74d0d27cfa}
+      \strng{bibnamehash}{c29f23f279126757ba18ec74d0d27cfa}
+      \strng{authorbibnamehash}{c29f23f279126757ba18ec74d0d27cfa}
+      \strng{authornamehash}{c29f23f279126757ba18ec74d0d27cfa}
+      \strng{authorfullhash}{c29f23f279126757ba18ec74d0d27cfa}
+      \strng{authorfullhashraw}{c29f23f279126757ba18ec74d0d27cfa}
+      \field{extraname}{2}
+      \field{sortinit}{5}
+      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Expo Documentation}
+      \field{title}{Create a development build on EAS}
+      \field{urlday}{5}
+      \field{urlmonth}{7}
+      \field{urlyear}{2026}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://docs.expo.dev/develop/development-builds/create-a-build/
+      \endverb
+      \verb{url}
+      \verb https://docs.expo.dev/develop/development-builds/create-a-build/
+      \endverb
+    \endentry
+    \entry{welford1962_corrected_sums}{article}{}{}
+      \name{author}{1}{}{%
+        {{hash=fb43003f9f469d35fb8470d7423e1b97}{%
+           family={Welford},
+           familyi={W\bibinitperiod},
+           given={B.\bibnamedelimi P.},
+           giveni={B\bibinitperiod\bibinitdelim P\bibinitperiod}}}%
+      }
+      \strng{namehash}{fb43003f9f469d35fb8470d7423e1b97}
+      \strng{fullhash}{fb43003f9f469d35fb8470d7423e1b97}
+      \strng{fullhashraw}{fb43003f9f469d35fb8470d7423e1b97}
+      \strng{bibnamehash}{fb43003f9f469d35fb8470d7423e1b97}
+      \strng{authorbibnamehash}{fb43003f9f469d35fb8470d7423e1b97}
+      \strng{authornamehash}{fb43003f9f469d35fb8470d7423e1b97}
+      \strng{authorfullhash}{fb43003f9f469d35fb8470d7423e1b97}
+      \strng{authorfullhashraw}{fb43003f9f469d35fb8470d7423e1b97}
+      \field{sortinit}{5}
+      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Technometrics}
+      \field{number}{3}
+      \field{title}{Note on a Method for Calculating Corrected Sums of Squares and Products}
+      \field{volume}{4}
+      \field{year}{1962}
+      \field{pages}{419\bibrangedash 420}
+      \range{pages}{2}
+      \verb{doi}
+      \verb 10.1080/00401706.1962.10490022
+      \endverb
+    \endentry
+    \entry{liu2008_isolation_forest}{inproceedings}{}{}
+      \name{author}{3}{}{%
+        {{hash=231b376c1eeea575643f44deb86338c4}{%
+           family={Liu},
+           familyi={L\bibinitperiod},
+           given={Fei\bibnamedelima Tony},
+           giveni={F\bibinitperiod\bibinitdelim T\bibinitperiod}}}%
+        {{hash=9bc17f24d02724c02d418a27dfea50bb}{%
+           family={Ting},
+           familyi={T\bibinitperiod},
+           given={Kai\bibnamedelima Ming},
+           giveni={K\bibinitperiod\bibinitdelim M\bibinitperiod}}}%
+        {{hash=6b1a37e820a730061851a81dcca2d154}{%
+           family={Zhou},
+           familyi={Z\bibinitperiod},
+           given={Zhi-Hua},
+           giveni={Z\bibinithyphendelim H\bibinitperiod}}}%
+      }
+      \strng{namehash}{facf64454d5633117a12faa599e65058}
+      \strng{fullhash}{b38d2601a5a1a63e9c41ca76b68a2df4}
+      \strng{fullhashraw}{b38d2601a5a1a63e9c41ca76b68a2df4}
+      \strng{bibnamehash}{b38d2601a5a1a63e9c41ca76b68a2df4}
+      \strng{authorbibnamehash}{b38d2601a5a1a63e9c41ca76b68a2df4}
+      \strng{authornamehash}{facf64454d5633117a12faa599e65058}
+      \strng{authorfullhash}{b38d2601a5a1a63e9c41ca76b68a2df4}
+      \strng{authorfullhashraw}{b38d2601a5a1a63e9c41ca76b68a2df4}
+      \field{sortinit}{5}
+      \field{sortinithash}{20e9b4b0b173788c5dace24730f47d8c}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{2008 Eighth IEEE International Conference on Data Mining}
+      \field{title}{Isolation Forest}
+      \field{year}{2008}
+      \field{pages}{413\bibrangedash 422}
+      \range{pages}{10}
+      \verb{doi}
+      \verb 10.1109/ICDM.2008.17
+      \endverb
+    \endentry
+    \entry{mrdiy2026_esp32_can_shield_v12}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=43b598b79314c780a7a86c0e79fb4aa9}{%
+           family={{MrDIY.ca}},
+           familyi={M\bibinitperiod}}}%
+      }
+      \strng{namehash}{43b598b79314c780a7a86c0e79fb4aa9}
+      \strng{fullhash}{43b598b79314c780a7a86c0e79fb4aa9}
+      \strng{fullhashraw}{43b598b79314c780a7a86c0e79fb4aa9}
+      \strng{bibnamehash}{43b598b79314c780a7a86c0e79fb4aa9}
+      \strng{authorbibnamehash}{43b598b79314c780a7a86c0e79fb4aa9}
+      \strng{authornamehash}{43b598b79314c780a7a86c0e79fb4aa9}
+      \strng{authorfullhash}{43b598b79314c780a7a86c0e79fb4aa9}
+      \strng{authorfullhashraw}{43b598b79314c780a7a86c0e79fb4aa9}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Reference design and product documentation}
+      \field{title}{ESP32 CAN Bus Shield (v1.2)}
+      \field{urlday}{6}
+      \field{urlmonth}{7}
+      \field{urlyear}{2026}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://store.mrdiy.ca/p/esp32-can-bus-shield-v1-2/
+      \endverb
+      \verb{url}
+      \verb https://store.mrdiy.ca/p/esp32-can-bus-shield-v1-2/
+      \endverb
+    \endentry
+    \entry{sae2016_j1962_diagnostic_connector}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=c823732636c3fca8652a18a68c2391eb}{%
+           family={{SAE International}},
+           familyi={S\bibinitperiod}}}%
+      }
+      \strng{namehash}{c823732636c3fca8652a18a68c2391eb}
+      \strng{fullhash}{c823732636c3fca8652a18a68c2391eb}
+      \strng{fullhashraw}{c823732636c3fca8652a18a68c2391eb}
+      \strng{bibnamehash}{c823732636c3fca8652a18a68c2391eb}
+      \strng{authorbibnamehash}{c823732636c3fca8652a18a68c2391eb}
+      \strng{authornamehash}{c823732636c3fca8652a18a68c2391eb}
+      \strng{authorfullhash}{c823732636c3fca8652a18a68c2391eb}
+      \strng{authorfullhashraw}{c823732636c3fca8652a18a68c2391eb}
+      \field{extraname}{4}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Standard}
+      \field{title}{J1962\_201607: Diagnostic Connector}
+      \field{urlday}{6}
+      \field{urlmonth}{7}
+      \field{urlyear}{2026}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://www.sae.org/standards/j1962_201607-diagnostic-connector
+      \endverb
+      \verb{url}
+      \verb https://www.sae.org/standards/j1962_201607-diagnostic-connector
+      \endverb
+    \endentry
+    \entry{ti2026_sn65hvd23x_datasheet}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=67e54b1ee931f3f4bddfefa5fbde5fd8}{%
+           family={{Texas Instruments}},
+           familyi={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \strng{fullhash}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \strng{fullhashraw}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \strng{bibnamehash}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \strng{authorbibnamehash}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \strng{authornamehash}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \strng{authorfullhash}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \strng{authorfullhashraw}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \field{extraname}{1}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Datasheet}
+      \field{title}{SN65HVD23x 3.3-V CAN Bus Transceivers}
+      \field{urlday}{6}
+      \field{urlmonth}{7}
+      \field{urlyear}{2026}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://www.ti.com/lit/gpn/SN65HVD233
+      \endverb
+      \verb{url}
+      \verb https://www.ti.com/lit/gpn/SN65HVD233
+      \endverb
+    \endentry
+    \entry{onsemi2026_nup2105l}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=04d6d002c53dc55a907e40f8c47a640e}{%
+           family={{onsemi}},
+           familyi={o\bibinitperiod}}}%
+      }
+      \strng{namehash}{04d6d002c53dc55a907e40f8c47a640e}
+      \strng{fullhash}{04d6d002c53dc55a907e40f8c47a640e}
+      \strng{fullhashraw}{04d6d002c53dc55a907e40f8c47a640e}
+      \strng{bibnamehash}{04d6d002c53dc55a907e40f8c47a640e}
+      \strng{authorbibnamehash}{04d6d002c53dc55a907e40f8c47a640e}
+      \strng{authornamehash}{04d6d002c53dc55a907e40f8c47a640e}
+      \strng{authorfullhash}{04d6d002c53dc55a907e40f8c47a640e}
+      \strng{authorfullhashraw}{04d6d002c53dc55a907e40f8c47a640e}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Product documentation}
+      \field{title}{NUP2105L ESD Protection Diode, Dual Line CAN Bus Protector}
+      \field{urlday}{6}
+      \field{urlmonth}{7}
+      \field{urlyear}{2026}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://www.onsemi.com/products/discrete-power-modules/esd-protection-diodes/nup2105
+      \endverb
+      \verb{url}
+      \verb https://www.onsemi.com/products/discrete-power-modules/esd-protection-diodes/nup2105
+      \endverb
+    \endentry
+    \entry{ti2026_tps54331_product}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=67e54b1ee931f3f4bddfefa5fbde5fd8}{%
+           family={{Texas Instruments}},
+           familyi={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \strng{fullhash}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \strng{fullhashraw}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \strng{bibnamehash}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \strng{authorbibnamehash}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \strng{authornamehash}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \strng{authorfullhash}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \strng{authorfullhashraw}{67e54b1ee931f3f4bddfefa5fbde5fd8}
+      \field{extraname}{2}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Product documentation}
+      \field{title}{TPS54331 3-A, 28-V Input, Step-Down DC/DC Converter with Eco-mode}
+      \field{urlday}{6}
+      \field{urlmonth}{7}
+      \field{urlyear}{2026}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://www.ti.com/product/TPS54331
+      \endverb
+      \verb{url}
+      \verb https://www.ti.com/product/TPS54331
       \endverb
     \endentry
   \enddatalist

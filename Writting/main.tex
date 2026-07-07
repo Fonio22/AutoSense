@@ -235,7 +235,7 @@ Esta investigación se orienta al diseño, desarrollo e implementación de una s
 
 \section{Descripción de la problemática}
 
-Los vehículos tradicionales no cuentan con un seguimiento continuo de su estado mecánico, lo que puede derivar en averías imprevistas, costos de reparación elevados y riesgos para la seguridad vial. De hecho, hasta un 12\% de los accidentes automovilísticos podrían estar relacionados con algún tipo de falla mecánica \cite{laprensa2025_fallas_vehiculos}. Problemas como frenos defectuosos o reventones de ruedas se encuentran entre las causas recurrentes de incidentes, muchas veces debido a un mantenimiento insuficiente o a la ausencia de advertencias oportunas sobre su deterioro \cite{laprensa2025_fallas_autos}. Estas situaciones evidencian la necesidad de detectar a tiempo condiciones irregulares antes de que se conviertan en riesgos mayores.
+Los vehículos tradicionales no cuentan con un seguimiento continuo de su estado mecánico, lo que puede derivar en averías imprevistas, costos de reparación elevados y riesgos para la seguridad vial. Aunque la mayoría de los siniestros viales se relaciona con factores humanos, estudios de seguridad vehicular también documentan razones críticas asociadas al vehículo, especialmente neumáticos, ruedas y frenos \cite{nhtsa2018_critical_reasons_crashes}. En el contexto local, reportes periodísticos han señalado la incidencia de fallas mecánicas y mantenimiento insuficiente como factores de riesgo para la conducción \cite{laprensa2025_fallas_vehiculos,laprensa2025_fallas_autos}. Estas situaciones evidencian la necesidad de detectar a tiempo condiciones irregulares antes de que se conviertan en riesgos mayores.
 
 Históricamente, el mantenimiento de vehículos se ha gestionado de manera reactiva, cuando la falla ya ocurrió, o preventiva, bajo intervalos fijos de servicio. Sin embargo, ambos enfoques presentan limitaciones: el reactivo llega demasiado tarde y el preventivo puede no captar cambios rápidos entre revisiones. Además, muchos conductores dependen exclusivamente de la luz de ``Check Engine'' u otras señales básicas del tablero, que por lo general aparecen cuando el problema ya se ha manifestado \cite{selvaraj2023_advanced_telematics}. En consecuencia, variaciones sostenidas en temperatura, voltaje, carga del motor, consumo o códigos de diagnóstico pueden pasar inadvertidas hasta convertirse en fallas más serias.
 
@@ -244,7 +244,9 @@ En este escenario, resulta pertinente un monitoreo inteligente apoyado por IoT e
 Por lo tanto, el problema radica en cómo aprovechar la infraestructura existente en los vehículos, especialmente el puerto OBD-II y sus sensores asociados, para brindar al conductor una supervisión accesible y alertas tempranas en tiempo real. Los vehículos compatibles con OBD-II pueden beneficiarse de un sistema que convierta datos disponibles en información útil para la conducción y el mantenimiento, siempre que expongan señales suficientes para el perfil aplicado \cite{mahale2025_review_predictive_maintenance}.
 
 \section{Objetivo general}
-Diseñar e implementar una arquitectura IoT vehicular con procesamiento en el borde e integración de algoritmos de inteligencia artificial ligera, que permita monitorear parámetros críticos del vehículo mediante la interfaz OBD-II, detectar desviaciones operativas y visualizar datos a través de una aplicación móvil.
+Diseñar e implementar una arquitectura IoT vehicular con procesamiento en el borde (Edge Computing) e integración de algoritmos de inteligencia artificial, que permita el diagnóstico en tiempo real de parámetros críticos del vehículo mediante la interfaz OBD-II, con visualización de datos a través de una aplicación móvil y capacidad de expansión a funciones de control remoto.
+
+Para mantener la coherencia con el alcance validado, en esta tesis el diagnóstico se interpreta como monitoreo, lectura de parámetros, detección de desviaciones y generación de alertas tempranas. La expansión hacia funciones de control remoto se conserva como posibilidad arquitectónica y línea futura, no como una función activa implementada sobre el vehículo real.
 \section{Objetivos específicos}
 
 \begin{enumerate}
@@ -884,7 +886,7 @@ La figura resume el recorrido de la IA local: primero se consolida la muestra, l
 
 \subsection{Baseline estadístico y Z-score}
 
-La primera capa del detector es estadística. El firmware mantiene una línea base con estadísticos acumulados por vehículo y por contexto de conducción mediante el método de Welford, que permite actualizar media y varianza sin guardar todas las muestras históricas. El baseline se divide en una referencia global y referencias por contexto: \texttt{IDLE}, \texttt{CRUISING}, \texttt{ACCELERATING}, \texttt{DECELERATING} y \texttt{UNKNOWN}. Cuando existe suficiente historial contextual, el detector usa el contexto específico; si todavía no hay suficientes muestras, recurre al baseline global. Esa lógica evita que una condición de manejo poco frecuente sesgue toda la referencia del vehículo.
+La primera capa del detector es estadística. El firmware mantiene una línea base con estadísticos acumulados por vehículo y por contexto de conducción mediante el método de Welford, propuesto para actualizar sumas corregidas de cuadrados y productos de manera incremental \cite{welford1962_corrected_sums}. Esta técnica permite actualizar media y varianza sin guardar todas las muestras históricas. El baseline se divide en una referencia global y referencias por contexto: \texttt{IDLE}, \texttt{CRUISING}, \texttt{ACCELERATING}, \texttt{DECELERATING} y \texttt{UNKNOWN}. Cuando existe suficiente historial contextual, el detector usa el contexto específico; si todavía no hay suficientes muestras, recurre al baseline global. Esa lógica evita que una condición de manejo poco frecuente sesgue toda la referencia del vehículo.
 
 El estado \texttt{baselineReady} no se activa con cualquier dato aislado. En el firmware, la condición mínima exige suficientes muestras válidas por señal y, por defecto, al menos 300 observaciones para considerar estable la referencia. Mientras ese umbral no se cumple, el detector conserva el comportamiento de aprendizaje y limita la interpretación de anomalías. Además, el perfil activo forma parte de la identidad del modelo; si cambia el vehículo o cambia el hash del perfil, la línea base se reinicia para no mezclar comportamientos incompatibles.
 
@@ -902,7 +904,7 @@ El resultado no se interpreta como una avería concreta, sino como una medida de
 
 \subsection{Isolation Forest compacto}
 
-La segunda capa del detector es un \textit{Isolation Forest} pequeño diseñado para ejecutarse en el ESP32-S3 sin memoria dinámica durante la inferencia. El modelo usa 16 árboles, un tamaño de muestra de 64, una ventana circular de 128 muestras y una profundidad máxima de 6 niveles. Esa configuración busca equilibrar costo computacional y sensibilidad, porque el objetivo no es construir un modelo pesado de laboratorio, sino una detección robusta que pueda mantenerse activa mientras el vehículo circula.
+La segunda capa del detector es un \textit{Isolation Forest} pequeño, técnica planteada para aislar observaciones anómalas mediante árboles aleatorios y submuestreo \cite{liu2008_isolation_forest}. En AutoSense, el modelo está diseñado para ejecutarse en el ESP32-S3 sin memoria dinámica durante la inferencia. Usa 16 árboles, un tamaño de muestra de 64, una ventana circular de 128 muestras y una profundidad máxima de 6 niveles. Esa configuración busca equilibrar costo computacional y sensibilidad, porque el objetivo no es construir un modelo pesado de laboratorio, sino una detección robusta que pueda mantenerse activa mientras el vehículo circula.
 
 El entrenamiento local ocurre solo cuando el contexto es estable. El firmware usa muestras de \texttt{IDLE} o \texttt{CRUISING} para alimentar el bosque y evita aprender a partir de escenarios claramente anómalos o demasiado inestables. Si el bosque aún no está listo, el score final depende exclusivamente del Z-score. Cuando ya existe modelo, el detector combina ambas señales con los pesos configurados en el firmware; por defecto, 70\% para Z-score y 30\% para Isolation Forest. Esta combinación favorece la interpretación estadística de la línea base, pero deja al bosque la tarea de reforzar patrones que no siempre se expresan como una desviación puntual de una sola señal.
 
@@ -1033,7 +1035,7 @@ En AutoSense, esa misma preocupación por la interpretación se materializa en u
     \end{tabular}
 \end{table}
 
-La comparación anterior permite ubicar la propuesta en el cruce entre adquisición OBD-II, procesamiento embebido y presentación móvil. A diferencia de los trabajos que privilegian una sola dimensión del problema, AutoSense articula el flujo completo: el ESP32-S3 lee y analiza, la aplicación móvil organiza la experiencia del usuario y la nube conserva sincronización e historial cuando está disponible. Esa integración es la base sobre la cual se desarrolla el resto de la propuesta.
+La comparación anterior permite ubicar la propuesta en el cruce entre adquisición OBD-II, procesamiento embebido y presentación móvil. A diferencia de los trabajos que privilegian una sola dimensión del problema, AutoSense articula el flujo completo: hardware propio OBD-II/CAN, política de solo lectura, registro binario local, análisis ligero en el ESP32-S3, aplicación móvil y respaldo en Firebase cuando está disponible. El vacío que atiende esta tesis no es la creación de un algoritmo aislado, sino la integración verificable de esas capas en un prototipo funcional validado con simulador y vehículo real.
 
 \newpage
 
@@ -1185,7 +1187,7 @@ La validación siguió además una secuencia segura de operación: primero se ve
 
 \label{sec:criterios-evaluacion}
 
-La evaluación del prototipo se orientó a comprobar funcionamiento técnico verificable y no percepciones subjetivas. En consecuencia, los criterios se definieron a partir de señales observables en el dashboard del ESP32-S3, la aplicación móvil, el registro binario y la sincronización remota. El sistema se consideró adecuado cuando las lecturas, la comunicación y la persistencia se mantuvieron consistentes durante sesiones continuas de prueba.
+La evaluación del prototipo se orientó a comprobar funcionamiento técnico verificable y no percepciones subjetivas. En consecuencia, los criterios se definieron a partir de señales observables en el dashboard del ESP32-S3, la aplicación móvil, el registro binario y la sincronización remota. Como umbral mínimo, una sesión se consideró válida cuando el enlace CAN permanecía activo, existían respuestas y decodificaciones OBD-II, la guardia de solo lectura no reportaba bloqueos, la muestra contenía señales válidas, el contador de log avanzaba y la aplicación recibía telemetría. Las métricas de latencia extremo a extremo, pérdida de paquetes BLE y tiempo de sincronización histórica se dejaron como mediciones de rendimiento pendientes, porque requieren instrumentación específica adicional.
 
 \begin{table}[H]
 \centering
@@ -2419,7 +2421,7 @@ Después de esta comprobación inicial, las pruebas se dividieron en dos grupos 
 
 El escenario principal de validación fue un Volkswagen Passat 2016. En este vehículo se utilizó el perfil \path{vw_passat_2016}, porque corresponde al perfil verificado dentro del proyecto y permite recorrer el flujo completo de AutoSense: conexión al puerto OBD-II, lectura de datos por CAN, identificación del vehículo, aplicación del perfil, transmisión BLE hacia la aplicación móvil, registro de datos y posterior análisis de telemetría.
 
-La campaña de recolección se desarrolló aproximadamente durante dos meses, con sesiones operativas de cinco a seis horas diarias. Durante ese periodo se recolectaron datos en conducción real, incluyendo trayectos urbanos y de carretera. Esta distinción fue importante porque el comportamiento del vehículo no es igual en tráfico urbano, donde existen paradas frecuentes, aceleraciones cortas y variación de velocidad, que en carretera, donde predominan velocidades más sostenidas y condiciones de carga más estables.
+La campaña de recolección se desarrolló entre el 5 de mayo y el 3 de julio de 2026. Durante ese periodo se consolidaron 86\,998 registros con una cadencia de 10 segundos, equivalentes a 241.7 horas efectivas de observación. Los datos incluyen conducción real en trayectos urbanos y de carretera. Esta distinción fue importante porque el comportamiento del vehículo no es igual en tráfico urbano, donde existen paradas frecuentes, aceleraciones cortas y variación de velocidad, que en carretera, donde predominan velocidades más sostenidas y condiciones de carga más estables.
 
 \begin{figure}[H]
 \centering
@@ -2599,7 +2601,7 @@ En los reportes del dashboard USB-CDC se observó el estado \path{log=ON}, con s
 
 La exportación \path{obdlog.csv} permitió revisar el formato de salida del historial. El archivo contiene campos como \path{sequence}, \path{uptime_seconds}, \path{valid_mask}, \path{rpm}, \path{speed_kph}, \path{coolant_c}, \path{throttle_pct}, \path{fuel_level_pct}, \path{engine_load_pct}, \path{map_kpa}, \path{maf_gps} y \path{ecu_voltage_v}. La presencia de \path{valid_mask} es relevante porque no todas las señales están disponibles en cada muestra; por tanto, el registro conserva cuáles magnitudes fueron válidas y evita interpretar espacios vacíos como mediciones reales.
 
-En la capa móvil se verificó que la aplicación dispone de persistencia de sesión y mecanismos para conservar estado de viaje, perfil activo y datos asociados al usuario. Además, se incorporó el flujo de sincronización histórica del \texttt{obdlog}: al conectarse por BLE, la app consulta el último contador respaldado, descarga solo los registros nuevos, guarda un archivo binario local y lo sube a Firebase Storage cuando el modo de datos permite sincronización en la nube. Firestore mantiene el índice de exportación y el cursor de secuencia, de modo que una reconexión posterior no repite registros ya sincronizados. Esta validación confirma la lógica de respaldo incremental; para campañas de mayor escala, la evidencia debe complementarse con capturas del archivo \texttt{.bin}, el objeto en Storage y el documento de índice generado por Firestore.
+En la capa móvil se verificó que la aplicación dispone de persistencia de sesión y mecanismos para conservar estado de viaje, perfil activo y datos asociados al usuario. Además, el repositorio incorpora el flujo de sincronización histórica del \texttt{obdlog}: al conectarse por BLE, la app consulta el último contador respaldado, descarga solo los registros nuevos, guarda un archivo binario local y lo sube a Firebase Storage cuando el modo de datos permite sincronización en la nube. Firestore mantiene el índice de exportación y el cursor de secuencia, de modo que una reconexión posterior no repite registros ya sincronizados. La prueba documenta la implementación del flujo y sus reglas de acceso; la evidencia operacional completa debe registrarse con el archivo \texttt{.bin}, el objeto en Storage y el documento de índice generado por Firestore durante una sesión de exportación.
 
 \begin{table}[H]
 \centering
@@ -2618,7 +2620,7 @@ Capacidad local & Espacio suficiente para campaña prolongada antes de sobrescri
 \addlinespace
 Aplicación móvil & Persistencia de sesión, viaje activo y perfil de vehículo. & Uso de SecureStore, caché de perfil y flujo de viaje en la app. & Verificado. \\
 \addlinespace
-Firebase & Respaldo histórico en nube. & Exportación BLE incremental, archivo local \texttt{.bin}, Storage por usuario y cursor en Firestore. & Verificado. \\
+Firebase & Respaldo histórico en nube. & Código de exportación BLE incremental, reglas de Storage por usuario y cursor en Firestore. & En código. \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -2687,11 +2689,15 @@ Frecuencia por PID en simulador & 1.8 a 2.8 Hz & Métricas del simulador despué
 Registro local & 10 s por muestra & Dashboard con logger activo y error cero. & Adecuado. \\
 \addlinespace
 Capacidad de historial & 274720 registros & Contador de capacidad del firmware. & Suficiente. \\
+\addlinespace
+Latencia extremo a extremo & No medida con instrumento dedicado & Pruebas funcionales sin cronometraje certificado. & Pendiente. \\
+\addlinespace
+Tiempo de sincronización histórica & No medido en campaña completa & Flujo implementado en app, firmware y reglas Firebase. & Pendiente. \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Los resultados muestran que el prototipo mantuvo tasas de consulta y decodificación suficientes para la visualización y el registro planteados en esta etapa. La prueba no pretende establecer el límite máximo del sistema, sino confirmar que, bajo los escenarios utilizados, el flujo de adquisición, transmisión BLE, dashboard USB-CDC y almacenamiento local se mantuvo operativo.
+Los resultados muestran que el prototipo mantuvo tasas de consulta y decodificación suficientes para la visualización y el registro planteados en esta etapa. La prueba no pretende establecer el límite máximo del sistema, sino confirmar que, bajo los escenarios utilizados, el flujo de adquisición, transmisión BLE, dashboard USB-CDC y almacenamiento local se mantuvo operativo. Las métricas de latencia extremo a extremo, pérdida de paquetes BLE y duración de sincronización histórica quedan identificadas como mediciones pendientes para una validación de rendimiento más estricta.
 
 \section{Resultados obtenidos}
 
@@ -2717,6 +2723,25 @@ Temperatura del refrigerante & 89,74 $^\circ$C & 95,07 $^\circ$C & 37,17 a 95,07
 Carga del motor & 34,09\% & 60,55\% & 9,80 a 60,55\% \\
 \addlinespace
 Consumo instantáneo & 4,02 L/h & 11,69 L/h & 0,53 a 11,69 L/h \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Además del segmento urbano usado para los gráficos, la campaña completa fue clasificada por contexto de ruta. Esta lectura permite verificar que AutoSense no se evaluó únicamente con una muestra aislada, sino con registros distribuidos entre ciudad, carretera y segmentos conservadores no determinados.
+
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{Resumen por contexto de ruta en la campaña completa. Elaboración propia.}
+\label{tab:route-context-summary}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+\textbf{Contexto} & \textbf{Registros} & \textbf{Vel. media} & \textbf{RPM media} & \textbf{Temp. media} & \textbf{Carga media} & \textbf{Consumo medio} \\
+ & & \textbf{(km/h)} & & \textbf{($^\circ$C)} & \textbf{(\%)} & \textbf{(L/h)} \\
+\midrule
+\texttt{city} & 71\,114 & 28,81 & 2225,31 & 91,58 & 33,50 & 4,08 \\
+\texttt{highway} & 8521 & 95,13 & 2086,38 & 94,17 & 34,31 & 3,98 \\
+\texttt{unknown} & 7363 & 39,55 & 2262,08 & 93,97 & 31,99 & 3,91 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -2845,11 +2870,44 @@ IA local en el ESP32-S3 & El firmware combina Welford, Z-score e Isolation Fores
 
 El gráfico de Z-score de la Figura~\ref{fig:resultados-zscore} permite interpretar los resultados desde una perspectiva diferente a la lectura directa de unidades físicas. Velocidad, RPM, temperatura, carga y consumo poseen escalas distintas; por tanto, compararlas directamente puede producir una interpretación equivocada. Al normalizar las señales, el sistema observa qué tan lejos se encuentra cada variable de su comportamiento medio dentro del conjunto analizado. Esta representación es útil porque permite identificar desviaciones relativas, aunque las unidades originales sean diferentes.
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.98\textwidth,height=0.54\textheight,keepaspectratio]{Figures/ai_zscore_deviation_index.png}
+\caption{Índice de desviación normalizada calculado a partir del segmento urbano analizado. Visualización propia generada con los datos exportados del Excel de salida; no representa una falla mecánica confirmada.}
+\label{fig:ai-zscore-deviation-index}
+\end{figure}
+
+La Figura~\ref{fig:ai-zscore-deviation-index} resume el mayor valor absoluto de Z-score entre variables seleccionadas. La mayor parte del segmento permanece en rangos bajos, mientras que algunos picos aislados superan el umbral visual de seguimiento. En el contexto de esta tesis, esos picos no se interpretan como fallas, sino como instantes donde una o varias señales se alejaron de su comportamiento medio dentro del tramo analizado. Esta lectura es coherente con el alcance del prototipo: identificar desviaciones que ameritan observación, no emitir un diagnóstico mecánico definitivo.
+
 En el firmware, este principio se implementa mediante una línea base estadística calculada con Welford. La ventaja de este método para un sistema embebido es que permite actualizar promedio y desviación estándar sin almacenar todas las muestras históricas en memoria. Esto se ajusta al enfoque de registro y procesamiento en el borde, donde el ESP32-S3 dispone de recursos limitados y debe mantener una operación estable durante periodos prolongados. La línea base convierte la telemetría en una referencia dinámica del comportamiento esperado del vehículo.
 
 El Z-score aporta una interpretación explicable: permite estimar cuánto se aleja una señal de su patrón aprendido. Esta característica es importante para una tesis aplicada, porque el sistema no se comporta como una caja negra completa; puede indicar qué señales contribuyen más a una desviación. Por ejemplo, una elevación simultánea de carga, consumo y caudal de aire no tiene el mismo significado que una desviación térmica sostenida. En el primer caso puede tratarse de una aceleración normal; en el segundo, puede requerir observación continua si se mantiene fuera de la línea base.
 
 El Tiny Isolation Forest complementa el análisis estadístico al evaluar patrones multivariables. La implementación del firmware utiliza 16 árboles, tamaño de muestra 64 y profundidad máxima 6, con inferencia local y sin depender de memoria dinámica para la etapa de evaluación. Cuando el modelo ya se encuentra listo, el puntaje final combina 70\% del resultado por Z-score y 30\% del Isolation Forest. Esta ponderación mantiene mayor peso en una medida estadística explicable, mientras agrega una capa adicional para reconocer combinaciones de señales que podrían no apreciarse con una sola variable.
+
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{Evidencia funcional y límites del módulo de análisis local. Elaboración propia.}
+\label{tab:ai-analysis-evidence}
+\begin{tabular}{@{}p{0.24\textwidth}p{0.34\textwidth}p{0.30\textwidth}@{}}
+\toprule
+\textbf{Elemento} & \textbf{Evidencia disponible} & \textbf{Interpretación} \\
+\midrule
+Entrada de análisis & Muestras OBD-II compactas con \path{validMask} y señales decodificadas. & El análisis opera sobre datos ya recolectados, sin generar comandos adicionales al vehículo. \\
+\addlinespace
+Baseline estadístico & Welford, mínimo de 300 muestras y persistencia local del estado. & Permite construir una referencia incremental del comportamiento normal observado. \\
+\addlinespace
+Z-score & Segmento urbano con 775 muestras válidas; índice medio de desviación 1,27 y máximo 7,12 en la visualización externa. & Muestra desviaciones relativas, no fallas confirmadas. \\
+\addlinespace
+Tiny Isolation Forest & 16 árboles, muestra 64, profundidad máxima 6 y peso de 30\% cuando el modelo está listo. & Refuerza la detección multivariable con bajo costo de memoria. \\
+\addlinespace
+Severidades & Estados \path{NORMAL}, \path{WATCH}, \path{WARNING} y \path{CRITICAL} con \textit{debounce}. & Reduce alertas por picos aislados y prioriza persistencia. \\
+\addlinespace
+Métrica no evaluada & No existe conjunto de fallas mecánicas etiquetadas. & No se reportan precisión, recall ni F1 del detector. \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 La inferencia configurada cada 10 segundos también es coherente con el propósito del sistema. AutoSense no busca reaccionar ante cada variación instantánea como si fuera una falla, sino identificar patrones persistentes que ameriten seguimiento. Por esa razón, el firmware aplica un mecanismo de \textit{debounce}: una muestra aislada puede elevar el estado a \path{WATCH}, pero para reportar estados como \path{WARNING} o \path{CRITICAL} se requiere persistencia dentro de una ventana de inferencias. Esta decisión reduce falsos positivos en condiciones reales, donde frenadas, aceleraciones y cambios de pendiente pueden alterar temporalmente varias señales.
 
@@ -2906,7 +2964,7 @@ Diseñar un sistema de adquisición de datos vehiculares mediante lectura de par
 \addlinespace
 Implementar un módulo de análisis de datos vehiculares que identifique variaciones anómalas y genere alertas tempranas. & El firmware incorporó línea base estadística con Welford, Z-score por señal, Tiny Isolation Forest, combinación ponderada de puntajes, debounce y severidades \path{NORMAL}, \path{WATCH}, \path{WARNING} y \path{CRITICAL}. & Cumplido como detección de desviaciones, no como diagnóstico mecánico definitivo. \\
 \addlinespace
-Implementar un entorno en la nube para almacenamiento estructurado, consultas históricas, visualización remota y respaldo. & La solución integró Firebase Auth, Firestore, Functions y Storage para usuario, vehículo, perfiles, estado, alertas y respaldo histórico. El ESP32-S3 conserva historial local en \path{obdlog}; la app descarga los registros no sincronizados por BLE, guarda el archivo binario local y lo respalda en Firebase Storage con índice y cursor en Firestore. & Cumplido dentro del alcance funcional del prototipo. \\
+Implementar un entorno en la nube para almacenamiento estructurado, consultas históricas, visualización remota y respaldo. & La solución integró Firebase Auth, Firestore, Functions y Storage para usuario, vehículo, perfiles, estado, alertas y respaldo histórico. El ESP32-S3 conserva historial local en \path{obdlog}; la app incluye descarga incremental por BLE, archivo binario local, respaldo en Firebase Storage e índice con cursor en Firestore. & Cumplido en implementación; requiere evidencia operacional extendida para exportaciones completas. \\
 \addlinespace
 Diseñar e integrar una aplicación móvil multiplataforma para visualizar estado, alertas e historial. & Se desarrolló una aplicación React Native/Expo con sesión autenticada, pantallas de inicio, eficiencia, alertas, tiempo real, perfil, vehículo y vistas de detalle. La app recibe telemetría por BLE, presenta datos en vivo y organiza información del usuario y vehículo. & Cumplido dentro de la versión funcional del prototipo. \\
 \addlinespace
@@ -2915,7 +2973,7 @@ Validar el funcionamiento integral mediante pruebas prácticas de adquisición, 
 \end{tabular}
 \end{table}
 
-Con base en la tabla anterior, el objetivo general se considera alcanzado en el alcance experimental definido para el proyecto. Se diseñó e implementó una arquitectura IoT vehicular con procesamiento en el borde e integración de inteligencia artificial ligera, capaz de leer parámetros críticos desde OBD-II, procesarlos localmente y visualizarlos mediante una aplicación móvil. El cumplimiento no implica cobertura universal de todos los vehículos ni diagnóstico mecánico exacto, sino validación funcional de una arquitectura completa y operativa sobre el entorno probado.
+Con base en la tabla anterior, el objetivo general se considera alcanzado en el alcance experimental definido para el proyecto. Se diseñó e implementó una arquitectura IoT vehicular con procesamiento en el borde e integración de inteligencia artificial ligera, capaz de leer parámetros críticos desde OBD-II, procesarlos localmente y visualizarlos mediante una aplicación móvil. La capacidad de expansión hacia funciones de control queda planteada desde la arquitectura y los trabajos futuros, pero no forma parte de las funciones activas validadas sobre el vehículo real. El cumplimiento no implica cobertura universal de todos los vehículos ni diagnóstico mecánico exacto, sino validación funcional de una arquitectura completa y operativa sobre el entorno probado.
 
 \section{Recomendaciones}
 
@@ -2925,7 +2983,7 @@ También se recomienda ampliar la validación a otros vehículos compatibles con
 
 En relación con la recolección de datos, se recomienda continuar separando los escenarios de prueba por contexto de conducción. La distinción entre \texttt{city}, \texttt{highway} y \texttt{unknown} permite analizar las señales con mayor precisión y evita comparar condiciones operativas diferentes como si fueran equivalentes. Para futuras campañas, conviene documentar la duración de cada sesión, el tipo de ruta, el estado del vehículo, la versión del firmware, el perfil aplicado y cualquier evento observado durante la conducción.
 
-Respecto al almacenamiento, se recomienda definir políticas de retención, consulta y depuración para los archivos históricos ya sincronizados. El flujo implementado descarga registros incrementales del ESP32-S3, conserva una copia local en el teléfono y respalda el binario en Firebase Storage, mientras Firestore mantiene el cursor y el índice de exportación. A partir de esa base, futuras versiones deberían establecer cuánto tiempo se conservan los archivos, cómo se agrupan por viaje o día y qué resúmenes se generan para evitar depender de la descarga completa del binario en cada consulta.
+Respecto al almacenamiento, se recomienda definir políticas de retención, consulta y depuración para los archivos históricos ya sincronizados. El flujo implementado descarga registros incrementales del ESP32-S3, conserva una copia local en el teléfono y respalda el binario en Firebase Storage, mientras Firestore mantiene el cursor y el índice de exportación. A partir de esa base, futuras versiones deberían documentar en cada exportación el rango de secuencias, el tamaño del archivo, la ruta local, la ruta en Storage y el documento Firestore asociado. También conviene establecer cuánto tiempo se conservan los archivos, cómo se agrupan por viaje o día y qué resúmenes se generan para evitar depender de la descarga completa del binario en cada consulta.
 
 Para el módulo de análisis de datos, se recomienda continuar calibrando la línea base estadística y los umbrales de alerta con más sesiones reales. El uso de Welford, Z-score e Isolation Forest ligero resulta adecuado para análisis local, pero su precisión práctica depende de la cantidad y variedad de datos observados. Antes de asociar una alerta con una falla concreta, sería necesario contrastarla con inspecciones técnicas, códigos DTC confirmados o evidencia de mantenimiento.
 
