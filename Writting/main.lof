@@ -1,0 +1,37 @@
+\babel@toc {spanish}{}\relax 
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Esquemático de referencia del flujo de diagnóstico vehicular en AutoSense.}}{14}{figure.caption.6}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Esquema conceptual del sistema OBD2 integrado a AutoSense.}}{16}{figure.caption.8}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Secuencia conceptual de consulta y respuesta del sistema OBD2.}}{17}{figure.caption.9}%
+\contentsline {figure}{\numberline {2.4}{\ignorespaces Relación entre los niveles diferenciales del bus CAN y el arbitraje por prioridad, adaptado de Vector Informatik \blx@tocontentsinit {0}\cite {vector2021_can_bus_levels,vector2022_can_bitwise_arbitration}.}}{21}{figure.caption.11}%
+\contentsline {figure}{\numberline {2.5}{\ignorespaces Arquitectura vertical de la IoT de AutoSense.}}{29}{figure.caption.14}%
+\contentsline {figure}{\numberline {2.6}{\ignorespaces Diagrama vertical de los canales de comunicación de AutoSense.}}{32}{figure.caption.15}%
+\contentsline {figure}{\numberline {2.7}{\ignorespaces Flujo vertical de la aplicación móvil de AutoSense.}}{34}{figure.caption.16}%
+\contentsline {figure}{\numberline {2.8}{\ignorespaces Pipeline local de inteligencia artificial de AutoSense.}}{37}{figure.caption.17}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Arquitectura lógica de AutoSense y relación entre sus capas principales.}}{59}{figure.caption.24}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Esquemático general del hardware AutoSense generado en KiCad. Elaboración propia.}}{63}{figure.caption.26}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Vista de layout de la PCB AutoSense en KiCad. Elaboración propia.}}{71}{figure.caption.29}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces PCB AutoSense recibida antes del montaje del módulo ESP32-S3. Elaboración propia.}}{72}{figure.caption.30}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces Montaje del módulo ESP32-S3-WROOM-1 sobre la PCB AutoSense. Elaboración propia.}}{73}{figure.caption.31}%
+\contentsline {figure}{\numberline {4.6}{\ignorespaces Prototipo AutoSense ensamblado con conector OBD-II macho. Elaboración propia.}}{74}{figure.caption.32}%
+\contentsline {figure}{\numberline {4.7}{\ignorespaces Flujo interno del firmware AutoSense desde el arranque hasta la persistencia y salida de datos.}}{77}{figure.caption.34}%
+\contentsline {figure}{\numberline {4.8}{\ignorespaces Ciclo lógico de ejecución de \texttt {appLoop()} en el firmware AutoSense.}}{78}{figure.caption.35}%
+\contentsline {figure}{\numberline {4.9}{\ignorespaces Flujo de acceso de la aplicación móvil AutoSense en simulador iOS. Elaboración propia.}}{85}{figure.caption.38}%
+\contentsline {figure}{\numberline {4.10}{\ignorespaces Pantallas principales de supervisión y resumen operativo en AutoSense. Elaboración propia.}}{87}{figure.caption.40}%
+\contentsline {figure}{\numberline {4.11}{\ignorespaces Pantallas de detalle para avisos de batería, frenos y temperatura. Elaboración propia.}}{88}{figure.caption.41}%
+\contentsline {figure}{\numberline {4.12}{\ignorespaces Pantallas de detalle para llantas y consumo dentro del flujo móvil. Elaboración propia.}}{89}{figure.caption.42}%
+\contentsline {figure}{\numberline {4.13}{\ignorespaces Perfil y vehículo en la aplicación móvil}}{90}{figure.caption.43}%
+\contentsline {figure}{\numberline {4.14}{\ignorespaces Estados de conexión y visualización en tiempo real desde la aplicación móvil. Elaboración propia.}}{92}{figure.caption.44}%
+\contentsline {figure}{\numberline {4.15}{\ignorespaces Flujo general de persistencia y sincronización de datos en AutoSense. Elaboración propia.}}{94}{figure.caption.45}%
+\contentsline {figure}{\numberline {4.16}{\ignorespaces Secuencia general de interacción entre usuario, aplicación, ESP32-S3 y Firebase. Elaboración propia.}}{101}{figure.caption.49}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }

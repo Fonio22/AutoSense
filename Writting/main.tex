@@ -1136,17 +1136,958 @@ Si alguno de estos criterios no se cumplía, el ajuste regresaba a la fase de in
 
 \section{Descripción general del sistema}
 
+\label{sec:descripcion-general-sistema}
+
+AutoSense se concibe como un sistema integrado de monitoreo vehicular que enlaza la lectura OBD-II/CAN con una capa embebida de procesamiento, una interfaz móvil y servicios de respaldo local y en la nube. La solución parte del vehículo, donde el ESP32-S3 actúa como núcleo de adquisición y control en modo de solo lectura; continúa con la transmisión de datos por BLE y USB-CDC; y culmina en la aplicación móvil, que presenta la información al usuario y coordina la sincronización con Firebase y con el almacenamiento local del prototipo.
+
+El flujo operativo del repositorio refleja esa integración de extremo a extremo. Al iniciar una sesión, el firmware obtiene la información básica del vehículo, intenta leer el VIN y, con ese dato, el sistema resuelve el perfil correspondiente. Si el vehículo coincide con el caso verificado del proyecto, se aplica el perfil \texttt{vw\_passat\_2016}; en caso contrario, se recurre a un perfil genérico compatible. A partir de allí, el firmware organiza el sondeo de parámetros, consolida la telemetría y conserva un historial binario en LittleFS para mantener trazabilidad de las lecturas sin depender exclusivamente de la memoria volátil.
+
+En paralelo, la aplicación móvil consume la telemetría y gestiona la experiencia del usuario mediante autenticación, navegación y visualización de estado en tiempo real. Ese nivel superior no sustituye al firmware, sino que lo complementa: la app solicita perfil, recibe notificaciones, muestra lecturas relevantes y respalda la persistencia de usuario y vehículo mediante Firebase. Con ello, AutoSense no se limita a capturar datos del vehículo, sino que los organiza como una cadena operativa completa que va desde la adquisición embebida hasta la consulta en pantalla.
+
+Las subsecciones siguientes desarrollan por separado los elementos que conforman esta cadena: la arquitectura general, el hardware, el firmware, la aplicación móvil, el almacenamiento, la integración, el módulo de análisis y los mecanismos de seguridad. Esta sección solo establece la visión global del sistema para ubicar el papel de cada componente dentro del flujo completo de AutoSense.
+
 \section{Arquitectura del sistema}
+
+\label{sec:arquitectura-sistema}
+
+\subsection{Visión por capas}
+
+AutoSense se organiza como una arquitectura local-first, compuesta por capas que cooperan pero no dependen entre sí para cada lectura individual. En la base está la capa vehicular, donde el sistema extrae datos OBD-II/CAN desde el puerto de diagnóstico del automóvil bajo una política de solo lectura. Sobre ella opera la capa embebida del ESP32-S3, que interpreta las respuestas del bus, aplica el perfil activo y consolida las señales útiles para el resto del sistema. Esta capa fue elegida porque Espressif documenta soporte para BLE y para consola USB OTG/CDC dentro de la familia ESP32-S3, lo que coincide con los canales reales del prototipo \cite{espressif2026_esp32s3_get_started,espressif2026_esp32s3_usb_otg_console,espressif2026_esp32s3_ble_overview}.
+
+La aplicación móvil constituye la capa de interacción con el usuario. Se construye con React Native y Expo Router, pero se distribuye como \emph{development build} para habilitar el módulo BLE nativo fuera de Expo Go, de acuerdo con la documentación oficial de Expo \cite{expo2026_sdk_support,expo2026_development_build}. Por encima de la app se ubica Firebase, que no actúa como transportador de cada muestra, sino como infraestructura de identidad, resolución de perfiles, metadata y sincronización. En paralelo, LittleFS proporciona la persistencia local del prototipo, de modo que el historial y el perfil activo sobreviven a reinicios o a pérdidas temporales de conectividad.
+
+\begin{figure}[H]
+\centering
+\begingroup
+\shorthandoff{<>}
+\resizebox{0.96\textwidth}{!}{%
+\begin{tikzpicture}[
+    >=Stealth,
+    node distance=10mm,
+    every node/.style={font=\small},
+    autosenseblock/.style={
+        draw,
+        rounded corners=2mm,
+        align=center,
+        text width=3.7cm,
+        minimum height=1.25cm,
+        inner sep=5pt
+    },
+    veh/.style={autosenseblock, fill=gray!10},
+    esp/.style={autosenseblock, fill=blue!10},
+    app/.style={autosenseblock, fill=green!12},
+    cloud/.style={autosenseblock, fill=orange!12},
+    store/.style={autosenseblock, fill=yellow!18},
+    serial/.style={autosenseblock, fill=cyan!12}
+]
+    \node[veh] (veh) {Vehículo\\OBD-II / CAN};
+    \node[esp, below=of veh] (esp) {ESP32-S3\\Firmware AutoSense\\\footnotesize adquisición, guardia de solo lectura, compactación};
+    \node[app, below=of esp] (app) {Aplicación móvil\\React Native / Expo\\\footnotesize sesión, telemetría y navegación};
+    \node[cloud, below=of app] (cloud) {Firebase\\Auth, Firestore, Functions y Storage};
+
+    \node[store, left=18mm of esp] (lfs) {LittleFS\\\footnotesize perfil activo\\historial binario};
+    \node[serial, right=18mm of esp] (usb) {USB-CDC\\dashboard local\\monitor serial};
+
+    \draw[->, thick] (veh) -- node[midway, right, font=\scriptsize]{OBD-II/CAN} (esp);
+    \draw[<->, thick] (esp) -- node[midway, right, font=\scriptsize]{BLE} (app);
+    \draw[<->, thick] (app) -- node[midway, right, font=\scriptsize]{Wi-Fi / Internet} (cloud);
+    \draw[->, thick] (esp) -- node[midway, above, font=\scriptsize]{persistencia local} (lfs);
+    \draw[->, thick] (esp) -- node[midway, above, font=\scriptsize]{salida serial} (usb);
+\end{tikzpicture}
+}
+\endgroup
+\caption{Arquitectura lógica de AutoSense y relación entre sus capas principales.}
+\label{fig:arquitectura-autosense}
+\end{figure}
+
+La figura resume la separación funcional del sistema. El vehículo genera la información bruta; el ESP32-S3 la recibe, la valida y la compacta; la app la consume y la presenta; Firebase administra el soporte de sesión y perfiles; y LittleFS conserva el estado local. El flujo de red no pasa por el microcontrolador como un enlace Wi-Fi independiente, sino por el teléfono, que actúa como puente entre la comunicación BLE y los servicios en la nube.
+
+\subsection{Flujo de datos y responsabilidades}
+
+El arranque del sistema comienza con el emparejamiento de la aplicación móvil hacia el dispositivo \texttt{AutoSense OBD2}. La app autentica al usuario, restaura la sesión local y consulta al firmware información básica de identificación. A partir de esa respuesta se intenta leer el VIN; si el vehículo coincide con el caso verificado del proyecto, el backend resuelve el perfil \texttt{vw\_passat\_2016}; en caso contrario, se mantiene un perfil genérico compatible. Esa resolución se realiza en la nube porque centraliza la lógica de identificación y permite servir metadatos consistentes al cliente y al prototipo embebido.
+
+Una vez resuelto el perfil, la aplicación descarga el archivo JSON correspondiente, valida tamaño e integridad y lo transmite al ESP32-S3 por BLE en fragmentos. El firmware acepta el paquete, verifica la política de solo lectura, almacena la copia activa en LittleFS y reinicia el sondeo de \texttt{signals[]} con base en ese perfil. En esa etapa, el \texttt{ObdService} extrae respuestas OBD-II, el gestor de perfiles mantiene la configuración aplicada, el clasificador de rutas separa trayectos de tipo \texttt{city} y \texttt{highway}, y el detector local de anomalías resume el comportamiento con los modelos ya definidos en el repositorio.
+
+El mismo flujo de datos se expone por dos canales de salida distintos. BLE entrega la telemetría a la app para la vista de tiempo real, mientras que USB-CDC publica un dashboard local pensado para monitoreo, depuración y contraste durante las pruebas. Esta dualidad evita que la validación dependa de una sola interfaz: si una capa falla, la otra permite verificar si el problema está en el transporte, en la decodificación o en la persistencia del firmware.
+
+\subsection{Persistencia y sincronización}
+
+La arquitectura separa claramente la persistencia local de la sincronización remota. En el ESP32-S3, LittleFS conserva el perfil activo, la configuración y el historial binario de lecturas, por lo que el sistema puede continuar operando aunque el teléfono se desconecte o la red no esté disponible. En la aplicación, SecureStore conserva la sesión de Firebase y el cliente mantiene una caché del perfil activo en almacenamiento del teléfono para no repetir la transferencia completa en cada arranque. Esta estrategia reduce latencia, evita dependencias innecesarias y permite restaurar el contexto de uso con rapidez.
+
+Firebase cubre el plano de control y no el plano de adquisición en tiempo real. Authentication mantiene el acceso seguro, Firestore conserva documentos de usuario, vehículo y actividad, Functions resuelve el VIN y el perfil, y Storage hospeda los archivos de perfil descargables. De esta manera, la nube actúa como centro de identidad y distribución de configuración, mientras que la telemetría de alta frecuencia permanece en el firmware y en la app. El resultado es una arquitectura dividida en responsabilidades claras: el vehículo produce, el ESP32-S3 procesa y conserva, la app presenta y sincroniza, y la nube administra el contexto del sistema.
+
+\begin{table}[H]
+\centering
+\caption{Componentes principales de la arquitectura de AutoSense.}
+\label{tab:componentes-arquitectura}
+\renewcommand{\arraystretch}{1.08}
+\setlength{\tabcolsep}{4pt}
+\small
+\begin{tabular}{@{}p{0.17\textwidth}p{0.21\textwidth}p{0.25\textwidth}p{0.25\textwidth}@{}}
+\toprule
+Componente & Función & Entrada & Salida o persistencia \\
+\midrule
+Vehículo OBD-II/CAN & Fuente de datos diagnósticos y de telemetría & Solicitudes OBD-II de solo lectura & Tramas CAN, VIN, DTC y respuestas de PIDs \\
+ESP32-S3 y firmware & Adquisición, control y compactación de datos & Tramas CAN, perfil activo y parámetros de ejecución & Muestras compactas, BLE, USB-CDC y log binario \\
+Aplicación móvil & Interfaz de usuario y puente hacia la nube & BLE, sesión autenticada y perfil descargado & Pantallas, comandos de sesión y sincronización \\
+Firebase & Identidad, perfiles y sincronización & VIN, documentos y metadatos del usuario & Auth, Firestore, Functions y Storage \\
+LittleFS & Persistencia local embebida & Perfil activo, configuración y eventos de log & Perfil activo e historial binario \\
+USB-CDC & Consola local de monitoreo & Estado interno del firmware & Dashboard serial y diagnóstico local \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+En conjunto, esta arquitectura permite que AutoSense funcione con un nivel de desacoplamiento suficiente para evolucionar cada bloque sin romper el resto. El firmware puede cambiar su plan de consulta sin alterar la interfaz móvil; la app puede actualizar su navegación sin modificar la lógica CAN; y la nube puede ampliar el catálogo de perfiles sin tocar la política de solo lectura del ESP32-S3. Esa separación es la base sobre la que se desarrollan las subsecciones siguientes del capítulo.
 
 \section{Diseño del hardware}
 
+El diseño de hardware de AutoSense corresponde a una placa impresa propia para conectar el prototipo directamente al puerto OBD-II del vehículo, acondicionar la comunicación CAN y alojar el microcontrolador ESP32-S3 que ejecuta el firmware del sistema. A diferencia de una solución basada en módulos sueltos, la placa integra en un mismo circuito el conector OBD-II, el transceptor CAN, las etapas de alimentación, la interfaz USB-C, el selector de modo de operación y el módulo ESP32-S3-WROOM-1. Esta integración reduce cableado externo, mejora la repetibilidad de las pruebas y permite que el dispositivo se comporte como un adaptador compacto para uso dentro del vehículo.
+
+La propuesta tomó como referencia funcional el \emph{ESP32 CAN Bus Shield v1.2} de MrDIY, el cual combina un ESP32, un transceptor CAN, conector OBD-II, conversión de alimentación a 3.3 V, protección del bus y selector de modo de lectura/escritura \cite{mrdiy2026_esp32_can_shield_v12}. Sin embargo, AutoSense no replica el shield de forma directa: el diseño fue adaptado para integrar el ESP32-S3-WROOM-1 en la PCB, exponer USB-C para programación y depuración, separar redes internas de 3.3 V y mantener la política de uso orientada a lectura segura del bus vehicular. En consecuencia, el hardware no se plantea como una tarjeta genérica de experimentación CAN, sino como la base física del sistema AutoSense.
+
+\subsection{Referencia de diseño y bloques funcionales}
+
+El hardware se organizó en bloques para que cada función crítica quedara separada dentro del esquemático: entrada OBD-II, protección y alimentación desde el vehículo, conversión DC-DC, regulación de 3.3 V, transceptor CAN, núcleo ESP32-S3, USB-C y elementos de control manual. Esta división facilita la lectura del circuito y permite relacionar cada componente con una responsabilidad concreta dentro del prototipo.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.58\textheight,keepaspectratio]{Figures/hardware_schematic_autosense.pdf}
+\caption{Esquemático general del hardware AutoSense generado en KiCad. Elaboración propia.}
+\label{fig:hardware-schematic-autosense}
+\end{figure}
+
+En la figura \ref{fig:hardware-schematic-autosense} se observa que el conector OBD-II alimenta el sistema y entrega las líneas CAN al transceptor. El ESP32-S3 no se conecta directamente al par diferencial del vehículo; esa función la realiza el SN65HVD233, que traduce entre las señales lógicas del microcontrolador y el bus CAN diferencial. De igual manera, la alimentación del automóvil no entra directamente al módulo ESP32-S3, sino que pasa por protección, filtrado y regulación antes de llegar a las redes internas de 3.3 V.
+
+\begin{table}[H]
+\centering
+\caption{Componentes principales del hardware AutoSense.}
+\label{tab:hardware-componentes-principales}
+\renewcommand{\arraystretch}{1.08}
+\setlength{\tabcolsep}{4pt}
+\small
+\begin{tabular}{@{}p{0.17\textwidth}p{0.24\textwidth}p{0.49\textwidth}@{}}
+\toprule
+Referencia & Componente & Función dentro del diseño \\
+\midrule
+J1 & C-OBD-II-16M & Conector macho OBD-II de 16 pines para alimentación, masa y acceso a CAN del vehículo. \\
+U1 & SN65HVD233 & Transceptor CAN de 3.3 V que adapta las señales lógicas del ESP32-S3 al par diferencial CANH/CANL. \\
+U2 & ESP32-S3-WROOM-1 & Núcleo de procesamiento, comunicación BLE, USB y ejecución del firmware AutoSense. \\
+U5 & TPS54331DR & Convertidor reductor para obtener una etapa regulada desde la alimentación vehicular. \\
+U4 & AMS1117-3.3 & Regulador lineal usado para una red local de 3.3 V dentro de la placa. \\
+D9 & NUP2105LT1G & Protección ESD y transitorios sobre las líneas CANH/CANL. \\
+F1 & Fusible 500 mA / 24 V & Protección básica ante sobrecorriente en la entrada de alimentación. \\
+J2 & USB-C USB 2.0 & Programación, alimentación por USB y consola local de depuración. \\
+SW1 & Selector R/RW & Conmutación física entre modo de lectura y modo lectura/escritura del circuito CAN. \\
+SW3/SW4 & Pulsadores & Botones de BOOT y RESET para carga de firmware y reinicio manual. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{longtable}{@{}p{0.20\textwidth}p{0.08\textwidth}p{0.20\textwidth}p{0.42\textwidth}@{}}
+\caption{Lista de materiales agrupada del PCB AutoSense.}
+\label{tab:hardware-bom-agrupado}\\
+\toprule
+Referencias & Cant. & Valor & Función en la placa \\
+\midrule
+\endfirsthead
+\toprule
+Referencias & Cant. & Valor & Función en la placa \\
+\midrule
+\endhead
+C1, C2 & 2 & 4.7 uF & Filtrado y estabilidad en etapas de alimentación. \\
+C3, C4 & 2 & 10 nF & Desacoplo de alta frecuencia y control de ruido. \\
+C5 & 1 & 1 nF & Filtrado puntual de señales o compensación local. \\
+C6, C8, C12, C14 & 4 & 100 nF & Desacoplo cercano a circuitos integrados. \\
+C7 & 1 & 47 nF & Filtrado asociado a red de control o estabilidad. \\
+C9, C10 & 2 & 47 uF & Reserva de energía y suavizado de la etapa de potencia. \\
+C11 & 1 & 10 uF & Filtrado local de alimentación. \\
+C13, C15 & 2 & 22 uF & Filtrado de salida y soporte ante variaciones de carga. \\
+C16 & 1 & 1 uF & Desacoplo local de baja capacidad. \\
+D1, D3 & 2 & LED & Indicadores visuales de estado o alimentación. \\
+D2, D5, D8 & 3 & 1N5822 & Diodos Schottky para protección y conducción controlada. \\
+D6, D7 & 2 & SS14 & Diodos Schottky SMD para protección de alimentación. \\
+D9 & 1 & NUP2105LT1G & Protección ESD/transitorios en las líneas CAN. \\
+F1 & 1 & 500 mA / 24 V & Fusible de entrada para limitar sobrecorriente. \\
+J1 & 1 & C-OBD-II-16M & Conector físico hacia el puerto OBD-II del vehículo. \\
+J2 & 1 & USB-C USB 2.0 & Programación, consola USB-CDC y alimentación de pruebas. \\
+JP1--JP4 & 4 & Solder jumper abierto & Configuración opcional de rutas y funciones del hardware. \\
+L1 & 1 & 6.8 uH & Inductor de la etapa buck de alimentación. \\
+R1, R3 & 2 & 1 k & Limitación de corriente o polarización local. \\
+R2, R19, R26 & 3 & 10 k & Pull-up/pull-down y polarización de señales de control. \\
+R4, R5, R12, R25 & 4 & 100 & Resistencias serie para protección y acondicionamiento de señal. \\
+R8 & 1 & 330 k & Red divisora o ajuste de umbral en alimentación. \\
+R9 & 1 & 2 k & Red de polarización o indicador. \\
+R10 & 1 & 68 k & Red divisora o realimentación de regulación. \\
+R11 & 1 & 20 & Resistencia serie de baja impedancia. \\
+R13 & 1 & 30 k & Red de ajuste o realimentación. \\
+R15 & 1 & 1 M & Polarización de alta impedancia. \\
+R16 & 1 & 220 k & Red divisora o ajuste de umbral. \\
+R17 & 1 & 47 k & Polarización de control. \\
+R18 & 1 & 0 & Puente de configuración o enlace de red. \\
+R20 & 1 & 1.5 k & Limitación/polarización asociada a indicador o control. \\
+R21 & 1 & 3 k & Polarización local. \\
+R22 & 1 & 220 ohm & Limitación de corriente para indicador o señal. \\
+R23, R24 & 2 & 5.1 k & Resistencias CC del conector USB-C para identificación del dispositivo. \\
+SW1 & 1 & SW\_SPDT & Selector físico de modo R/RW. \\
+SW3, SW4 & 2 & TS-1088R-02026 & Botones BOOT y RESET. \\
+U1 & 1 & SN65HVD233 & Transceptor CAN de 3.3 V. \\
+U2 & 1 & ESP32-S3-WROOM-1 & Microcontrolador y radio BLE/Wi-Fi del prototipo. \\
+U4 & 1 & AMS1117-3.3 & Regulador lineal de 3.3 V. \\
+U5 & 1 & TPS54331DR & Convertidor buck principal desde la entrada vehicular. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Conexión OBD-II y entrada vehicular}
+
+El punto de entrada del sistema es el conector J1, correspondiente a un conector OBD-II macho de 16 pines. Este conector permite que el prototipo se inserte directamente en el puerto de diagnóstico del automóvil sin cables intermedios. La selección de pines se alinea con el uso típico del diagnóstico OBD-II sobre CAN: el pin 6 se emplea para CAN High, el pin 14 para CAN Low, el pin 16 para alimentación de batería y los pines 4 y 5 para referencia de tierra. Esta disposición se relaciona con la función del conector de diagnóstico definida por SAE J1962 \cite{sae2016_j1962_diagnostic_connector}.
+
+\begin{table}[H]
+\centering
+\caption{Pines OBD-II utilizados por AutoSense.}
+\label{tab:hardware-pines-obd}
+\renewcommand{\arraystretch}{1.08}
+\setlength{\tabcolsep}{5pt}
+\small
+\begin{tabular}{@{}p{0.15\textwidth}p{0.22\textwidth}p{0.53\textwidth}@{}}
+\toprule
+Pin OBD-II & Señal en la PCB & Uso en AutoSense \\
+\midrule
+4 & GND & Referencia de tierra del sistema y retorno de alimentación. \\
+5 & GND & Referencia de señal asociada al puerto de diagnóstico. \\
+6 & \texttt{CAN\_H} & Línea diferencial alta del bus CAN del vehículo. \\
+14 & \texttt{CAN\_L} & Línea diferencial baja del bus CAN del vehículo. \\
+16 & \texttt{+BATT} & Entrada de alimentación proveniente del vehículo. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Desde el punto de vista del diseño, la conexión OBD-II cumple dos funciones: suministra energía al dispositivo y entrega el medio físico de comunicación. Por esa razón, el trazado de la PCB concentra cerca del conector los elementos de protección y la etapa inicial de potencia. Esta ubicación reduce recorridos innecesarios de señales sensibles y mantiene separados los caminos de alimentación, CAN y control digital.
+
+\subsection{Acondicionamiento CAN y protección del bus}
+
+El acondicionamiento de la comunicación CAN se realiza mediante el transceptor U1, identificado en el esquemático como SN65HVD233. Este circuito integrado opera con alimentación de 3.3 V y permite comunicar un controlador CAN lógico con el bus diferencial definido por la capa física CAN. La documentación de Texas Instruments describe esta familia como transceptores CAN compatibles con ISO 11898-2, con tasas de señalización de hasta 1 Mbps y protección de pines de bus ante condiciones eléctricas adversas \cite{ti2026_sn65hvd23x_datasheet}. En AutoSense, su función es aislar al ESP32-S3 de la conexión directa al par CANH/CANL y entregar una interfaz eléctrica adecuada para el vehículo.
+
+El diseño incorpora además el dispositivo D9, NUP2105LT1G, conectado a las líneas CAN. Este componente se utiliza como protector bidireccional contra descargas electrostáticas y transitorios sobre dos líneas de bus CAN. onsemi lo identifica como un protector ESD de doble línea para CAN, orientado a mejorar la confiabilidad del sistema ante eventos eléctricos dañinos \cite{onsemi2026_nup2105l}. En el contexto de AutoSense, esta protección es relevante porque el prototipo se conecta a un entorno automotriz real, donde pueden existir picos de tensión, ruido y desconexiones durante pruebas.
+
+El selector SW1 representa una decisión importante del diseño: mantener una diferencia física entre el modo de lectura y el modo lectura/escritura. Aunque el firmware del proyecto aplica una política de consulta de solo lectura, el hardware conserva el selector R/RW inspirado en el diseño de referencia. Esto permite que, durante el uso normal del prototipo, el dispositivo se mantenga en una condición orientada a observación del bus, mientras que cualquier modo más activo queda limitado a pruebas controladas.
+
+\subsection{Alimentación y regulación}
+
+La alimentación principal ingresa desde el pin 16 del conector OBD-II como red \texttt{+BATT}. Debido a que esta tensión proviene del vehículo, no se utiliza directamente para alimentar al microcontrolador. Primero pasa por elementos de protección y por la etapa de conversión que adapta el nivel eléctrico a las necesidades internas de la placa. El diseño incluye un fusible F1 de 500 mA / 24 V, diodos Schottky y capacitores de filtrado, los cuales contribuyen a limitar fallos por sobrecorriente, polaridad o transitorios.
+
+El regulador principal de conmutación es U5, TPS54331DR. De acuerdo con Texas Instruments, el TPS54331 es un convertidor reductor de entrada hasta 28 V, corriente de salida de hasta 3 A y frecuencia de conmutación nominal de 570 kHz \cite{ti2026_tps54331_product}. En AutoSense, esta etapa permite derivar una alimentación estable desde la línea vehicular antes de alimentar los circuitos digitales. El uso de un convertidor tipo buck es coherente con el entorno de trabajo, porque la tensión disponible en el automóvil excede ampliamente los 3.3 V requeridos por el ESP32-S3 y el transceptor CAN.
+
+La PCB separa redes como \texttt{3V3\_SYS}, \texttt{3V3\_OBD} y \texttt{3V3\_USB}. Esta separación no significa que existan sistemas independientes, sino que el diseño distingue dominios de alimentación según su función: sistema principal, interfaz OBD/CAN y entrada USB. El regulador U4 AMS1117-3.3 complementa esta arquitectura al proporcionar una etapa lineal local de 3.3 V. Los capacitores de 100 nF, 1 uF, 4.7 uF, 10 uF, 22 uF y 47 uF distribuidos en el esquemático se utilizan para desacoplo, estabilidad de regulación y reducción de ruido.
+
+\subsection{Núcleo ESP32-S3 y señales de control}
+
+El núcleo de procesamiento de la placa es U2, ESP32-S3-WROOM-1. Este módulo concentra el microcontrolador, radio, memoria integrada del módulo y antena PCB. En AutoSense, el ESP32-S3 ejecuta el firmware de adquisición OBD-II, administra el perfil activo, procesa muestras compactas, expone datos por BLE y permite monitoreo local por USB. La elección del ESP32-S3 se relaciona con sus capacidades de comunicación y soporte oficial para BLE y consola USB, ya descritas por Espressif \cite{espressif2026_esp32s3_get_started,espressif2026_esp32s3_ble_overview,espressif2026_esp32s3_usb_otg_console}.
+
+El diseño deja visible una zona de exclusión de antena en la PCB. Esta zona evita colocar cobre o componentes debajo del área de radiación del módulo, lo cual ayuda a conservar el desempeño de la comunicación inalámbrica. En la práctica, esto es importante para AutoSense porque la app móvil se comunica con el dispositivo por BLE; una mala ubicación del módulo o una antena obstruida podría reducir alcance, estabilidad de conexión o calidad de emparejamiento.
+
+Los pulsadores SW3 y SW4 corresponden a BOOT y RESET. Estos controles permiten ingresar al modo de carga de firmware y reiniciar el dispositivo sin desconectarlo físicamente. Además, la placa incluye resistencias de polarización, resistencias serie y LEDs de estado que apoyan la puesta en marcha y la verificación visual durante pruebas. Estos elementos no ejecutan el diagnóstico por sí mismos, pero reducen fricción durante programación, validación de hardware y depuración.
+
+\subsection{USB-C, programación y depuración}
+
+La interfaz J2 corresponde a un conector USB-C limitado a USB 2.0. En el diseño de AutoSense, este puerto cumple tres propósitos: alimentar la placa durante pruebas de escritorio, cargar el firmware al ESP32-S3 y abrir una consola local de depuración. Las líneas \texttt{D+} y \texttt{D-} conectan la comunicación USB hacia el microcontrolador, mientras que las resistencias de 5.1 k en las líneas CC permiten que el puerto sea reconocido correctamente como dispositivo USB.
+
+Esta interfaz es especialmente útil antes de conectar el equipo al vehículo. Durante el desarrollo, el USB-C permite verificar que el ESP32-S3 arranca, que la consola responde y que el firmware se ejecuta antes de energizar la placa desde el puerto OBD-II. En pruebas reales, USB-CDC sirve como canal de contraste frente a BLE, porque permite observar mensajes de estado, telemetría y errores locales desde el monitor serial.
+
+\subsection{Diseño físico de la PCB y proceso de ensamble}
+
+La PCB fue diseñada para alojar el conector OBD-II en un extremo y el módulo ESP32-S3 en el cuerpo principal de la tarjeta. El área superior concentra la zona de conexión con el vehículo, potencia y CAN; la zona central agrupa regulación, protección y USB-C; y la parte inferior deja el módulo ESP32-S3 con su zona de antena libre. Esta distribución reduce interferencias entre potencia, radio y bus CAN, y permite que el dispositivo se inserte físicamente en el puerto OBD-II con una orientación compacta.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\textwidth,height=0.62\textheight,keepaspectratio]{Figures/hardware_pcb_layout.png}
+\caption{Vista de layout de la PCB AutoSense en KiCad. Elaboración propia.}
+\label{fig:hardware-pcb-layout}
+\end{figure}
+
+El proceso de ensamble se desarrolló de forma incremental para reducir el riesgo de fallas acumuladas. En primer lugar, se recibió y revisó la PCB fabricada, antes de instalar el módulo principal y el conector OBD-II. Esta inspección inicial permitió verificar la correspondencia entre el diseño y la placa física: huella del ESP32-S3, ubicación del USB-C, botones BOOT y RESET, pads de componentes SMD, serigrafía, taladros de fijación y espacio reservado para la antena. Esta etapa es importante porque cualquier error mecánico o de huella resulta más fácil de detectar antes de soldar componentes costosos o difíciles de retirar.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.72\textwidth,height=0.52\textheight,keepaspectratio]{Figures/hardware_pcb_empty.jpg}
+\caption{PCB AutoSense recibida antes del montaje del módulo ESP32-S3. Elaboración propia.}
+\label{fig:hardware-pcb-empty}
+\end{figure}
+
+Después de la inspección de la tarjeta, se procedió con el montaje de los elementos básicos y del módulo ESP32-S3-WROOM-1. En esta etapa se cuidó la alineación del módulo sobre la huella central, la continuidad de los pads laterales y la limpieza del área de soldadura. El montaje del microcontrolador representa una fase crítica, porque concentra las señales de alimentación, USB, control, comunicación con el transceptor CAN y salida inalámbrica por BLE. Por ello, antes de avanzar al ensamble final, el prototipo debía conservar una unión mecánica estable y una soldadura visualmente uniforme.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\textwidth,height=0.60\textheight,keepaspectratio]{Figures/hardware_pcb_esp32_mount.jpg}
+\caption{Montaje del módulo ESP32-S3-WROOM-1 sobre la PCB AutoSense. Elaboración propia.}
+\label{fig:hardware-pcb-esp32-mount}
+\end{figure}
+
+Finalmente, se integró el conector OBD-II macho, completando la interfaz física con el vehículo. Esta última etapa convierte la PCB en un prototipo funcional capaz de insertarse directamente en el puerto de diagnóstico. Una vez ensamblado el conjunto, se revisó la fijación mecánica del conector, la separación entre pines, la orientación de la placa y la accesibilidad del puerto USB-C y de los botones de control. Con ello, el hardware quedó listo para pruebas eléctricas, carga de firmware y validación posterior en el vehículo.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\textwidth,height=0.60\textheight,keepaspectratio]{Figures/hardware_pcb_final_assembly.jpg}
+\caption{Prototipo AutoSense ensamblado con conector OBD-II macho. Elaboración propia.}
+\label{fig:hardware-pcb-final-assembly}
+\end{figure}
+
+En conjunto, el diseño de hardware cumple el papel de puente físico entre el vehículo y el sistema digital de AutoSense. El conector OBD-II proporciona acceso y alimentación; la etapa de protección reduce riesgos eléctricos; el transceptor CAN adapta el bus automotriz al microcontrolador; la regulación estabiliza la energía; el ESP32-S3 ejecuta la lógica embebida; y USB-C facilita programación y diagnóstico. Con esta base, la siguiente sección puede centrarse en el firmware, ya no como una abstracción aislada, sino como software ejecutándose sobre una plataforma electrónica específica.
+
 \section{Diseño del firmware}
+
+El firmware de AutoSense es la capa que convierte el hardware descrito en la sección anterior en un sistema operativo de adquisición, validación, almacenamiento y comunicación vehicular. Su diseño no se limita a leer un conjunto fijo de valores OBD-II; organiza una secuencia completa que inicializa el ESP32-S3, configura el bus CAN, descubre PIDs disponibles, aplica un perfil vehicular, decodifica respuestas, compacta muestras, registra historial local, transmite telemetría por BLE y mantiene una consola de supervisión por USB-CDC. Esta lógica se ejecuta sobre el ESP32-S3-WROOM-1, cuyas capacidades de comunicación BLE y consola USB son consistentes con la documentación oficial de Espressif \cite{espressif2026_esp32s3_get_started,espressif2026_esp32s3_ble_overview,espressif2026_esp32s3_usb_otg_console}.
+
+Desde el punto de vista funcional, el firmware se diseñó bajo un criterio de seguridad conservador: consultar información, no modificar el vehículo. Por ello, todas las solicitudes salientes pasan por una política de solo lectura antes de enviarse por CAN. Esta decisión es coherente con el alcance del proyecto, porque AutoSense busca monitorear el comportamiento del vehículo y apoyar la interpretación de datos, no borrar códigos de falla, reprogramar módulos ni ejecutar actuadores. Los modos de diagnóstico utilizados se mantienen dentro de servicios de lectura definidos para OBD-II, como datos actuales, información del vehículo, códigos de falla almacenados o pendientes, datos congelados y monitores a bordo \cite{sae2022_j1978_obdii_scan_tool,sae2025_j1979_diagnostic_test_modes}.
+
+\subsection{Entorno de compilación y organización del firmware}
+
+El proyecto de firmware se encuentra organizado como una aplicación PlatformIO para la placa ESP32-S3 DevKitM-1, con framework Arduino, flash de 8 MB, sistema de archivos LittleFS y tabla de particiones propia. La configuración de compilación activa USB-CDC desde el arranque, lo que permite utilizar la consola local sin depender de un adaptador serial externo. Esta configuración resulta importante porque el mismo firmware debe funcionar tanto durante pruebas de escritorio como durante validaciones conectadas al puerto OBD-II del vehículo.
+
+La tabla de particiones separa los espacios de trabajo del firmware. La aplicación principal ocupa la partición \texttt{app0}; \texttt{configfs} almacena configuración, perfil activo y modelo local de anomalías; \texttt{obdlog} funciona como partición binaria cruda para el historial circular; y \texttt{coredump} queda reservada para diagnóstico de fallos del propio ESP32-S3. Esta distribución evita guardar el historial como texto dentro del sistema de archivos y permite usar una partición optimizada para registros compactos.
+
+\begin{table}[H]
+\centering
+\caption{Módulos principales del firmware AutoSense.}
+\label{tab:firmware-modulos}
+\renewcommand{\arraystretch}{1.08}
+\setlength{\tabcolsep}{4pt}
+\scriptsize
+\begin{tabular}{@{}p{0.20\textwidth}p{0.28\textwidth}p{0.42\textwidth}@{}}
+\toprule
+Módulo & Archivo principal & Responsabilidad \\
+\midrule
+Aplicación principal & \texttt{app.cpp}, \texttt{main.cpp} & Inicializar servicios, ejecutar el ciclo principal y coordinar CAN, BLE, logger, dashboard, perfiles e IA local. \\
+Configuración & \texttt{app\_config.cpp} & Leer \texttt{/config.ini} desde LittleFS y aplicar intervalos de logging, dashboard, anomalías, OBD y VAG. \\
+Servicio OBD & \texttt{obd\_service.cpp} & Descubrir PIDs, planificar consultas, recibir tramas CAN, decodificar respuestas y construir muestras compactas. \\
+Perfiles vehiculares & \texttt{vehicle\_profile.cpp} & Validar JSON, SHA-256, señales permitidas y guardar \texttt{/active\_profile.json}. \\
+Guardia de lectura & \texttt{obd\_read\_only}\\\texttt{\_guard.cpp} & Permitir solo servicios diagnósticos seguros y bloquear servicios de escritura, control o reprogramación. \\
+BLE & \texttt{obd\_ble\_protocol.cpp} & Exponer servicio GATT, recibir comandos de la app, transferir perfiles y notificar telemetría. \\
+Logger binario & \texttt{obd\_binary}\\\texttt{\_logger.cpp} & Escribir registros compactos en la partición \texttt{obdlog} con secuencia y CRC8. \\
+Dashboard & \texttt{obd\_dashboard.cpp} & Mostrar estado en USB-CDC, métricas, diagnósticos, VIN, DTC y contadores de validación. \\
+Análisis local & \texttt{obd\_anomaly}\\\texttt{\_detector.cpp} & Procesar muestras con baseline, Z-score, Isolation Forest, severidad y señales principales. \\
+Clasificación de ruta & \texttt{obd\_route}\\\texttt{\_classifier.cpp} & Estimar contexto \texttt{city}/\texttt{highway} a partir de velocidad, aceleración y estabilidad de manejo. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Secuencia de arranque}
+
+El punto de entrada del firmware es deliberadamente simple. En \texttt{main.cpp}, la función \texttt{setup()} delega la inicialización a \texttt{appSetup()}, mientras que \texttt{loop()} delega la ejecución continua a \texttt{appLoop()}. Esta separación mantiene el archivo principal limpio y concentra la lógica operativa en \texttt{app.cpp}, donde se coordinan los servicios del sistema.
+
+Durante el arranque, el firmware abre la consola serial a 115200 baudios, configura los LED de estado, coloca el pin \texttt{GPIO14} del transceptor CAN en modo normal, inicializa el servicio OBD, el escáner VW/VAG, el dashboard, el logger binario, el detector de anomalías y el protocolo BLE. Después lee la configuración de \texttt{/config.ini}, intenta cargar el perfil activo desde \texttt{/active\_profile.json}, imprime por USB la política de solo lectura y configura el bus CAN en \texttt{GPIO12} como RX, \texttt{GPIO13} como TX y 500000 baudios. Finalmente, comienza a anunciar BLE con el nombre \texttt{AutoSense OBD2}.
+
+\begin{figure}[H]
+\centering
+\begingroup
+\shorthandoff{<>}
+\resizebox{0.88\textwidth}{!}{%
+\begin{tikzpicture}[
+    >=Stealth,
+    node distance=7mm,
+    every node/.style={font=\small},
+    stepbox/.style={
+        draw,
+        rounded corners=2mm,
+        align=center,
+        text width=7.2cm,
+        minimum height=1.05cm,
+        inner sep=5pt
+    },
+    boot/.style={stepbox, fill=blue!10, draw=blue!70!black},
+    config/.style={stepbox, fill=yellow!18, draw=yellow!50!black},
+    safety/.style={stepbox, fill=red!8, draw=red!55!black},
+    data/.style={stepbox, fill=green!12, draw=green!50!black},
+    io/.style={stepbox, fill=cyan!12, draw=cyan!60!black},
+    ai/.style={stepbox, fill=violet!10, draw=violet!60!black},
+    link/.style={->, thick}
+]
+    \node[boot] (start) {Arranque del ESP32-S3\\\scriptsize Serial 115200, LED, CAN RX/TX y servicios base};
+    \node[config, below=of start] (cfg) {Configuración y perfil\\\scriptsize \texttt{/config.ini}, \texttt{/active\_profile.json}, intervalos y perfil \texttt{vw\_passat\_2016}};
+    \node[safety, below=of cfg] (guard) {Guardia de solo lectura\\\scriptsize permite OBD 01/02/03/06/07/09/0A y bloquea borrado, control o escritura};
+    \node[data, below=of guard] (obd) {Adquisición OBD-II por CAN\\\scriptsize discovery de PIDs, consultas Mode 01 y servicios diagnósticos seguros};
+    \node[data, below=of obd] (sample) {Muestra compacta\\\scriptsize \texttt{ObdCompactSample}, \texttt{validMask}, edad máxima de muestra y decodificación};
+    \node[io, below left=8mm and 11mm of sample] (ble) {BLE GATT\\\scriptsize comandos, perfil y telemetría};
+    \node[io, below=8mm of sample] (usb) {USB-CDC\\\scriptsize dashboard y depuración};
+    \node[ai, below right=8mm and 11mm of sample] (logic) {Ruta e IA local\\\scriptsize city/highway, Z-score e Isolation Forest};
+    \node[config, below=18mm of usb] (log) {Persistencia local\\\scriptsize log circular en \texttt{obdlog}, baseline y modelo en flash};
+
+    \draw[link] (start) -- (cfg);
+    \draw[link] (cfg) -- (guard);
+    \draw[link] (guard) -- (obd);
+    \draw[link] (obd) -- (sample);
+    \draw[link] (sample) -- (ble);
+    \draw[link] (sample) -- (usb);
+    \draw[link] (sample) -- (logic);
+    \draw[link] (ble) |- (log);
+    \draw[link] (usb) -- (log);
+    \draw[link] (logic) |- (log);
+\end{tikzpicture}
+}
+\endgroup
+\caption{Flujo interno del firmware AutoSense desde el arranque hasta la persistencia y salida de datos.}
+\label{fig:firmware-flujo-general}
+\end{figure}
+
+La figura \ref{fig:firmware-flujo-general} resume la lógica del firmware como una cadena de procesamiento. Primero se establece una condición inicial controlada; luego se cargan parámetros y perfil; después se aplica la guardia de seguridad antes de cualquier consulta; finalmente, la información obtenida se distribuye hacia BLE, USB-CDC, almacenamiento local y análisis embebido. Esta organización permite que el sistema falle de manera controlada: si no existe perfil activo, puede usar descubrimiento y fallback; si no hay datos frescos, no fuerza una muestra inválida; y si aparece un comando no permitido, lo bloquea antes de llegar al bus CAN.
+
+\subsection{Ciclo principal de ejecución}
+
+El ciclo \texttt{appLoop()} se ejecuta de forma repetitiva y breve. En cada iteración obtiene el tiempo con \texttt{millis()}, llama a \texttt{OBD.tick()} para decidir si corresponde enviar una consulta, atiende \texttt{BLE\_PROTO.tick()} para notificaciones y comandos, ejecuta \texttt{VAG.tick()} solo si la configuración y el perfil lo permiten, procesa todas las tramas CAN disponibles, actualiza estadísticas por segundo, compacta la muestra más reciente, actualiza la clasificación de ruta, escribe en el logger si corresponde, procesa anomalías locales y refresca el dashboard USB si está habilitado.
+
+Este diseño evita un flujo bloqueante. En lugar de detener el microcontrolador esperando una respuesta específica, cada módulo avanza cuando le corresponde por tiempo o cuando existe información disponible. Esa estrategia es adecuada para un sistema conectado a CAN y BLE, porque permite consultar el vehículo, recibir respuestas, notificar al teléfono y mantener una salida serial sin depender de una sola operación larga. El pequeño retardo final de \texttt{delay(1)} deja margen al sistema operativo del ESP32-S3 sin cambiar la lógica de temporización de los módulos.
+
+\begin{figure}[H]
+\centering
+\begingroup
+\shorthandoff{<>}
+\resizebox{0.88\textwidth}{!}{%
+\begin{tikzpicture}[
+    >=Stealth,
+    node distance=6mm and 10mm,
+    every node/.style={font=\scriptsize},
+    flowbox/.style={
+        draw,
+        rounded corners=2mm,
+        align=center,
+        text width=4.35cm,
+        minimum height=1.0cm,
+        inner sep=5pt
+    },
+    a/.style={flowbox, fill=blue!10, draw=blue!60!black},
+    b/.style={flowbox, fill=green!12, draw=green!50!black},
+    c/.style={flowbox, fill=orange!13, draw=orange!65!black},
+    d/.style={flowbox, fill=violet!10, draw=violet!60!black},
+    e/.style={flowbox, fill=cyan!12, draw=cyan!60!black},
+    f/.style={flowbox, fill=gray!10, draw=gray!65!black},
+    link/.style={->, thick},
+    returnlink/.style={->, thick, dashed, gray!75!black}
+]
+    \node[a] (tick) {\texttt{OBD.tick()}\\planificación de consultas OBD-II};
+    \node[b, below=of tick] (bletick) {\texttt{BLE\_PROTO.tick()}\\comandos y telemetría};
+    \node[c, below=of bletick] (vag) {\texttt{VAG.tick()}\\UDS seguro si el perfil lo permite};
+    \node[a, below=of vag] (can) {Procesamiento CAN\\respuestas OBD y VAG};
+    \node[e, below=of can] (sample) {Muestra compacta\\\texttt{ObdCompactSample} + \texttt{validMask}};
+
+    \node[c, below left=9mm and 9mm of sample] (logger) {\texttt{LOGGER.tick()}\\historial binario};
+    \node[d, below=9mm of sample] (analysis) {Ruta + anomalía\\contexto, score y severidad};
+    \node[e, below right=9mm and 9mm of sample] (dash) {\texttt{DASH.tick()}\\dashboard USB-CDC};
+    \node[f, below=13mm of analysis] (next) {\texttt{delay(1)}\\siguiente iteración};
+
+    \draw[link] (tick) -- (bletick);
+    \draw[link] (bletick) -- (vag);
+    \draw[link] (vag) -- (can);
+    \draw[link] (can) -- (sample);
+    \draw[link] (sample) -- (logger);
+    \draw[link] (sample) -- (analysis);
+    \draw[link] (sample) -- (dash);
+    \draw[link] (analysis) -- (next);
+    \draw[returnlink] (next.east) -- ++(3.0,0) |- (tick.east);
+\end{tikzpicture}
+}
+\endgroup
+\caption{Ciclo lógico de ejecución de \texttt{appLoop()} en el firmware AutoSense.}
+\label{fig:firmware-apploop}
+\end{figure}
+
+\subsection{Adquisición OBD-II y planificación de consultas}
+
+El módulo \texttt{ObdService} concentra la lógica de adquisición OBD-II. Al iniciar, el firmware no asume que todos los PIDs están disponibles en el vehículo; primero ejecuta descubrimiento mediante los PIDs de soporte \texttt{0100}, \texttt{0120}, \texttt{0140}, \texttt{0160}, \texttt{0180}, \texttt{01A0} y \texttt{01C0}. Cada respuesta contiene un mapa de bits que indica qué parámetros puede responder el vehículo. Con ese resultado, el sistema reconstruye su plan de consulta para no depender de una lista rígida.
+
+La planificación se divide en dos carriles. El carril rápido o \emph{key lane} opera cada 50 ms por solicitud y prioriza señales críticas para visualización, historial e inteligencia local, como RPM, velocidad, temperatura, carga del motor, posición del acelerador, MAF, MAP y voltaje ECU. El carril de fondo opera cada 350 ms por solicitud y cubre señales menos críticas o descubiertas dinámicamente. Esta separación permite mantener una vista en vivo responsiva sin saturar el bus con todas las señales al mismo ritmo.
+
+Además de \texttt{Mode 01}, el firmware consulta servicios diagnósticos de solo lectura. \texttt{Mode 09} se usa para VIN, CALID, CVN, nombre de ECU e IPT cuando el vehículo responde; \texttt{Mode 03}, \texttt{Mode 07} y \texttt{Mode 0A} se utilizan para DTC almacenados, pendientes y permanentes; \texttt{Mode 02} recupera datos congelados; y \texttt{Mode 06} consulta monitores a bordo. La sección teórica de OBD-II ya explicó el significado general de estos modos; en el diseño del firmware, lo relevante es que se ejecutan con intervalos controlados y dentro de la política de lectura segura.
+
+Cuando llegan tramas CAN, la rutina de procesamiento entrega cada frame al servicio OBD y al escáner VAG. El servicio OBD filtra respuestas estándar \texttt{0x7E8..0x7EF} y respuestas extendidas cuando corresponden, identifica el modo de respuesta y decodifica el contenido. Para \texttt{Mode 01}, el firmware conserva el valor crudo para el dashboard, aplica la fórmula del PID y actualiza la muestra compacta si la señal forma parte del conjunto útil para historial, BLE o análisis.
+
+\subsection{Gestión de perfiles vehiculares}
+
+El firmware no queda amarrado de forma permanente a un único vehículo. La lógica de perfiles se implementa mediante \texttt{ProfileManager}, el cual valida archivos JSON recibidos desde la aplicación móvil antes de aplicarlos. El flujo real inicia con la lectura del VIN por \texttt{Mode 09}; luego la app puede resolver el perfil correspondiente en la nube, descargarlo y transferirlo al ESP32-S3 por BLE en fragmentos. En el caso validado del proyecto, el perfil activo esperado es \texttt{vw\_passat\_2016}.
+
+La transferencia del perfil no se acepta de manera ciega. El firmware valida tamaño, SHA-256, estructura JSON, existencia de \texttt{signals[]}, fórmulas permitidas y configuración extendida de solo lectura. Si el perfil pasa estas verificaciones, se guarda como \texttt{/active\_profile.json} en LittleFS y se reinicia el plan de sondeo a partir de las señales definidas. Esto permite que el comportamiento del firmware se adapte al vehículo sin recompilar el código.
+
+El soporte VW/VAG extendido se mantiene bajo dos condiciones simultáneas: la configuración VAG debe estar habilitada y el perfil activo debe contener permisos extendidos de solo lectura. En consecuencia, el ESP32-S3 no activa el escaneo extendido solo por detectar un VIN de Volkswagen. Esta decisión evita consultas ampliadas sin autorización explícita del perfil y mantiene el diseño coherente con el principio de lectura segura.
+
+\subsection{Política de solo lectura}
+
+La seguridad operativa del firmware se implementa mediante el módulo de guardia de lectura. Antes de enviar una solicitud diagnóstica por CAN, el firmware evalúa si el servicio pertenece a la lista permitida. En OBD estándar se permiten \texttt{01}, \texttt{02}, \texttt{03}, \texttt{06}, \texttt{07}, \texttt{09} y \texttt{0A}; se bloquean explícitamente servicios como \texttt{04}, asociado a borrado o reinicio de información de emisiones, y \texttt{08}, asociado a operaciones de control. En UDS se permiten solo \texttt{0x19} y \texttt{0x22}, mientras que servicios de sesión, reset, seguridad, escritura, rutina, transferencia o control quedan bloqueados.
+
+La guardia también permite frames de control de flujo ISO-TP cuando forman parte de una respuesta ya iniciada, porque son necesarios para recibir mensajes largos sin representar una orden de escritura sobre la ECU. Si un servicio no está dentro de la lista segura, el firmware lo bloquea y registra el evento por USB con el prefijo \texttt{[readOnlyGuard] BLOCK}. Durante una operación normal, el dashboard debe mantener \texttt{guard=0}; si ese contador aumenta, la sesión debe revisarse antes de continuar.
+
+\begin{table}[H]
+\centering
+\caption{Servicios permitidos y bloqueados por la política de solo lectura.}
+\label{tab:firmware-solo-lectura}
+\renewcommand{\arraystretch}{1.08}
+\setlength{\tabcolsep}{5pt}
+\small
+\begin{tabular}{@{}p{0.18\textwidth}p{0.34\textwidth}p{0.38\textwidth}@{}}
+\toprule
+Familia & Permitido en AutoSense & Bloqueado por riesgo de escritura o control \\
+\midrule
+OBD-II estándar & \texttt{01}, \texttt{02}, \texttt{03}, \texttt{06}, \texttt{07}, \texttt{09}, \texttt{0A} & \texttt{04}, \texttt{08} y cualquier servicio no incluido en \texttt{SAFE\_READ}. \\
+UDS & \texttt{0x19} y \texttt{0x22} & Sesión, reset, clear DTC, security access, write DID, IO control, routine control, transfer, memory access y servicios no permitidos. \\
+ISO-TP & Flow control asociado a una respuesta recibida & Cualquier uso que no corresponda a recepción segura de una respuesta larga. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Compactación, almacenamiento y telemetría}
+
+Después de decodificar las respuestas, el firmware no conserva todo el dashboard como historial. La estructura central es \texttt{ObdCompactSample}, que contiene únicamente las señales útiles para almacenamiento, BLE e IA local. Entre ellas se incluyen RPM, velocidad, temperatura de refrigerante, acelerador, combustible, carga del motor, MAP, MAF, voltaje ECU, temperatura de admisión y avance de chispa. El campo \texttt{validMask} indica qué señales están realmente presentes en la muestra, porque no todos los PIDs se actualizan con la misma frecuencia ni todos los vehículos responden al mismo conjunto de parámetros.
+
+Para registrar historial, el firmware usa la partición cruda \texttt{obdlog}. Cada registro versión 1 mide 24 bytes e incluye magic \texttt{AS}, versión, \texttt{validMask}, secuencia, \texttt{uptimeSeconds}, señales principales y CRC8. El logger escribe solo si existe al menos una señal válida y respeta \texttt{logging.interval\_seconds}, que por defecto es 10 s. Al llegar al final de la partición, vuelve al inicio, por lo que el historial funciona como un log circular.
+
+La capacidad actual se calcula a partir de una partición de \texttt{0x650000} bytes, sectores de 4096 bytes y 170 registros útiles por sector. Esto produce 274720 registros. Con un intervalo de 10 s, el README del firmware estima una retención aproximada de 31.8 días; con 5 s, cerca de 15.9 días; y con 30 s, alrededor de 95.4 días. Esta decisión evita almacenar JSON o CSV dentro del microcontrolador, reduce desgaste y permite exportar posteriormente el binario con \texttt{dump\_obd\_log.py}.
+
+La telemetría en vivo sale por BLE mediante un servicio GATT propio. El dispositivo anuncia el nombre \texttt{AutoSense OBD2}, recibe comandos por la característica RX y notifica respuestas por la característica TX. El protocolo cubre información del dispositivo, lectura de VIN, perfil activo, transferencia y aplicación de perfiles, lista de PIDs soportados, inicio de streaming y detención de streaming. Cuando la app activa el flujo en vivo, el firmware envía \texttt{TELEMETRY} cada 1000 ms con valores recientes y con el resultado de anomalía vigente.
+
+\begin{table}[H]
+\centering
+\caption{Intervalos principales de ejecución del firmware.}
+\label{tab:firmware-intervalos}
+\renewcommand{\arraystretch}{1.08}
+\setlength{\tabcolsep}{5pt}
+\small
+\begin{tabular}{@{}p{0.32\textwidth}p{0.18\textwidth}p{0.40\textwidth}@{}}
+\toprule
+Proceso & Intervalo & Finalidad \\
+\midrule
+Consulta \emph{key lane} & 50 ms por solicitud & Priorizar señales críticas de operación y visualización. \\
+Consulta \emph{background} & 350 ms por solicitud & Consultar señales secundarias o descubiertas dinámicamente. \\
+Dashboard USB & 1000 ms & Refrescar la vista serial por USB-CDC. \\
+BLE stream & 1000 ms & Notificar telemetría en vivo hacia la aplicación móvil. \\
+Guardado binario & 10 s & Registrar una muestra compacta en \texttt{obdlog}. \\
+IA local & 10 s & Ejecutar inferencia de anomalía si existe muestra válida. \\
+Guardado de baseline/modelo & 300 s & Persistir estado analítico por lotes. \\
+Mode 09 & 3 s & Leer VIN, CALID, CVN, ECU name e IPT si responden. \\
+Mode 06 & 10 s & Consultar monitores a bordo. \\
+Mode 03 / 07 / 02 / 0A & 15 s / 20 s / 25 s / 30 s & Leer DTC almacenados, pendientes, freeze frame y DTC permanentes. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Clasificación de ruta y análisis local}
+
+El firmware incorpora dos módulos analíticos que no generan nuevas consultas OBD, sino que reutilizan la muestra compacta ya recolectada. El primero es el clasificador de ruta, que emplea velocidad, RPM, carga del motor y posición del acelerador para estimar si el comportamiento corresponde a ciudad, autopista o un estado intermedio. La lógica usa una ventana de muestras, velocidad promedio, porcentaje de alta velocidad, porcentaje de paradas, evidencia de frenado y estabilidad de aceleración. Esta clasificación aporta contexto a la lectura, especialmente en campañas de datos donde se comparan trayectos \texttt{city} y \texttt{highway}.
+
+El segundo módulo es el detector local de anomalías. Su flujo comienza con \texttt{ObdCompactSample}, lo transforma en \texttt{ObdSample}, determina el contexto de manejo, actualiza o consulta un baseline estadístico, calcula Z-score por señal, normaliza valores, evalúa un Tiny Isolation Forest cuando el modelo ya está entrenado, combina los puntajes y aplica \emph{debounce} antes de producir una severidad. La configuración por defecto ejecuta inferencia cada 10 s, requiere al menos 300 muestras para considerar estable la línea base, guarda estado cada 300 s y combina 70\% Z-score con 30\% Isolation Forest.
+
+La salida no identifica una pieza defectuosa de manera definitiva. El firmware entrega \texttt{score}, \texttt{severity}, \texttt{areaMask}, \texttt{topSignals}, \texttt{baselineReady} y \texttt{modelReady}. La severidad puede ser \texttt{NORMAL}, \texttt{WATCH}, \texttt{WARNING} o \texttt{CRITICAL}. Para evitar alarmas por ruido, una anomalía fuerte debe repetirse varias veces antes de escalar a advertencia o criticidad. Esta interpretación es consistente con el alcance de AutoSense: señalar patrones anómalos y áreas probables de revisión, no sustituir un diagnóstico mecánico especializado.
+
+\subsection{Verificación y herramientas de soporte}
+
+El repositorio incluye herramientas para validar el comportamiento del firmware sin depender únicamente de observación manual. \texttt{audit\_read\_only\_policy.py} revisa que la política de lectura mantenga los servicios permitidos y bloqueados esperados antes de flashear el dispositivo. \texttt{capture\_obd\_report.py} lee el dashboard serial, elimina códigos ANSI y genera reportes de métricas OBD, módulos VW/VAG y estado de diagnóstico. \texttt{dump\_obd\_log.py} exporta la partición binaria a CSV y permite conservar también el binario crudo cuando se necesita trazabilidad.
+
+La validación inicial recomendada por el propio firmware inicia con el vehículo estacionado, freno de mano activo, ignición encendida y motor apagado; después se repite con motor encendido en parking o neutral. Solo cuando \texttt{can=UP}, \texttt{rsp/s > 0}, \texttt{decoded/s > 0}, \texttt{log seq} avanza y \texttt{guard=0}, la sesión se considera apta para avanzar hacia pruebas de recolección más extensas. Estos criterios conectan el diseño del firmware con la metodología del capítulo anterior, porque permiten comprobar que adquisición, decodificación, almacenamiento y seguridad funcionan antes de analizar datos de conducción.
+
+En síntesis, el firmware de AutoSense está diseñado como una capa embebida de adquisición segura y procesamiento local. Su arquitectura separa responsabilidades, mantiene una política de solo lectura, aprovecha perfiles vehiculares para adaptar el sondeo, registra información compacta en flash, ofrece telemetría por BLE, conserva una salida técnica por USB-CDC y ejecuta análisis local sin enviar comandos adicionales al vehículo. Con ello, el software del ESP32-S3 completa el puente entre el hardware OBD-II/CAN y la aplicación móvil que se describe en la siguiente sección.
 
 \section{Diseño de la aplicación móvil}
 
+La aplicación móvil de AutoSense constituye la interfaz principal entre el usuario y el sistema de adquisición vehicular. Su diseño no se limita a mostrar valores recibidos desde el ESP32-S3; también organiza la sesión del usuario, conserva datos básicos del vehículo, administra el estado de conexión con el adaptador OBD2, presenta métricas resumidas de eficiencia y alertas, y sincroniza información con los servicios en la nube del proyecto. Por esta razón, dentro de la arquitectura general, la aplicación cumple el papel de capa de visualización, control operativo y consulta histórica.
+
+El desarrollo se implementó con React Native sobre Expo, usando Expo Router para organizar la navegación por archivos. Esta elección permite mantener una base de código orientada a iOS y Android, con componentes nativos cuando son necesarios. La compatibilidad práctica queda condicionada por los requisitos vigentes del SDK de Expo y por la disponibilidad de Bluetooth Low Energy en el teléfono; en el caso del SDK empleado, Expo documenta soporte para sistemas Android e iOS modernos, mientras que las funciones BLE nativas requieren una \emph{development build} y no dependen de Expo Go \cite{expo2026_sdk_support,expo2026_development_build}. En consecuencia, la interfaz puede probarse en simulador para navegación, autenticación y estados demo, pero la conexión real con el ESP32-S3 debe validarse en un dispositivo físico con BLE.
+
+\subsection{Arquitectura de navegación}
+
+La navegación móvil está separada en dos grupos principales. El primer grupo corresponde al flujo de acceso, donde se ubican el inicio de sesión, el registro de usuario y la recuperación de cuenta. El segundo grupo corresponde al flujo autenticado, compuesto por las pestañas \emph{Inicio}, \emph{Tiempo real} y \emph{Perfil}. Esta separación evita que las pantallas internas estén disponibles sin sesión activa y simplifica la transición entre usuario no autenticado y usuario autenticado.
+
+El componente \texttt{SessionProvider} actúa como contenedor global de la sesión. Desde allí se escucha el estado de Firebase Authentication, se consulta la información asociada al usuario y se expone a las pantallas internas una vista coherente del perfil activo. La persistencia de la sesión se realiza mediante almacenamiento seguro del dispositivo, de modo que el usuario no tenga que iniciar sesión cada vez que abre la aplicación, pero sin guardar credenciales visibles dentro del código o en almacenamiento plano. Esta estructura es importante para AutoSense porque la telemetría, los perfiles vehiculares y las preferencias de visualización quedan asociados a un usuario concreto.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.30\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Figures/mobile_login.png}
+\vspace{2mm}
+{\footnotesize Inicio de sesión}
+\end{minipage}
+\hfill
+\begin{minipage}{0.30\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Figures/mobile_register.png}
+\vspace{2mm}
+{\footnotesize Registro de usuario}
+\end{minipage}
+\hfill
+\begin{minipage}{0.30\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Figures/mobile_recovery.png}
+\vspace{2mm}
+{\footnotesize Recuperación de cuenta}
+\end{minipage}
+\caption{Flujo de acceso de la aplicación móvil AutoSense en simulador iOS. Elaboración propia.}
+\label{fig:mobile-auth-flow}
+\end{figure}
+
+\subsection{Gestión de sesión y datos}
+
+La gestión de datos combina almacenamiento local seguro y sincronización remota. En el cliente móvil se utiliza almacenamiento seguro para conservar la sesión de autenticación, mientras que Firebase centraliza datos de usuario, perfil vehicular, información de configuración, registros de aplicación de perfiles y recursos descargables. Esta división mantiene el teléfono como punto de interacción inmediata, pero permite que la información relevante del sistema pueda recuperarse desde la nube cuando el usuario inicia sesión en otro dispositivo o cuando se actualiza un perfil vehicular.
+
+El diseño también contempla que no toda la información procede de la nube. Cuando la aplicación necesita comunicarse con el adaptador, consulta el estado local de la conexión BLE y el perfil activo aplicado al dispositivo. Si existe un perfil asociado al VIN o si el usuario selecciona un perfil compatible, la aplicación puede solicitar, validar y transferir dicho perfil al firmware. En este flujo intervienen Firebase Functions para resolver el perfil vehicular, Firebase Storage para descargar el archivo de perfil cuando corresponde y Firestore para conservar la trazabilidad de aplicación del perfil.
+
+\begin{table}[H]
+\centering
+\caption{Responsabilidades principales de la aplicación móvil AutoSense.}
+\label{tab:mobile-responsabilidades}
+\small
+\begin{tabular}{@{}p{0.24\textwidth}p{0.36\textwidth}p{0.30\textwidth}@{}}
+\toprule
+Bloque & Responsabilidad & Uso en AutoSense \\
+\midrule
+Autenticación y sesión & Inicio de sesión, registro, recuperación de cuenta y persistencia segura. & Controla el acceso al flujo autenticado y asocia la telemetría a un usuario. \\
+Navegación & Organización por rutas de acceso y pestañas internas. & Separa inicio, tiempo real y perfil sin mezclar estados de sesión. \\
+Perfil vehicular & Resolución, descarga y aplicación de perfiles OBD2. & Permite usar \texttt{vw\_passat\_2016}, perfil genérico o modo demo. \\
+Comunicación BLE & Escaneo, conexión, comandos GATT y recepción de notificaciones. & Vincula la app con el ESP32-S3 para telemetría y transferencia de perfil. \\
+Sincronización remota & Consulta y escritura de datos en Firebase. & Conserva usuario, vehículo, estado operativo y trazabilidad básica. \\
+Visualización & Tarjetas, métricas, alertas, eficiencia y telemetría en vivo. & Presenta datos técnicos en una forma comprensible para el usuario final. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Pantallas principales}
+
+La pantalla de inicio resume el estado general del vehículo y de la sesión. En la implementación actual muestra el vehículo asociado, el combustible estimado, el estilo de manejo, el puntaje de eficiencia, la distancia del viaje actual y el estado de avisos. Esta pantalla cumple una función de síntesis: evita que el usuario tenga que revisar todos los parámetros OBD2 y concentra la información en indicadores de lectura rápida.
+
+La pantalla de eficiencia profundiza en el comportamiento de conducción. A partir de valores procesados por la aplicación y por el sistema, presenta un puntaje general, suavidad de aceleración, control de frenado, tiempo en ralentí y consumo estimado. El objetivo no es sustituir un análisis mecánico, sino ofrecer una interpretación operativa que ayude a revisar hábitos de manejo y consistencia de la telemetría recolectada. La pantalla de avisos, por su parte, organiza estados como batería, frenos, temperatura, llantas y consumo. Aunque algunas advertencias dependen de información disponible por OBD2 y otras de reglas de la aplicación, el diseño mantiene una lista clara de elementos revisables y evita presentar mensajes técnicos sin contexto.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.30\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Figures/mobile_home.png}
+\vspace{2mm}
+{\footnotesize Inicio}
+\end{minipage}
+\hfill
+\begin{minipage}{0.30\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Figures/mobile_efficiency.png}
+\vspace{2mm}
+{\footnotesize Eficiencia}
+\end{minipage}
+\hfill
+\begin{minipage}{0.30\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Figures/mobile_alerts.png}
+\vspace{2mm}
+{\footnotesize Avisos}
+\end{minipage}
+\caption{Pantallas principales de supervisión y resumen operativo en AutoSense. Elaboración propia.}
+\label{fig:mobile-main-screens}
+\end{figure}
+
+Además de la lista general de avisos, la aplicación contiene vistas de detalle para los estados principales del vehículo. En batería, frenos, temperatura y llantas se presenta el estado actual, la fuente de datos, la cantidad de avisos activos, la acción recomendada, una lectura actual y una indicación de seguimiento. La vista de consumo se concentra en la pantalla de eficiencia, porque allí la aplicación relaciona consumo, aceleración, frenado, ralentí y trayectoria en un mismo módulo operativo.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.30\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Figures/mobile_alert_battery.png}
+\vspace{2mm}
+{\footnotesize Batería}
+\end{minipage}
+\hfill
+\begin{minipage}{0.30\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Figures/mobile_alert_brakes.png}
+\vspace{2mm}
+{\footnotesize Frenos}
+\end{minipage}
+\hfill
+\begin{minipage}{0.30\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Figures/mobile_alert_temperature.png}
+\vspace{2mm}
+{\footnotesize Temperatura}
+\end{minipage}
+\caption{Pantallas de detalle para avisos de batería, frenos y temperatura. Elaboración propia.}
+\label{fig:mobile-alert-details-primary}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.38\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Figures/mobile_alert_tires.png}
+\vspace{2mm}
+{\footnotesize Llantas}
+\end{minipage}
+\hfill
+\begin{minipage}{0.38\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Figures/mobile_alert_consumption.png}
+\vspace{2mm}
+{\footnotesize Consumo y eficiencia}
+\end{minipage}
+\caption{Pantallas de detalle para llantas y consumo dentro del flujo móvil. Elaboración propia.}
+\label{fig:mobile-alert-details-secondary}
+\end{figure}
+
+El módulo de perfil reúne información del usuario, vehículo, emparejamiento y configuración. Desde esta sección se accede a los datos personales, correo, contraseña, configuración de vehículo, soporte y cierre de sesión. Esta organización mantiene separadas las acciones de administración de las pantallas de lectura vehicular, lo cual reduce errores de uso durante una sesión de conducción o durante una prueba de adquisición.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.40\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Figures/mobile_profile.png}
+\vspace{2mm}
+{\footnotesize Perfil y configuración}
+\end{minipage}
+\hfill
+\begin{minipage}{0.40\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Figures/mobile_vehicle.png}
+\vspace{2mm}
+{\footnotesize Datos del vehículo}
+\end{minipage}
+\caption[Perfil y vehículo en la aplicación móvil]{Pantallas de administración del perfil y del vehículo asociado al usuario de prueba. Elaboración propia.}
+\label{fig:mobile-profile-vehicle}
+\end{figure}
+
+\subsection{Conexión OBD2 desde la app}
+
+La pestaña \emph{Tiempo real} concentra la interacción con el adaptador OBD2. Su flujo inicia con la búsqueda del dispositivo BLE del proyecto, mostrado al usuario como adaptador AutoSense. Cuando el hardware físico no está disponible, la pantalla informa que no se encontró el dispositivo y ofrece opciones de reintento o uso de perfiles manuales. Esta respuesta es relevante porque evita que el usuario interprete una ausencia de telemetría como falla interna de la aplicación; la interfaz distingue entre no estar conectado, no tener perfil y estar recibiendo datos.
+
+Cuando existe una conexión válida, la aplicación puede enviar comandos al servicio GATT del firmware, solicitar información del adaptador, leer VIN, consultar PIDs soportados, transferir perfiles y activar el flujo de telemetría. La implementación utiliza características RX/TX y notificaciones para recibir eventos desde el ESP32-S3, mientras que el firmware conserva la política de solo lectura explicada en secciones anteriores. De esta forma, la aplicación funciona como cliente de control y visualización, no como una herramienta que modifique el comportamiento de la ECU del vehículo.
+
+Para documentar el diseño visual se capturaron dos estados. El primero corresponde al emparejamiento cuando el simulador iOS no dispone de hardware BLE conectado. El segundo corresponde a la pantalla de telemetría en vivo en modo demo, utilizada para validar presentación de velocidad, RPM, temperatura, voltaje y otras magnitudes sin requerir el vehículo durante la documentación. En pruebas con dispositivo físico, esta misma vista recibe datos desde el ESP32-S3 por BLE.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.40\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Figures/mobile_realtime_pairing.png}
+\vspace{2mm}
+{\footnotesize Emparejamiento OBD2}
+\end{minipage}
+\hfill
+\begin{minipage}{0.40\textwidth}
+\centering
+\includegraphics[width=\linewidth]{Figures/mobile_realtime_live.png}
+\vspace{2mm}
+{\footnotesize Telemetría en vivo}
+\end{minipage}
+\caption{Estados de conexión y visualización en tiempo real desde la aplicación móvil. Elaboración propia.}
+\label{fig:mobile-realtime}
+\end{figure}
+
+\subsection{Sincronización y persistencia móvil}
+
+La sincronización móvil se diseñó para separar los datos de interacción del usuario, la configuración del vehículo y la telemetría operativa. Firebase Authentication identifica al usuario; Firestore conserva información estructurada como perfil, vehículo, estado de dashboard y trazabilidad; Firebase Functions resuelve perfiles vehiculares cuando la aplicación consulta por VIN; y Firebase Storage permite alojar archivos de perfil que luego son descargados y aplicados al firmware. Esta arquitectura reduce la dependencia de perfiles embebidos dentro de la aplicación y facilita actualizar configuraciones sin recompilar el cliente móvil.
+
+En paralelo, la aplicación mantiene estado local suficiente para ofrecer una experiencia continua. El usuario puede conservar sesión, ver datos recientes, acceder a la configuración del vehículo y entrar al flujo de tiempo real sin repetir pasos innecesarios. Cuando no hay adaptador conectado, el modo demo permite verificar diseño, navegación y comportamiento de la interfaz, pero no sustituye la validación sobre vehículo real. La diferencia entre demo y lectura real queda indicada en la pantalla para no confundir datos simulados con datos adquiridos por OBD2.
+
+En conjunto, el diseño móvil de AutoSense integra navegación autenticada, administración de usuario, configuración vehicular, conexión BLE, visualización de telemetría, métricas de eficiencia, alertas y sincronización con Firebase. Esta sección describe la interfaz que utiliza el usuario; el almacenamiento de datos y la integración completa con las demás capas del sistema se desarrollan en los apartados siguientes.
+
 \section{Diseño de almacenamiento de datos}
 
-\section{Integración del sistema}
+El diseño de almacenamiento de AutoSense se organiza como una cadena de persistencia en tres niveles: el ESP32-S3 conserva los datos necesarios durante la recolección, la aplicación móvil mantiene estado local para continuidad de uso y Firebase centraliza la información que debe sincronizarse con el usuario. En el flujo actual del proyecto no se emplea MySQL, SQLite ni una base de datos relacional embebida. La persistencia se resuelve mediante memoria flash interna del ESP32-S3, almacenamiento seguro y archivos locales en la aplicación, y servicios administrados de Firebase para la capa remota.
+
+Esta decisión responde a la naturaleza del sistema. Durante la conducción, el adaptador debe registrar muestras de telemetría sin depender de conectividad móvil ni de una sesión activa de la aplicación. Por ello, el almacenamiento local del ESP32-S3 es el primer punto de resguardo. La aplicación actúa como interfaz, caché operativo y puente de sincronización, mientras que Firebase conserva perfiles, estado del usuario, viajes y datos estructurados que deben estar disponibles entre sesiones.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    node distance=1.1cm and 1.5cm,
+    box/.style={draw, rounded corners=5pt, align=center, minimum width=3.8cm, minimum height=1.1cm, font=\small, inner sep=6pt},
+    edge/.style={-{Latex[length=3mm]}, thick},
+    note/.style={font=\footnotesize\bfseries, align=center}
+]
+\node[note] (localTitle) at (0,0) {Persistencia local\\en ESP32-S3};
+\node[note] (cloudTitle) at (6.3,0) {Sincronización\\móvil y nube};
+
+\node[box, fill=gray!12, below=0.65cm of localTitle] (obd) {OBD-II / CAN\\lecturas del vehículo};
+\node[box, fill=blue!10, below=of obd] (sample) {\texttt{ObdCompactSample}\\muestra validada};
+\node[box, fill=orange!15, below=of sample] (log) {\texttt{obdlog}\\historial binario};
+\node[box, fill=yellow!16, left=1.2cm of sample] (config) {\texttt{configfs}\\LittleFS\\configuración y perfil};
+
+\node[box, fill=green!12, below=0.65cm of cloudTitle] (ble) {BLE\\telemetría en vivo};
+\node[box, fill=purple!10, below=of ble] (app) {Aplicación móvil\\caché y sesión};
+\node[box, fill=cyan!12, below=of app] (cloud) {Firebase\\Firestore / Storage};
+
+\draw[edge] (obd) -- (sample);
+\draw[edge] (sample) -- (log);
+\draw[edge] (config) -- (sample);
+\draw[edge] (sample.east) -- node[above, font=\footnotesize]{stream} (ble.west);
+\draw[edge] (ble) -- (app);
+\draw[edge] (app) -- (cloud);
+\end{tikzpicture}%
+}
+\caption{Flujo general de persistencia y sincronización de datos en AutoSense. Elaboración propia.}
+\label{fig:storage-flow}
+\end{figure}
+
+\subsection{Almacenamiento local en el ESP32-S3}
+
+El ESP32-S3 utiliza dos zonas de almacenamiento diferenciadas. La primera corresponde a la partición \texttt{configfs}, montada mediante LittleFS. En esta zona se conservan archivos de configuración y estado operativo, como \texttt{config.ini}, el perfil activo del vehículo en \texttt{/active\_profile.json} y el estado persistente del detector de anomalías. Estos archivos no representan el historial principal de telemetría, sino la información necesaria para que el dispositivo pueda arrancar con la misma política de lectura, perfil vehicular y parámetros de análisis que tenía antes del reinicio.
+
+La segunda zona es la partición raw \texttt{obdlog}, reservada exclusivamente para historial OBD-II. Esta partición inicia en \texttt{0x1A0000} y tiene tamaño \texttt{0x650000}. A diferencia de \texttt{configfs}, no se maneja como un sistema de archivos con nombres de archivo; se escribe directamente como una secuencia de registros binarios de tamaño fijo. Esta separación evita mezclar configuración con telemetría histórica y permite que el registro tenga comportamiento predecible durante sesiones prolongadas de conducción.
+
+El firmware no guarda el historial en JSON, CSV ni texto hexadecimal dentro del ESP32-S3. Cada muestra histórica se codifica en un registro binario de 24 bytes. Esta representación reduce el espacio ocupado por cada lectura, disminuye el volumen de escritura sobre la flash y evita el costo de formatear texto en un microcontrolador que debe seguir atendiendo CAN, BLE, dashboard USB e inferencia local. En un sistema que recolecta datos cada pocos segundos, el ahorro acumulado es significativo: guardar texto sería más legible para humanos, pero menos eficiente para memoria flash y para operación continua.
+
+El registro se escribe según el intervalo de guardado configurado; en la configuración actual, el valor por defecto es de 10 segundos. Antes de escribir, el logger verifica que exista al menos una señal válida mediante \texttt{validMask != 0}. Esto evita llenar la memoria con muestras vacías cuando el vehículo no responde, cuando el bus no está disponible o cuando las señales disponibles están fuera de la ventana de vigencia.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Niveles de almacenamiento utilizados por AutoSense.}
+\label{tab:storage-layers}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}p{0.18\textwidth} p{0.20\textwidth} p{0.28\textwidth} p{0.24\textwidth}@{}}
+\toprule
+\textbf{Capa} & \textbf{Tecnología} & \textbf{Datos guardados} & \textbf{Propósito} \\
+\midrule
+ESP32-S3 & LittleFS en \texttt{configfs} & Configuración, perfil activo y estado del modelo local & Arranque consistente y operación sin depender de la app \\
+ESP32-S3 & Partición raw \texttt{obdlog} & Muestras OBD-II compactas en binario & Historial local durante la recolección vehicular \\
+Aplicación móvil & \texttt{SecureStore} & Sesión Firebase y sesión activa de viaje & Continuidad de uso y recuperación de estado local \\
+Aplicación móvil & FileSystem de Expo & Caché del perfil vehicular activo & Reutilizar perfiles sin descargarlos en cada uso \\
+Firebase & Firestore y Storage & Usuario, vehículo, viajes, alertas, dashboard y perfiles & Sincronización remota y disponibilidad entre sesiones \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Formato binario del historial OBD-II}
+
+El formato de registro v1 está orientado a guardar solo las variables necesarias para análisis histórico, validación de conducción y reconstrucción básica del estado del vehículo. Cada registro inicia con dos bytes de identificación \texttt{AS}, contiene una versión de formato, conserva un contador de secuencia y termina con un \texttt{crc8}. Esta estructura permite distinguir registros válidos de zonas borradas, detectar escrituras incompletas y continuar el registro después de un reinicio.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Estructura del registro binario v1 en la partición \texttt{obdlog}.}
+\label{tab:obdlog-record}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}p{0.24\textwidth} p{0.12\textwidth} p{0.58\textwidth}@{}}
+\toprule
+\textbf{Campo} & \textbf{Tamaño} & \textbf{Función} \\
+\midrule
+\texttt{magic} & 2 bytes & Identifica registros AutoSense mediante \texttt{AS}. \\
+\texttt{version} & 1 byte & Indica la versión del formato binario. \\
+\texttt{validMask} & 2 bytes & Marca qué señales estaban disponibles al momento de compactar la muestra. \\
+\texttt{sequence} & 4 bytes & Contador creciente usado para ordenar y continuar el historial. \\
+\texttt{uptimeSeconds} & 4 bytes & Tiempo de operación del ESP32-S3 al momento de guardar la muestra. \\
+\texttt{rpm} & 2 bytes & Revoluciones por minuto del motor. \\
+\texttt{speedKph} & 1 byte & Velocidad vehicular en km/h. \\
+\texttt{coolantRaw} & 1 byte & Temperatura del refrigerante codificada como \texttt{temperatura + 40}. \\
+\texttt{throttlePct} & 1 byte & Apertura del acelerador en porcentaje. \\
+\texttt{fuelLevelPct} & 1 byte & Nivel de combustible en porcentaje. \\
+\texttt{engineLoadPct} & 1 byte & Carga calculada del motor. \\
+\texttt{mapKpa} & 1 byte & Presión absoluta del múltiple en kPa. \\
+\texttt{mafGps} & 1 byte & Flujo de aire másico redondeado a g/s. \\
+\texttt{ecuVoltage} & 1 byte & Voltaje de ECU en decivoltios. \\
+\texttt{crc8} & 1 byte & Verificación de integridad del registro. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El uso de \texttt{sequence} permite que el sistema escanee la partición al arrancar, encuentre el último registro válido y continúe en la siguiente posición disponible. El uso de \texttt{crc8} evita aceptar registros corruptos o escrituras parciales como datos reales. Esto es relevante en un dispositivo alimentado desde el puerto OBD-II, porque el apagado del vehículo o la desconexión física pueden ocurrir sin una secuencia formal de cierre.
+
+La partición \texttt{obdlog} se administra como un log circular. Cada sector de flash mide 4096 bytes y contiene 170 registros de 24 bytes, dejando un pequeño espacio sin utilizar por sector. Cuando el puntero de escritura llega al inicio de un sector, el sector se borra antes de escribir nuevos registros. Cuando se llena la partición completa, el sistema regresa al inicio y reemplaza las muestras más antiguas. Con el tamaño configurado, el firmware dispone de 1616 sectores, equivalentes a 274720 registros. A 10 segundos por registro, esta capacidad representa aproximadamente 31.8 días de historial continuo.
+
+La muestra compacta proviene de \texttt{ObdCompactSample}. Esta estructura contiene las señales recientes que el firmware pudo validar desde OBD-II, pero el registro binario v1 no exporta todas las señales posibles. En la versión actual se guardan RPM, velocidad, temperatura del refrigerante, acelerador, combustible, carga del motor, MAP, MAF y voltaje de ECU. Señales como temperatura de admisión y avance de chispa pueden participar en telemetría BLE o en análisis local si están disponibles, pero no forman parte principal del registro histórico v1. Esta limitación es una decisión de tamaño: el formato prioriza un conjunto estable de variables relevantes antes que guardar todo el dashboard.
+
+\subsection{Persistencia móvil y sincronización remota}
+
+La aplicación móvil complementa el almacenamiento embebido con persistencia local de sesión y perfil. En la app, \texttt{SecureStore} conserva la sesión de Firebase y mantiene el acceso del usuario entre aperturas de la aplicación. El mismo mecanismo se usa para guardar la sesión activa de viaje, de modo que el seguimiento pueda recuperarse o cerrarse de forma coherente si la aplicación se reinicia. Para perfiles vehiculares, la aplicación utiliza FileSystem de Expo: guarda el JSON del perfil activo y su metadato asociado en el directorio local de documentos, evitando descargar el mismo perfil cada vez que se entra al flujo OBD2.
+
+En la nube, Firestore conserva el documento principal del usuario en la colección \texttt{users}. Allí se guarda información estructurada como datos de perfil, vehículo, configuración, estado de conexión en tiempo real, dashboard, eficiencia y alertas. Los viajes se almacenan como subcolección bajo \texttt{users}, asociada al identificador del usuario autenticado. Firebase Storage se utiliza para perfiles vehiculares descargables, organizados por identificador de perfil, versión y archivo \texttt{profile.json}. La aplicación obtiene esos perfiles cuando necesita aplicar una configuración específica al ESP32-S3.
+
+Las Cloud Functions aparecen en esta sección únicamente como servicios consumidos por la aplicación. En el flujo actual, la app llama funciones para resolver el perfil vehicular a partir del VIN, obtener información de descarga de perfil y registrar la aplicación de un perfil al dispositivo. Sin embargo, el código de esas funciones no forma parte del repositorio local revisado, por lo que esta tesis no las describe como implementación interna del proyecto, sino como parte de la integración remota utilizada por la aplicación.
+
+En conjunto, el almacenamiento de AutoSense está diseñado para no perder la recolección por falta de conexión móvil y, al mismo tiempo, permitir sincronización remota cuando la app y Firebase están disponibles. El ESP32-S3 resguarda la evidencia básica en binario, la aplicación mantiene continuidad de sesión y perfiles, y Firebase organiza los datos de usuario, vehículo y recorridos para consulta posterior.
+
+\section{Interacción del sistema}
+
+La interacción del sistema describe la forma en que los componentes de AutoSense cooperan durante una sesión real de uso. A diferencia de la arquitectura, que explica la estructura por capas, esta sección se concentra en el orden de comunicación entre el usuario, la aplicación móvil, el ESP32-S3, el vehículo y Firebase. El flujo principal inicia cuando el usuario entra al módulo de tiempo real, continúa con la búsqueda del dispositivo \texttt{AutoSense OBD2}, resuelve el perfil vehicular, aplica la configuración al firmware y finalmente presenta telemetría en vivo junto con actualizaciones de estado en la nube.
+
+El diseño de interacción mantiene una separación clara de responsabilidades. El ESP32-S3 no se conecta directamente a Firebase ni ejecuta lógica de usuario; su función es responder comandos BLE, aplicar perfiles validados, consultar el vehículo por OBD-II/CAN y emitir telemetría. La aplicación móvil actúa como coordinador: autentica al usuario, localiza el dispositivo por BLE, solicita VIN y perfiles, envía configuraciones al firmware, presenta datos al usuario y sincroniza estados seleccionados con Firestore. Firebase participa como plano de control, no como transporte de adquisición directa: resuelve perfiles, entrega metadatos, registra aplicaciones de perfil y conserva el estado del usuario.
+
+\subsection{Inicio de sesión y descubrimiento del dispositivo}
+
+La interacción comienza antes de conectarse al vehículo. La aplicación móvil utiliza el estado de sesión de Firebase para determinar si el usuario puede ingresar al flujo autenticado. Una vez dentro de la pestaña de tiempo real, la pantalla de emparejamiento intenta reutilizar una conexión activa si ya existe; de lo contrario, busca dispositivos BLE que correspondan al servicio de AutoSense o que anuncien un nombre asociado al proyecto. En Android, la app solicita permisos Bluetooth y ubicación cuando son necesarios; en iOS, la conexión depende de la disponibilidad del módulo BLE nativo dentro del \emph{development build}.
+
+El dispositivo embebido anuncia el nombre \texttt{AutoSense OBD2} y expone un servicio GATT propio. La aplicación se conecta al dispositivo, solicita un MTU mayor cuando la plataforma lo permite y descubre servicios y características antes de enviar comandos. El protocolo utiliza una característica RX para comandos escritos desde la app y una característica TX para respuestas y notificaciones. Esta organización evita depender de lectura serial por cable para el usuario final, pero conserva USB-CDC como canal técnico de monitoreo.
+
+Si la app no encuentra el dispositivo en el tiempo de búsqueda configurado, cambia a un estado de error visible para el usuario. Si ya existe un dispositivo previamente conectado, intenta reconectarse usando el identificador guardado localmente. Esta decisión mejora la experiencia de uso porque evita repetir exploraciones completas cuando el mismo teléfono se conecta al mismo adaptador en sesiones sucesivas.
+
+\subsection{Identificación del vehículo y aplicación de perfil}
+
+Después de establecer el enlace BLE, la aplicación solicita información básica al ESP32-S3 mediante \texttt{GET\_DEVICE\_INFO}. Esta respuesta incluye identificador del dispositivo, versión de firmware, versión de hardware y tamaño máximo recomendado para transferencia de fragmentos. Luego la app intenta leer el VIN con \texttt{READ\_VIN}. Si el VIN está disponible, se consulta la función remota de resolución de perfil; si no está disponible, la app permite seleccionar manualmente un perfil compatible.
+
+Cuando la resolución identifica el perfil verificado del proyecto, la app descarga el perfil \texttt{vw\_passat\_2016}; si el vehículo no coincide con ese caso, puede recurrir al perfil genérico o al perfil de simulador según corresponda. Antes de transferir el perfil, la aplicación consulta el perfil activo con \texttt{GET\_ACTIVE\_PROFILE}. Si el ESP32-S3 ya tiene la misma versión aplicada, la app evita repetir la transferencia. Si el perfil es distinto o no existe, inicia una transferencia por fragmentos.
+
+La transferencia de perfil se realiza en cuatro pasos. Primero, la app envía \texttt{START\_PROFILE\_TRANSFER} con tamaño, versión y hash esperado. Luego transmite el JSON del perfil mediante comandos \texttt{PROFILE\_CHUNK}; cada fragmento viaja codificado en base64 porque la librería BLE móvil representa los valores escritos en ese formato. Al finalizar, la app envía \texttt{END\_PROFILE\_TRANSFER}, y el firmware valida tamaño, estructura y SHA-256 antes de aceptar la configuración. Finalmente, \texttt{APPLY\_PROFILE} guarda el perfil activo en LittleFS y reinicia el plan de sondeo OBD-II con las señales permitidas.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\caption{Comandos principales de interacción BLE entre la app y el ESP32-S3.}
+\label{tab:system-interaction-ble-commands}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.30\textwidth} >{\raggedright\arraybackslash}p{0.19\textwidth} >{\raggedright\arraybackslash}p{0.41\textwidth}@{}}
+\toprule
+\textbf{Comando} & \textbf{Momento de uso} & \textbf{Función dentro de AutoSense} \\
+\midrule
+\texttt{GET\_DEVICE\_INFO} & Conexión inicial & Obtiene identificador, versión y tamaño máximo de fragmento. \\
+\texttt{READ\_VIN} & Identificación vehicular & Solicita el VIN si el firmware ya lo obtuvo por Mode 09. \\
+\texttt{GET\_ACTIVE\_PROFILE} & Antes de transferir & Verifica si el ESP32-S3 ya tiene el perfil requerido. \\
+\texttt{START\_PROFILE\_TRANSFER} & Inicio de carga & Declara tamaño y hash del perfil que será enviado. \\
+\texttt{PROFILE\_CHUNK} & Transferencia & Envía fragmentos del JSON de perfil hacia el firmware. \\
+\texttt{END\_PROFILE\_TRANSFER} & Validación & Solicita validar tamaño, estructura y hash antes de aplicar. \\
+\texttt{APPLY\_PROFILE} & Activación & Guarda el perfil y reconstruye el plan de consulta OBD-II. \\
+\texttt{GET\_SUPPORTED\_PIDS} & Registro de soporte & Obtiene una lista resumida de PIDs soportados por el vehículo. \\
+\texttt{START\_STREAM} & Telemetría en vivo & Activa notificaciones periódicas de datos OBD-II. \\
+\texttt{STOP\_STREAM} & Cierre de sesión & Detiene el envío de telemetría hacia la aplicación. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Telemetría en vivo y actualización de estado}
+
+Una vez aplicado el perfil, la app marca el estado de conexión del usuario en Firestore y abre la pantalla de datos en vivo. En esta etapa el comando principal es \texttt{START\_STREAM}. El ESP32-S3 responde activando el envío de mensajes \texttt{TELEMETRY} cada 1000 ms. Cada mensaje incluye variables como velocidad, RPM, temperatura del motor, combustible estimado, carga del motor, voltaje, acelerador, temperatura de admisión, \texttt{validMask}, clasificación de ruta y resultado del detector de anomalías local.
+
+La app normaliza la telemetría recibida antes de presentarla. Esto significa que convierte valores ausentes a estados seguros, limita rangos numéricos y traduce estados de ruta o severidad a categorías conocidas por la interfaz. La pantalla de tiempo real muestra velocidad, RPM, temperatura, combustible, carga del motor, voltaje, acelerador, admisión y estado de diagnóstico. Si el flujo opera en modo demo, la pantalla genera datos simulados para validar navegación e interfaz; cuando existe conexión real con el ESP32-S3, la telemetría proviene del stream BLE.
+
+Además de mostrar datos, la aplicación actualiza estado remoto de forma controlada. El dashboard y las alertas se sincronizan con Firestore solo cuando hay telemetría real, conexión activa y datos útiles. El intervalo de sincronización se limita para no escribir en la nube en cada notificación BLE. En paralelo, el seguimiento de viaje se activa cuando el vehículo se considera en movimiento y el motor muestra actividad. Ese módulo registra o actualiza documentos de viaje, distancia, duración y consumo estimado, sin bloquear la visualización en vivo.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=0.55cm,
+    seqbox/.style={draw, rounded corners=5pt, align=center, text width=0.58\textwidth, minimum width=0.66\textwidth, minimum height=0.85cm, font=\small, inner sep=5pt},
+    edge/.style={-{Latex[length=3mm]}, thick}
+]
+\node[seqbox, fill=gray!12] (user) {Usuario abre\\Tiempo real};
+\node[seqbox, fill=green!12, below=of user] (scan) {App busca\\AutoSense OBD2};
+\node[seqbox, fill=blue!10, below=of scan] (info) {\texttt{GET\_DEVICE\_INFO}\\y \texttt{READ\_VIN}};
+\node[seqbox, fill=cyan!12, below=of info] (profile) {Firebase resuelve\\perfil vehicular};
+\node[seqbox, fill=yellow!16, below=of profile] (transfer) {App transfiere\\perfil por BLE};
+\node[seqbox, fill=orange!15, below=of transfer] (apply) {ESP32-S3 aplica\\perfil y sondeo};
+\node[seqbox, fill=purple!10, below=of apply] (stream) {\texttt{START\_STREAM}\\telemetría 1 s};
+\node[seqbox, fill=teal!12, below=of stream] (sync) {App muestra datos\\y sincroniza estado};
+
+\draw[edge] (user) -- (scan);
+\draw[edge] (scan) -- (info);
+\draw[edge] (info) -- (profile);
+\draw[edge] (profile) -- (transfer);
+\draw[edge] (transfer) -- (apply);
+\draw[edge] (apply) -- (stream);
+\draw[edge] (stream) -- (sync);
+\end{tikzpicture}
+\caption{Secuencia general de interacción entre usuario, aplicación, ESP32-S3 y Firebase. Elaboración propia.}
+\label{fig:system-interaction-sequence}
+\end{figure}
+
+\subsection{Manejo de errores y continuidad operativa}
+
+La interacción del sistema contempla fallos esperados en un entorno móvil y automotriz. Si el VIN no puede leerse, la aplicación no detiene el flujo completo; presenta selección manual de perfil. Si la resolución remota de perfil falla, también se habilita el modo manual. Si BLE no responde dentro del tiempo esperado, la solicitud queda rechazada por \emph{timeout} y la pantalla muestra un estado de conexión fallida. Esta lógica evita que el usuario quede en una pantalla indefinida sin saber si el problema está en Bluetooth, en el firmware o en el vehículo.
+
+El protocolo BLE también incorpora mecanismos de continuidad. La app mantiene una tabla de solicitudes pendientes con identificador único, de manera que cada respuesta pueda asociarse al comando que la originó. Si una notificación BLE llega truncada o no se procesa correctamente, la app intenta leer la característica TX como respaldo. Este mecanismo no cambia la lógica del firmware; solo mejora la robustez del cliente móvil ante diferencias de comportamiento entre plataformas BLE.
+
+En el ESP32-S3, la desconexión de un cliente BLE desactiva el streaming, limpia notificaciones pendientes, descarta transferencias incompletas y reinicia la publicidad del dispositivo. Esto permite que una sesión interrumpida pueda empezar nuevamente sin reiniciar físicamente el adaptador. Del lado de la aplicación, al salir de la pantalla en vivo se detiene el seguimiento de viaje, se marca el estado de conexión como inactivo y se cancela la conexión BLE activa.
+
+El resultado de esta interacción es un flujo local-first: la adquisición y validación de datos se mantienen en el ESP32-S3, la app coordina la experiencia de usuario y la nube conserva estado sincronizado sin ser un requisito para cada muestra individual. Esta separación permite que AutoSense siga mostrando y registrando telemetría local aunque la red no esté disponible, y que sincronice información de usuario, vehículo y viajes cuando la aplicación tenga conectividad.
 
 \section{Módulo de análisis de datos}
 
