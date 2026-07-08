@@ -1,12 +1,12 @@
 # Fdb version 4
-["biber Build/main"] 1783447897.75127 "Build/main.bcf" "Build/main.bbl" "Build/main" 1783447902.22158 0
-  "Build/main.bcf" 1783447902.05929 123266 241e5686e5e7775424d7cb8b4221f2a7 "pdflatex"
+["biber Build/main"] 1783461295.24258 "Build/main.bcf" "Build/main.bbl" "Build/main" 1783461303.22799 0
+  "Build/main.bcf" 1783461303.05901 123266 241e5686e5e7775424d7cb8b4221f2a7 "pdflatex"
   "Reference/references.bib" 1783447522.61099 13904 f498ab7b8a5a9fea8b18f73fb51512a1 ""
   (generated)
   "Build/main.bbl"
   "Build/main.blg"
   (rewritten before read)
-["pdflatex"] 1783447899.14951 "main.tex" "Build/main.pdf" "main" 1783447902.22182 0
+["pdflatex"] 1783461300.12002 "main.tex" "Build/main.pdf" "main" 1783461303.22825 0
   "/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -206,13 +206,13 @@
   "/usr/local/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1783208907 5573038 b99aad5e4898a9034e953632f940512b ""
   "/usr/local/texlive/2026/texmf-var/web2c/pdftex/pdflatex.fmt" 1774209607 3636776 dc5fa9b6b1453b9d196cd42edf876004 ""
   "/usr/local/texlive/2026/texmf.cnf" 1774209515 577 648cd9f92f9c0eac486f4c71c85cfbbe ""
-  "Build/main.aux" 1783447902.03948 71929 e48b18ba81151668b3ab550e19a890cc "pdflatex"
-  "Build/main.bbl" 1783447899.13976 62414 f7c6b673b1e671794c3dc0efb088fa62 "biber Build/main"
-  "Build/main.lof" 1783447902.05998 6625 947c3fa77a23119630ba1ae6936f82d7 "pdflatex"
-  "Build/main.lot" 1783447902.06002 5966 ce63db4af8497d71e0903b81cfa34121 "pdflatex"
-  "Build/main.out" 1783447902.05838 32246 d5bed20cbcd2e36d1d285ce4e84fd7be "pdflatex"
-  "Build/main.run.xml" 1783447902.05988 2412 a14d7b0021cfb58933eab0e0321f79a4 "pdflatex"
-  "Build/main.toc" 1783447902.05995 14733 19775412a8bf4873b26ff4288388d349 "pdflatex"
+  "Build/main.aux" 1783461303.0392 71929 e48b18ba81151668b3ab550e19a890cc "pdflatex"
+  "Build/main.bbl" 1783461300.10834 62414 f7c6b673b1e671794c3dc0efb088fa62 "biber Build/main"
+  "Build/main.lof" 1783461303.05968 6625 947c3fa77a23119630ba1ae6936f82d7 "pdflatex"
+  "Build/main.lot" 1783461303.0597 5966 ce63db4af8497d71e0903b81cfa34121 "pdflatex"
+  "Build/main.out" 1783461303.05805 32246 d5bed20cbcd2e36d1d285ce4e84fd7be "pdflatex"
+  "Build/main.run.xml" 1783461303.05959 2412 a14d7b0021cfb58933eab0e0321f79a4 "pdflatex"
+  "Build/main.toc" 1783461303.05965 14733 19775412a8bf4873b26ff4288388d349 "pdflatex"
   "Figures/ai_zscore_deviation_index.png" 1783440627.13782 60923 634bb62e36d35316d2fc5d360084dd82 ""
   "Figures/can_bus_access_procedure.png" 1783258096.5389 23994 dea52f0f557acea05c3bba9a737a62de ""
   "Figures/can_high_speed_bus_levels.png" 1783258094.82502 13731 230f6309a6989a9e519aedf412a8a918 ""
@@ -263,7 +263,7 @@
   "Figures/test_autosense_adapter_powered.jpg" 1783427021.28258 830506 68c813364d6e27209c3d152db7aa3ecf ""
   "Figures/test_obd_simulator_generic.jpg" 1783427897.57537 682227 92d0d0daa51d735057c45370bbaee543 ""
   "Figures/test_real_passat_2016.jpg" 1783427021.68012 671380 a8e2dc45c1f0396892e6c8bf7e600c27 ""
-  "main.tex" 1783447888.04203 366280 3f8758081767ebe5252fcea13159cf6c ""
+  "main.tex" 1783461284.17311 366546 ab623e47f283c24078ce88986add6fc8 ""
   (generated)
   "Build/main.aux"
   "Build/main.bcf"
