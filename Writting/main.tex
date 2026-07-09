@@ -176,11 +176,11 @@ Agradezco a la Universidad Tecnológica de Panamá y a la Facultad de Ingenierí
 \chapter*{Resumen}
 \addcontentsline{toc}{chapter}{Resumen}
 
-El presente trabajo desarrolla AutoSense, un sistema Edge-IoT con inteligencia artificial ligera para el monitoreo predictivo de vehículos mediante lectura OBD-II/CAN. La propuesta integra un adaptador embebido basado en ESP32-S3, firmware de adquisición y análisis local, comunicación Bluetooth Low Energy, aplicación móvil desarrollada con React Native/Expo y servicios Firebase para autenticación, perfiles vehiculares, sincronización y almacenamiento histórico.
+Este trabajo presenta AutoSense, un sistema Edge-IoT con inteligencia artificial ligera para el monitoreo predictivo de vehículos mediante lectura OBD-II/CAN. La propuesta integra un adaptador embebido basado en ESP32-S3, firmware de adquisición y análisis local, comunicación Bluetooth Low Energy, aplicación móvil desarrollada con React Native/Expo y servicios Firebase para autenticación, perfiles vehiculares, sincronización y almacenamiento histórico.
 
 La investigación responde a la necesidad de contar con una solución accesible que permita observar datos del vehículo de forma continua, conservar historial operativo y detectar desviaciones sin intervenir la ECU ni ejecutar comandos de control. Para ello, el firmware opera bajo una política de solo lectura, descubre PIDs soportados, aplica perfiles vehiculares, compacta muestras, registra historial binario en el ESP32-S3 y transmite telemetría hacia la aplicación móvil. El módulo de análisis local utiliza línea base estadística mediante Welford, Z-score por señal y un Tiny Isolation Forest para identificar condiciones anómalas dentro del alcance del prototipo.
 
-La validación se realizó en tres escenarios: banco preliminar, simulador OBD-II y Volkswagen Passat 2016. La campaña principal consolidó 86\,998 registros clasificados en contextos \texttt{city}, \texttt{highway} y \texttt{unknown}, con señales como velocidad, RPM, temperatura del refrigerante, carga del motor y consumo instantáneo. Los resultados demuestran que el sistema adquiere, almacena, visualiza y analiza datos vehiculares reales de forma integrada. El alcance predictivo se interpreta como detección de desviaciones y apoyo al seguimiento del vehículo, no como diagnóstico mecánico definitivo.
+La validación cubrió tres escenarios: banco preliminar, simulador OBD-II y Volkswagen Passat 2016. La campaña principal consolidó 86\,998 registros clasificados en contextos \texttt{city}, \texttt{highway} y \texttt{unknown}, con señales como velocidad, RPM, temperatura del refrigerante, carga del motor y consumo instantáneo. Los resultados demuestran que el sistema adquiere, almacena, visualiza y analiza datos vehiculares reales de forma integrada. El alcance predictivo se interpreta como detección de desviaciones y apoyo al seguimiento del vehículo, no como diagnóstico mecánico definitivo.
 
 \textbf{Palabras clave:} OBD-II, CAN Bus, ESP32-S3, Edge-IoT, Bluetooth Low Energy, Firebase, inteligencia artificial, monitoreo vehicular, mantenimiento predictivo.
 
@@ -221,17 +221,17 @@ The system was validated in three scenarios: preliminary bench testing, an OBD-I
 \chapter*{Introducción}
 \addcontentsline{toc}{chapter}{Introducción}
 
-La transformación digital del sector automotriz ha impulsado el uso de sensores, conectividad inalámbrica y plataformas de análisis para interpretar el comportamiento del vehículo en tiempo real. En este nuevo escenario, el automóvil ya no se limita a cumplir una función de transporte, sino que también genera datos continuos sobre su funcionamiento, lo que abre la posibilidad de supervisar su estado, registrar eventos relevantes y apoyar decisiones técnicas de manera más temprana. La literatura sobre el Internet de los Vehículos y la inteligencia en el borde coincide en que el valor de esos datos depende no solo de su captura, sino también de la capacidad de procesarlos cerca de su origen y convertirlos en información útil para el usuario y para los sistemas de mantenimiento \cite{zhang2020_iov_edge,kalalas2025_ai_driven_monitoring}.
+Los vehículos modernos generan datos continuos sobre su funcionamiento: velocidad, temperatura, carga del motor, voltaje, consumo, códigos de diagnóstico y otros parámetros disponibles desde sus módulos electrónicos. Esa información ya existe dentro del automóvil, pero suele quedar limitada al tablero, a la lectura ocasional de un escáner o a revisiones realizadas cuando el conductor percibe una falla. La literatura sobre Internet de los Vehículos e inteligencia en el borde coincide en que el valor de esos datos depende de capturarlos, procesarlos cerca de su origen y convertirlos en información útil para el usuario y para los sistemas de mantenimiento \cite{zhang2020_iov_edge,kalalas2025_ai_driven_monitoring}.
 
-En ese contexto, la interfaz OBD-II representa una fuente accesible de información embarcada, porque permite obtener parámetros de diagnóstico y operación sin modificar la estructura original del automóvil. Estudios recientes señalan que el análisis de datos OBD-II mediante técnicas de aprendizaje automático ha ampliado su uso más allá de la lectura básica de códigos de falla, incorporando tareas como detección de anomalías, análisis del comportamiento de conducción, optimización del consumo y apoyo a la seguridad vehicular \cite{michailidis2025_obdii_review}. Además, la existencia de herramientas y servicios de diagnóstico estandarizados facilita que estas soluciones puedan aplicarse en distintos modelos de vehículos compatibles con el puerto OBD-II, lo que aumenta su relevancia práctica \cite{sae2022_j1978_obdii_scan_tool,sae2025_j1979_diagnostic_test_modes}.
+La interfaz OBD-II ofrece una vía práctica para acceder a esa información sin modificar la arquitectura original del vehículo. Estudios recientes muestran que los datos OBD-II ya no se usan solo para leer códigos de falla; también sirven para detectar anomalías, analizar patrones de conducción, estimar consumo y apoyar tareas de seguridad vehicular mediante técnicas de aprendizaje automático \cite{michailidis2025_obdii_review}. La estandarización de herramientas y servicios de diagnóstico permite trabajar sobre vehículos compatibles con el puerto OBD-II, siempre que cada modelo exponga los parámetros necesarios \cite{sae2022_j1978_obdii_scan_tool,sae2025_j1979_diagnostic_test_modes}.
 
 A pesar de esa disponibilidad de datos, el desafío principal sigue siendo interpretarlos de manera oportuna. En muchos casos, el mantenimiento de un vehículo continúa dependiendo de acciones reactivas, es decir, se interviene cuando el problema ya se manifestó, o de revisiones preventivas basadas únicamente en calendario o kilometraje. Ese esquema puede ser insuficiente cuando aparecen cambios graduales en variables críticas como temperatura, voltaje, carga del motor o códigos de error, ya que tales variaciones no siempre generan una advertencia inmediata en el tablero. La investigación reciente en mantenimiento predictivo destaca precisamente la necesidad de usar modelos de análisis capaces de detectar señales tempranas y patrones anómalos antes de que el deterioro se convierta en una falla evidente \cite{mahale2025_review_predictive_maintenance,tormos2025_explainable_ai}.
 
-En este punto, la computación en el borde adquiere un papel decisivo. En lugar de enviar cada medición directamente a un servidor remoto, las arquitecturas edge permiten filtrar, agrupar o inferir parte de la información cerca del vehículo, reduciendo latencia y dependencia de la conectividad. Esto es especialmente importante en aplicaciones móviles y vehiculares, donde la continuidad del servicio, la respuesta rápida y el manejo eficiente de recursos son condiciones clave. La evolución de las plataformas de edge intelligence para el Internet de los Vehículos muestra que el análisis local no solo mejora el tiempo de respuesta, sino que también facilita la operación en entornos de movilidad alta y conexión variable \cite{zhang2020_iov_edge,minamy2025_edgecomputing,kalalas2025_ai_driven_monitoring}.
+La computación en el borde reduce dos problemas frecuentes en sistemas vehiculares: latencia y dependencia de conectividad. En lugar de enviar cada medición a un servidor remoto, el procesamiento local filtra, agrupa o infiere parte de la información cerca del vehículo. Así, el sistema puede seguir funcionando durante trayectos con cobertura variable y recursos limitados \cite{zhang2020_iov_edge,minamy2025_edgecomputing,kalalas2025_ai_driven_monitoring}.
 
-Bajo esta perspectiva, la propuesta de este trabajo integra lectura OBD-II, procesamiento en el borde, almacenamiento en la nube y visualización móvil para convertir datos del vehículo en información comprensible para el conductor. Su alcance se centra en identificar condiciones anómalas y emitir alertas tempranas, manteniendo la compatibilidad con vehículos que ya cuentan con infraestructura de diagnóstico \cite{selvaraj2023_advanced_telematics,michailidis2025_obdii_review}.
+Con ese enfoque, la propuesta integra lectura OBD-II, procesamiento en el borde, almacenamiento en la nube y visualización móvil para convertir datos del vehículo en información comprensible para el conductor. Su alcance se centra en identificar condiciones anómalas y emitir alertas tempranas, manteniendo la compatibilidad con vehículos que ya cuentan con infraestructura de diagnóstico \cite{selvaraj2023_advanced_telematics,michailidis2025_obdii_review}.
 
-Esta investigación se orienta al diseño, desarrollo e implementación de una solución funcional que integre adquisición de datos, transmisión, almacenamiento y visualización de parámetros críticos del vehículo. Su relevancia radica en aprovechar recursos ya presentes en el automóvil sin introducir modificaciones invasivas, al tiempo que construye una base técnica para supervisión continua y apoyo a decisiones de mantenimiento \cite{mahale2025_review_predictive_maintenance,sae2022_j1978_obdii_scan_tool}.
+Esta investigación diseña e implementa una solución funcional que integra adquisición de datos, transmisión, almacenamiento y visualización de parámetros críticos del vehículo. El sistema aprovecha recursos ya presentes en el automóvil, evita modificaciones invasivas y construye una base técnica para supervisión continua y apoyo a decisiones de mantenimiento \cite{mahale2025_review_predictive_maintenance,sae2022_j1978_obdii_scan_tool}.
 
 \newpage
 
@@ -244,11 +244,11 @@ Esta investigación se orienta al diseño, desarrollo e implementación de una s
 
 Los vehículos tradicionales no cuentan con un seguimiento continuo de su estado mecánico, lo que puede derivar en averías imprevistas, costos de reparación elevados y riesgos para la seguridad vial. Aunque la mayoría de los siniestros viales se relaciona con factores humanos, estudios de seguridad vehicular también documentan razones críticas asociadas al vehículo, especialmente neumáticos, ruedas y frenos \cite{nhtsa2018_critical_reasons_crashes}. En el contexto local, reportes periodísticos han señalado la incidencia de fallas mecánicas y mantenimiento insuficiente como factores de riesgo para la conducción \cite{laprensa2025_fallas_vehiculos,laprensa2025_fallas_autos}. Estas situaciones evidencian la necesidad de detectar a tiempo condiciones irregulares antes de que se conviertan en riesgos mayores.
 
-Históricamente, el mantenimiento de vehículos se ha gestionado de manera reactiva, cuando la falla ya ocurrió, o preventiva, bajo intervalos fijos de servicio. Sin embargo, ambos enfoques presentan limitaciones: el reactivo llega demasiado tarde y el preventivo puede no captar cambios rápidos entre revisiones. Además, muchos conductores dependen exclusivamente de la luz de ``Check Engine'' u otras señales básicas del tablero, que por lo general aparecen cuando el problema ya se ha manifestado \cite{selvaraj2023_advanced_telematics}. En consecuencia, variaciones sostenidas en temperatura, voltaje, carga del motor, consumo o códigos de diagnóstico pueden pasar inadvertidas hasta convertirse en fallas más serias.
+El mantenimiento vehicular suele apoyarse en dos enfoques: reparación después de la falla o revisiones preventivas por kilometraje y calendario. El primero llega tarde; el segundo puede pasar por alto cambios rápidos entre revisiones. Muchos conductores dependen casi por completo de la luz de ``Check Engine'' u otras señales básicas del tablero, que por lo general aparecen cuando el problema ya se manifestó \cite{selvaraj2023_advanced_telematics}. Por ello, variaciones sostenidas en temperatura, voltaje, carga del motor, consumo o códigos de diagnóstico pueden pasar inadvertidas hasta convertirse en fallas más serias.
 
-En este escenario, resulta pertinente un monitoreo inteligente apoyado por IoT e Inteligencia Artificial que permita analizar de forma continua los datos que ya genera el vehículo y detectar patrones anómalos o señales tempranas de deterioro \cite{kalalas2025_ai_driven_monitoring}. Soluciones basadas en OBD-II han demostrado que es posible obtener información útil del vehículo para su supervisión remota y para la generación de alertas oportunas \cite{singh2021_obdii_iot,dabarera2022_iot_vehicle_management}. Del mismo modo, estudios recientes muestran que el uso de datos de diagnóstico embarcado y técnicas de análisis explicable contribuye a identificar anomalías y a respaldar la toma de decisiones de mantenimiento \cite{tormos2025_explainable_ai,mahale2025_review_predictive_maintenance}.
+Ante ese problema, un monitoreo apoyado por IoT e Inteligencia Artificial puede analizar de forma continua los datos que ya genera el vehículo y detectar patrones anómalos o señales tempranas de deterioro \cite{kalalas2025_ai_driven_monitoring}. Soluciones basadas en OBD-II han demostrado que es posible obtener información útil del vehículo para su supervisión remota y para la generación de alertas oportunas \cite{singh2021_obdii_iot,dabarera2022_iot_vehicle_management}. Estudios recientes también muestran que el uso de datos de diagnóstico embarcado y técnicas de análisis explicable contribuye a identificar anomalías y a respaldar la toma de decisiones de mantenimiento \cite{tormos2025_explainable_ai,mahale2025_review_predictive_maintenance}.
 
-Por lo tanto, el problema radica en cómo aprovechar la infraestructura existente en los vehículos, especialmente el puerto OBD-II y sus sensores asociados, para brindar al conductor una supervisión accesible y alertas tempranas en tiempo real. Los vehículos compatibles con OBD-II pueden beneficiarse de un sistema que convierta datos disponibles en información útil para la conducción y el mantenimiento, siempre que expongan señales suficientes para el perfil aplicado \cite{mahale2025_review_predictive_maintenance}.
+El problema se concentra en cómo aprovechar la infraestructura existente en los vehículos, especialmente el puerto OBD-II y sus sensores asociados, para ofrecer al conductor supervisión accesible y alertas tempranas en tiempo real. Los vehículos compatibles con OBD-II pueden beneficiarse de un sistema que convierta datos disponibles en información útil para conducción y mantenimiento, siempre que expongan señales suficientes para el perfil aplicado \cite{mahale2025_review_predictive_maintenance}.
 
 \section{Objetivo general}
 Diseñar e implementar una arquitectura IoT vehicular con procesamiento en el borde e inteligencia artificial ligera para monitorear en tiempo real parámetros críticos disponibles por OBD-II/CAN, registrar historial operativo, detectar desviaciones y visualizar la información mediante una aplicación móvil.
@@ -266,19 +266,19 @@ Para mantener la coherencia con el alcance validado, en esta tesis el diagnósti
 
 \section{Justificación}
 
-El presente trabajo se justifica, en primer lugar, por su relevancia académica y técnica, ya que integra en una misma solución el diagnóstico vehicular mediante OBD-II, el desarrollo de firmware sobre ESP32-S3, la comunicación BLE, el procesamiento de datos y la visualización móvil. Esta integración permite abordar el problema desde una perspectiva de sistema completo y no como una herramienta aislada de lectura de códigos, lo que resulta consistente con la evolución reciente de la monitorización vehicular basada en datos, el análisis en el borde y las aplicaciones de aprendizaje automático sobre OBD-II \cite{michailidis2025_obdii_review,zhang2020_iov_edge,kalalas2025_ai_driven_monitoring}.
+El trabajo se justifica por su aporte académico y técnico al integrar diagnóstico OBD-II, firmware sobre ESP32-S3, comunicación BLE, procesamiento de datos y visualización móvil. El problema no se aborda como una simple lectura de códigos, sino como un sistema compuesto por adquisición, análisis, almacenamiento y presentación de información. Esta orientación coincide con la evolución reciente del monitoreo vehicular basado en datos, el análisis en el borde y las aplicaciones de aprendizaje automático sobre OBD-II \cite{michailidis2025_obdii_review,zhang2020_iov_edge,kalalas2025_ai_driven_monitoring}.
 
-Desde el punto de vista práctico, la propuesta aprovecha la infraestructura ya presente en vehículos compatibles con OBD-II para convertir mediciones de operación en alertas comprensibles para el conductor. Esto es importante porque los signos de deterioro no siempre aparecen como una falla evidente en el tablero, y la lectura continua de parámetros críticos puede apoyar decisiones de mantenimiento más oportunas. En ese sentido, el sistema no sustituye el criterio mecánico, sino que complementa la supervisión tradicional con información accesible en tiempo real \cite{sae2022_j1978_obdii_scan_tool,mahale2025_review_predictive_maintenance,tormos2025_explainable_ai}.
+Desde el punto de vista práctico, la propuesta aprovecha la infraestructura ya presente en vehículos compatibles con OBD-II para convertir mediciones de operación en alertas comprensibles para el conductor. Los signos de deterioro no siempre aparecen como una falla evidente en el tablero; por eso, la lectura continua de parámetros críticos puede apoyar decisiones de mantenimiento más oportunas. El sistema no sustituye el criterio mecánico: complementa la supervisión tradicional con información accesible en tiempo real \cite{sae2022_j1978_obdii_scan_tool,mahale2025_review_predictive_maintenance,tormos2025_explainable_ai}.
 
-La solución también posee relevancia económica y social. Al utilizar un ESP32-S3, una aplicación desarrollada con Expo/React Native y servicios en la nube para autenticación, sincronización y almacenamiento, el proyecto se apoya en herramientas disponibles y escalables, evitando depender de equipos especializados de diagnóstico que suelen ser más costosos. Además, al facilitar la detección temprana de anomalías y centralizar el historial de funcionamiento, la propuesta puede contribuir a reducir paradas imprevistas, gastos correctivos y riesgos asociados a fallas no atendidas a tiempo.
+La solución tiene un componente económico y social. Al utilizar un ESP32-S3, una aplicación desarrollada con Expo/React Native y servicios en la nube para autenticación, sincronización y almacenamiento, el proyecto evita depender de equipos especializados de diagnóstico que suelen ser más costosos. La detección temprana de anomalías y el historial de funcionamiento pueden reducir paradas imprevistas, gastos correctivos y riesgos asociados a fallas no atendidas a tiempo.
 
-Finalmente, el trabajo tiene valor metodológico porque organiza el desarrollo en etapas claras: adquisición de datos, transmisión, almacenamiento, visualización, validación y ajuste. Esa estructura permite evaluar cada componente de manera independiente y luego verificar el comportamiento integral del sistema. Asimismo, la incorporación de Firebase para la gestión de usuarios, datos y perfiles vehiculares fortalece la trazabilidad de la información y deja una base reutilizable para futuras mejoras del proyecto, como ampliación de métricas, nuevas alertas o integración con más vehículos.
+El desarrollo se organizó en etapas verificables: adquisición de datos, transmisión, almacenamiento, visualización, validación y ajuste. Esta separación permite evaluar cada componente por separado y después verificar el comportamiento del sistema completo. Firebase aporta gestión de usuarios, perfiles vehiculares, datos e historial, dejando una base reutilizable para ampliar métricas, alertas o compatibilidad con más vehículos.
 
 \section{Alcance}
 
 El alcance de este trabajo comprende el diseño, desarrollo e integración de un prototipo funcional de monitoreo vehicular basado en la lectura de datos OBD-II, el procesamiento local en un ESP32-S3, la transmisión inalámbrica mediante BLE y la visualización de información en una aplicación móvil. La propuesta se orienta a vehículos que dispongan de una interfaz OBD-II compatible y se apoya en el uso de datos embarcados para supervisar el comportamiento del vehículo, identificar condiciones anómalas y presentar alertas tempranas al usuario \cite{sae2022_j1978_obdii_scan_tool,michailidis2025_obdii_review}.
 
-En términos funcionales, el sistema abarca las siguientes partes:
+Funcionalmente, el sistema abarca las siguientes partes:
 
 \begin{itemize}
     \item Adquisición de parámetros vehiculares desde el puerto OBD-II mediante el firmware del ESP32-S3.
@@ -288,13 +288,13 @@ En términos funcionales, el sistema abarca las siguientes partes:
     \item Sincronización y resguardo de información mediante servicios en la nube, utilizando Firebase como soporte para autenticación, almacenamiento y funciones de aplicación.
 \end{itemize}
 
-Asimismo, el alcance incluye pruebas de funcionamiento sobre perfiles vehiculares compatibles y escenarios controlados de validación, de manera que pueda evaluarse la respuesta del sistema frente a condiciones normales y a variaciones anómalas del vehículo. En la etapa actual, la validación se ha realizado sobre el perfil de Volkswagen Passat 2016, mientras que en otros vehículos la compatibilidad se considera esperada solo en la medida en que el puerto OBD-II exponga parámetros equivalentes y configuraciones semejantes. La solución se apoya en enfoques actuales de inteligencia en el borde y monitoreo vehicular para reducir latencia y mejorar la oportunidad de la información procesada \cite{zhang2020_iov_edge,kalalas2025_ai_driven_monitoring}.
+El alcance incluye pruebas de funcionamiento sobre perfiles vehiculares compatibles y escenarios controlados de validación. En esta etapa, el perfil evaluado fue Volkswagen Passat 2016; en otros vehículos, la compatibilidad depende de que el puerto OBD-II exponga parámetros equivalentes y configuraciones semejantes. La solución usa inteligencia en el borde y monitoreo vehicular para reducir latencia y entregar información procesada con mayor oportunidad \cite{zhang2020_iov_edge,kalalas2025_ai_driven_monitoring}.
 
-En consecuencia, el prototipo se concibe como una solución de observación y apoyo al usuario, sin capacidad de intervención directa sobre los sistemas del vehículo.
+Por esa razón, el prototipo se concibe como una solución de observación y apoyo al usuario, sin capacidad de intervención directa sobre los sistemas del vehículo.
 
 \section{Limitaciones}
 
-La propuesta presenta limitaciones derivadas tanto de la diversidad de plataformas vehiculares como del alcance experimental del prototipo. En particular, el comportamiento del sistema depende de la compatibilidad del puerto OBD-II, del soporte de PIDs disponibles y de la estabilidad de la comunicación entre el ESP32-S3, la aplicación móvil y los servicios en la nube \cite{sae2022_j1978_obdii_scan_tool,michailidis2025_obdii_review,zhang2020_iov_edge}. Además, la validación práctica se ha concentrado en el perfil de Volkswagen Passat 2016, por lo que la extensión a otros modelos queda sujeta a prueba y ajuste específicos.
+La propuesta presenta limitaciones derivadas tanto de la diversidad de plataformas vehiculares como del alcance experimental del prototipo. En particular, el comportamiento del sistema depende de la compatibilidad del puerto OBD-II, del soporte de PIDs disponibles y de la estabilidad de la comunicación entre el ESP32-S3, la aplicación móvil y los servicios en la nube \cite{sae2022_j1978_obdii_scan_tool,michailidis2025_obdii_review,zhang2020_iov_edge}. La validación práctica se concentró en el perfil de Volkswagen Passat 2016, por lo que la extensión a otros modelos queda sujeta a prueba y ajuste específicos.
 
 \begin{itemize}
     \item La compatibilidad, el conjunto de parámetros y la frecuencia de actualización pueden variar entre vehículos según los PIDs expuestos y el perfil aplicado.
@@ -305,7 +305,7 @@ La propuesta presenta limitaciones derivadas tanto de la diversidad de plataform
     \item Las métricas de latencia extremo a extremo, pérdida de paquetes BLE y tiempo de sincronización histórica requieren instrumentación adicional para una evaluación de rendimiento más estricta.
 \end{itemize}
 
-Por estas razones, los resultados deben interpretarse como evidencia de funcionamiento del prototipo dentro de un entorno acotado, no como una cobertura universal de la totalidad del parque automotor.
+Por eso, los resultados deben interpretarse como evidencia de funcionamiento del prototipo dentro de un entorno acotado, no como una cobertura universal de la totalidad del parque automotor.
 
 \newpage
 
@@ -318,40 +318,40 @@ Por estas razones, los resultados deben interpretarse como evidencia de funciona
 
 La evolución del diagnóstico vehicular ha estado marcada por la estandarización de la interfaz OBD-II, que permitió acceder a datos de la ECU sin intervenir físicamente la arquitectura original del automóvil. Ese cambio transformó el uso de los sistemas embarcados: de la lectura ocasional de códigos de falla se pasó a la consulta sistemática de variables de operación, estados de emisiones y condiciones de conducción. En la literatura reciente, OBD-II ya no se interpreta únicamente como una herramienta de diagnóstico, sino como una fuente estructurada de datos para monitoreo continuo, analítica vehicular y soporte al mantenimiento predictivo, especialmente cuando se combina con técnicas de aprendizaje automático y con esquemas de conectividad más cercanos al vehículo \cite{sae2022_j1978_obdii_scan_tool,michailidis2025_obdii_review,mahale2025_review_predictive_maintenance}.
 
-Uno de los aportes que consolidó esta transición fue el sistema de monitoreo remoto de salud vehicular y mantenimiento prognóstico propuesto por Shafi et al. En ese trabajo, la información del vehículo se adquiría durante la operación normal, se transmitía a un servidor para su análisis y se complementaba con una aplicación móvil capaz de mostrar el estado del sistema al usuario. La relevancia de este antecedente radica en que demuestra que la supervisión vehicular puede extenderse más allá del tablero del automóvil y convertirse en un flujo de datos apto para anticipar fallas, registrar comportamiento histórico y apoyar decisiones preventivas antes de que la avería sea visible. Además, el enfoque de monitoreo remoto anticipa una idea que luego sería común en soluciones más maduras: la separación entre adquisición, transporte, análisis y presentación de resultados \cite{shafi2018_vehicle_remote_health}.
+Shafi et al. propusieron un sistema de monitoreo remoto de salud vehicular y mantenimiento prognóstico. En ese trabajo, la información del vehículo se adquiría durante la operación normal, se transmitía a un servidor para análisis y se complementaba con una aplicación móvil que mostraba el estado del sistema al usuario. El antecedente demuestra que la supervisión vehicular puede extenderse más allá del tablero del automóvil y convertirse en un flujo de datos para anticipar fallas, registrar comportamiento histórico y apoyar decisiones preventivas antes de que la avería sea visible. También introduce una separación que resulta útil para AutoSense: adquisición, transporte, análisis y presentación de resultados \cite{shafi2018_vehicle_remote_health}.
 
-Posteriormente, la convergencia entre OBD-II e Internet de las Cosas hizo posible soluciones más compactas y cercanas al usuario final. Singh et al. propusieron un sistema inteligente de diagnóstico vehicular basado en OBD-II e IoT en el que la lectura se enviaba a un dispositivo móvil mediante Bluetooth; su planteamiento confirmó que el puerto de diagnóstico puede ser la base de una arquitectura de bajo costo para consulta remota y visualización inmediata. En una línea complementaria, Dabarera et al. desarrollaron un sistema de gestión vehicular orientado al rastreo y al diagnóstico con telemetría OBD-II, mostrando que la información embarcada puede utilizarse tanto para supervisión técnica como para administración del vehículo en contextos de uso cotidiano. Estos trabajos resultan importantes porque sitúan la comunicación inalámbrica y la interfaz móvil como elementos centrales en las soluciones modernas de diagnóstico, y porque muestran que la lectura del vehículo puede integrarse con servicios de seguimiento, reportes y control de información sin alterar la infraestructura original del automóvil \cite{singh2021_obdii_iot,dabarera2022_iot_vehicle_management}.
+La convergencia entre OBD-II e Internet de las Cosas produjo soluciones más cercanas al usuario final. Singh et al. propusieron un sistema inteligente de diagnóstico vehicular basado en OBD-II e IoT, donde la lectura se enviaba a un dispositivo móvil mediante Bluetooth; ese planteamiento confirmó que el puerto de diagnóstico puede sostener una arquitectura de bajo costo para consulta remota y visualización inmediata. Dabarera et al. desarrollaron un sistema de gestión vehicular orientado al rastreo y al diagnóstico con telemetría OBD-II, mostrando que la información embarcada sirve para supervisión técnica y administración del vehículo en uso cotidiano. Ambos trabajos ubican la comunicación inalámbrica y la interfaz móvil como piezas centrales del diagnóstico moderno \cite{singh2021_obdii_iot,dabarera2022_iot_vehicle_management}.
 
-Más allá del diagnóstico estrictamente mecánico, varias investigaciones han utilizado los datos OBD-II para estudiar el comportamiento de conducción y su relación con el consumo de combustible. DrivingStyles, propuesto por Meseguer et al., es un antecedente clave en esa dirección, ya que adopta técnicas de minería de datos y redes neuronales para clasificar estilos de conducción a partir de variables obtenidas de la ECU y calcular, en tiempo real, el consumo y el impacto ambiental de vehículos a gasolina y diésel. Su aporte no se limita a la estimación de consumo, sino que evidencia que una misma infraestructura de adquisición puede servir para interpretar el comportamiento del conductor, reducir emisiones y ofrecer retroalimentación útil a la persona que conduce. Para este trabajo, ese antecedente es relevante porque confirma la utilidad de combinar datos vehiculares con visualización móvil y análisis en capa superior, sin depender de sensores externos adicionales. También muestra que el valor de OBD-II no se agota en la detección de fallas, sino que se extiende a la caracterización de conducción y a la generación de recomendaciones operativas \cite{meseguer2017_drivingstyles}.
+Más allá del diagnóstico mecánico, varias investigaciones han usado datos OBD-II para estudiar conducción y consumo. DrivingStyles, propuesto por Meseguer et al., adopta minería de datos y redes neuronales para clasificar estilos de conducción a partir de variables de la ECU y calcular en tiempo real el consumo y el impacto ambiental de vehículos a gasolina y diésel. Este antecedente muestra que una misma infraestructura de adquisición puede interpretar comportamiento del conductor, estimar eficiencia y ofrecer retroalimentación operativa. Para AutoSense, confirma la utilidad de combinar datos vehiculares, visualización móvil y análisis de datos sin depender de sensores externos adicionales \cite{meseguer2017_drivingstyles}.
 
-Otro antecedente importante es el sistema de monitoreo integrado de conductor y vehículo presentado por Campos-Ferreira et al. En ese estudio, el monitoreo se plantea como una combinación de sensores a bordo y remotos, con el objetivo de observar simultáneamente variables del vehículo y del usuario en una arquitectura fácil de configurar y replicar. La importancia de este enfoque radica en que el análisis de movilidad ya no se limita al estado mecánico del vehículo, sino que incorpora el contexto de uso y la interacción humana como parte del sistema de observación. Esa visión coincide con las soluciones actuales que buscan un monitoreo más integral, en el que la telemetría, la interfaz de usuario y la interpretación de datos se integran para ofrecer una experiencia más completa y práctica. En otras palabras, el interés deja de estar únicamente en el dato aislado y pasa a centrarse en el sistema completo que lo captura, lo interpreta y lo convierte en información accionable \cite{camposferreira2023_vehicle_driver_monitoring}.
+Campos-Ferreira et al. presentaron un sistema de monitoreo integrado de conductor y vehículo. El estudio combina sensores a bordo y remotos para observar variables del vehículo y del usuario en una arquitectura configurable y replicable. Su aporte está en ampliar el análisis de movilidad: no observa solo el estado mecánico, sino también el contexto de uso y la interacción humana. Esta visión se relaciona con AutoSense porque la telemetría, la interfaz y la interpretación de datos se tratan como partes de un mismo sistema, no como módulos aislados \cite{camposferreira2023_vehicle_driver_monitoring}.
 
-Un problema recurrente en la literatura es la heterogeneidad entre modelos de vehículo y protocolos de comunicación. Yen et al. abordaron esta dificultad al desarrollar un módulo OBD-II universal capaz de trabajar con diferentes estándares CAN y al combinarlo con modelos de aprendizaje profundo para estimar el consumo de combustible. El estudio es especialmente útil porque no asume una compatibilidad automática entre automóviles; por el contrario, demuestra que la universalidad requiere diseñar una capa de adquisición flexible y adaptable a cada caso. Además, al validar el sistema en tres vehículos de distintas marcas, los autores reforzaron la idea de que el valor de una solución OBD-II depende tanto de la calidad de la captura como de la capacidad de normalizar datos procedentes de plataformas heterogéneas. Este punto resulta central para proyectos como AutoSense, donde el soporte por perfil vehicular y la validación por modelo son parte esencial de la consistencia técnica del sistema \cite{yen2021_universal_obdii}.
+Un problema recurrente en la literatura es la heterogeneidad entre modelos de vehículo y protocolos de comunicación. Yen et al. abordaron esta dificultad al desarrollar un módulo OBD-II universal capaz de trabajar con diferentes estándares CAN y al combinarlo con modelos de aprendizaje profundo para estimar el consumo de combustible. El estudio es especialmente útil porque no asume una compatibilidad automática entre automóviles; por el contrario, demuestra que la universalidad requiere diseñar una capa de adquisición flexible y adaptable a cada caso. La validación en tres vehículos de distintas marcas refuerza una idea clave para esta tesis: el valor de una solución OBD-II depende tanto de la calidad de la captura como de la normalización de datos procedentes de plataformas heterogéneas. Este punto resulta central para AutoSense, donde el soporte por perfil vehicular y la validación por modelo son parte esencial de la consistencia técnica del sistema \cite{yen2021_universal_obdii}.
 
-En los trabajos más recientes, el interés se ha desplazado hacia arquitecturas de Internet de los Vehículos y computación en el borde, donde el procesamiento no se centraliza de forma exclusiva en la nube. Zhang y Letaief destacan que la inteligencia en el borde reduce latencia y mejora el aprovechamiento de la información vehicular; Kalalas et al. proponen migración de servicios de borde para el monitoreo de condición vehicular; y Selvaraj et al. subrayan la utilidad de la analítica en tiempo real para mantenimiento predictivo y optimización del desempeño. Esta tendencia se complementa con revisiones recientes que emplean datos OBD-II y aprendizaje automático para detectar anomalías, mejorar seguridad, interpretar patrones y ofrecer información comprensible para el usuario, como ocurre en los enfoques de mantenimiento explicable y de conducción segura basados en IA. La literatura muestra que el reto ya no consiste solo en captar datos del vehículo, sino en procesarlos con suficiente cercanía y contexto como para volverlos útiles en tiempo oportuno \cite{zhang2020_iov_edge,kalalas2025_ai_driven_monitoring,selvaraj2023_advanced_telematics,michailidis2025_obdii_review,tormos2025_explainable_ai}.
+Los trabajos recientes se orientan hacia arquitecturas de Internet de los Vehículos y computación en el borde, donde el procesamiento no se concentra únicamente en la nube. Zhang y Letaief destacan que la inteligencia en el borde reduce latencia y mejora el uso de la información vehicular; Kalalas et al. proponen migración de servicios de borde para monitoreo de condición; y Selvaraj et al. subrayan la analítica en tiempo real para mantenimiento predictivo y optimización del desempeño. Las revisiones sobre OBD-II y aprendizaje automático mantienen la misma línea: detectar anomalías, mejorar seguridad, interpretar patrones y presentar información comprensible para el usuario. El reto ya no se limita a captar datos del vehículo; también exige procesarlos con cercanía, contexto y oportunidad \cite{zhang2020_iov_edge,kalalas2025_ai_driven_monitoring,selvaraj2023_advanced_telematics,michailidis2025_obdii_review,tormos2025_explainable_ai}.
 
-A partir de estos antecedentes, se observa una transición clara: el vehículo pasó de ser un sistema cerrado de diagnóstico puntual a convertirse en una plataforma de datos apta para monitoreo continuo, análisis contextual y apoyo a la toma de decisiones. AutoSense se inserta en esa línea de desarrollo con una arquitectura distribuida que separa la adquisición de datos en el firmware del ESP32-S3, la transmisión por BLE, la visualización en la aplicación móvil y la sincronización de perfiles e historial en la nube. Esta organización responde a las necesidades detectadas en la literatura, pero añade una implementación orientada al uso práctico y a la validación sobre un perfil vehicular ya verificado, lo que permite partir de una base funcional real y ampliar progresivamente la compatibilidad sin perder control sobre la calidad de los datos. En ese sentido, el proyecto no busca repetir soluciones previas, sino integrar sus aportes en una plataforma concreta, más compacta y ajustada a la realidad del trabajo de campo.
+Estos antecedentes muestran una transición clara: el vehículo pasó de ser un sistema de diagnóstico puntual a una fuente de datos para monitoreo continuo, análisis contextual y apoyo a decisiones de mantenimiento. AutoSense se ubica en esa línea con una arquitectura distribuida que separa adquisición en el ESP32-S3, transmisión BLE, visualización móvil y sincronización de perfiles e historial en la nube. La diferencia práctica está en la validación sobre un perfil vehicular específico, \texttt{vw\_passat\_2016}, lo que permite partir de una base real antes de ampliar compatibilidad a otros modelos.
 
 \section{Diagnóstico vehicular}
 \label{sec:diagnostico-vehicular}
 
-El diagnóstico vehicular es el proceso mediante el cual se observa, interpreta y valida la información generada por los sistemas electrónicos del automóvil con el fin de identificar fallas, detectar deterioro o confirmar el estado de sus componentes críticos. En los vehículos modernos, esta tarea se apoya en la ECU y en los módulos asociados, que registran estados operativos, códigos de falla y variables de funcionamiento. La estandarización OBD-II formalizó parte de esa interacción al definir un conjunto mínimo de información que puede ser consultado por herramientas externas de diagnóstico, lo que convierte al puerto OBD en una interfaz práctica para revisión técnica, mantenimiento y supervisión continua \cite{sae2022_j1978_obdii_scan_tool,epa2016_obd_information_exchange}.
+El diagnóstico vehicular observa, interpreta y valida la información generada por los sistemas electrónicos del automóvil para identificar fallas, detectar deterioro o confirmar el estado de sus componentes críticos. En los vehículos modernos, esta tarea se apoya en la ECU y en los módulos asociados, que registran estados operativos, códigos de falla y variables de funcionamiento. La estandarización OBD-II formalizó parte de esa interacción al definir un conjunto mínimo de información que puede ser consultado por herramientas externas de diagnóstico, lo que convierte al puerto OBD en una interfaz práctica para revisión técnica, mantenimiento y supervisión continua \cite{sae2022_j1978_obdii_scan_tool,epa2016_obd_information_exchange}.
 
-Desde esa perspectiva, el diagnóstico no debe entenderse como una predicción exacta de la falla mecánica, sino como una lectura estructurada del estado del vehículo a partir de señales observables. Un escáner OBD-II no reemplaza el criterio técnico del mantenimiento mecánico, pero sí aporta datos consistentes para reconocer desviaciones, confirmar síntomas y orientar el análisis. En ese sentido, la información diagnóstica funciona como una capa intermedia entre el comportamiento físico del vehículo y la interpretación del usuario o del técnico. La utilidad del estándar radica precisamente en esa capacidad de traducir eventos internos del automóvil a datos comparables y consultables desde una herramienta externa \cite{sae2022_j1978_obdii_scan_tool,epa2016_obd_information_exchange}.
+Desde esa perspectiva, el diagnóstico no equivale a predecir con exactitud una falla mecánica. Consiste en leer de forma estructurada el estado del vehículo a partir de señales observables. Un escáner OBD-II no reemplaza el criterio técnico del mantenimiento mecánico, pero aporta datos consistentes para reconocer desviaciones, confirmar síntomas y orientar el análisis. La información diagnóstica actúa como una capa intermedia entre el comportamiento físico del vehículo y la interpretación del usuario o del técnico \cite{sae2022_j1978_obdii_scan_tool,epa2016_obd_information_exchange}.
 
-Uno de los elementos más representativos del diagnóstico vehicular es la gestión de los DTC o \textit{Diagnostic Trouble Codes}. Cuando el sistema detecta una condición anómala, registra un código de falla y en muchos casos activa el indicador MIL, conocido comúnmente como \textit{Check Engine}. Sin embargo, el código almacenado no siempre describe la causa raíz de forma directa; más bien identifica la zona funcional o la condición detectada por la ECU. Por ello, una lectura correcta del diagnóstico requiere distinguir entre síntoma, código y causa probable. Esta separación es importante para no sobreinterpretar el dato y para evitar conclusiones apresuradas sobre la reparación requerida. La propia documentación técnica de OBD resalta que la advertencia sirve para informar la necesidad de revisión y no necesariamente para ordenar una parada inmediata del vehículo \cite{epa2016_obd_information_exchange}.
+La gestión de DTC o \textit{Diagnostic Trouble Codes} es una de las funciones centrales del diagnóstico vehicular. Cuando el sistema detecta una condición anómala, registra un código de falla y en muchos casos activa el indicador MIL, conocido comúnmente como \textit{Check Engine}. El código almacenado no siempre describe la causa raíz; identifica la zona funcional o la condición detectada por la ECU. Por ello, una lectura correcta debe separar síntoma, código y causa probable. Esa distinción evita sobreinterpretar el dato y reduce conclusiones apresuradas sobre la reparación requerida \cite{epa2016_obd_information_exchange}.
 
 Junto con los DTC, el sistema puede conservar datos de contexto que ayudan a interpretar el evento. Entre ellos se encuentra el \textit{freeze frame}, que corresponde a una captura del estado del vehículo en el momento en que se registró una condición de falla. Ese instantáneo permite asociar el código con variables como velocidad, temperatura, carga del motor, RPM o tensión de la ECU, lo cual mejora el análisis posterior. También son relevantes los códigos almacenados, pendientes y permanentes, ya que describen momentos distintos de confirmación de la anomalía. En AutoSense, este tipo de información resulta valiosa porque no solo permite mostrar una alerta, sino también explicar el contexto en que surgió y registrar una referencia para el historial del vehículo.
 
-Otro componente esencial del diagnóstico son los parámetros en tiempo real o \textit{live data}, normalmente accedidos mediante PIDs. Estos valores permiten consultar la condición operativa del vehículo mientras está en funcionamiento y ofrecen una vista más dinámica que la simple lectura de fallas. Variables como RPM, velocidad, temperatura del refrigerante, posición del acelerador, carga del motor, flujo de aire, presión del múltiple o voltaje de la ECU permiten interpretar cómo responde el sistema ante diferentes escenarios de conducción. En proyectos como AutoSense, esta información se vuelve especialmente útil porque el firmware no depende de una lista rígida de señales, sino que consulta los PIDs soportados por el vehículo y organiza la lectura según el perfil activo. Esa adaptación es importante porque la disponibilidad real de señales puede variar entre marcas, modelos y ECUs, como se observa en la literatura sobre módulos OBD-II universales y vehículos heterogéneos \cite{yen2021_universal_obdii}.
+Otro componente esencial son los parámetros en tiempo real o \textit{live data}, normalmente accedidos mediante PIDs. Estos valores consultan la condición operativa del vehículo mientras está en funcionamiento y ofrecen una vista más dinámica que la lectura de fallas. Variables como RPM, velocidad, temperatura del refrigerante, posición del acelerador, carga del motor, flujo de aire, presión del múltiple o voltaje de la ECU describen cómo responde el sistema ante distintos escenarios de conducción. En AutoSense, el firmware no depende de una lista rígida de señales: primero consulta los PIDs soportados por el vehículo y después organiza la lectura según el perfil activo. Esa adaptación es necesaria porque la disponibilidad real de señales varía entre marcas, modelos y ECUs \cite{yen2021_universal_obdii}.
 
-La lectura de \textit{live data} también sirve para detectar variaciones graduales que no necesariamente generan un código inmediato. Cambios sostenidos en temperatura, combustible, voltaje o carga pueden ser indicios tempranos de degradación, especialmente cuando se comparan varias sesiones de conducción. En consecuencia, el diagnóstico vehicular moderno no se limita a consultar una alerta puntual, sino que incorpora la observación continua de tendencias. Esta forma de trabajo es coherente con los enfoques recientes de mantenimiento predictivo, los cuales usan datos del vehículo para identificar patrones, anomalías o desviaciones respecto de una línea base esperada. La literatura reciente sobre diagnósticos basados en OBD-II y mantenimiento asistido por inteligencia artificial destaca precisamente ese paso desde la corrección reactiva hacia la supervisión preventiva y contextual \cite{michailidis2025_obdii_review,mahale2025_review_predictive_maintenance,tormos2025_explainable_ai}.
+La lectura de \textit{live data} también sirve para detectar variaciones graduales que no necesariamente generan un código inmediato. Cambios sostenidos en temperatura, combustible, voltaje o carga pueden ser indicios tempranos de degradación, especialmente cuando se comparan varias sesiones de conducción. Así, el diagnóstico vehicular moderno no se limita a consultar una alerta puntual; incorpora la observación continua de tendencias. Esta forma de trabajo es coherente con los enfoques recientes de mantenimiento predictivo, los cuales usan datos del vehículo para identificar patrones, anomalías o desviaciones respecto de una línea base esperada. La literatura reciente sobre diagnósticos basados en OBD-II y mantenimiento asistido por inteligencia artificial destaca precisamente ese paso desde la corrección reactiva hacia la supervisión preventiva y contextual \cite{michailidis2025_obdii_review,mahale2025_review_predictive_maintenance,tormos2025_explainable_ai}.
 
-Además de los parámetros en tiempo real, el diagnóstico incluye la revisión de monitores de emisiones y de la condición de preparación del vehículo, conocida como \textit{readiness}. Este estado informa si los monitores del sistema han completado sus pruebas internas y si el vehículo está en una condición adecuada para inspección o validación. Su lectura es relevante porque permite saber si una falla ya fue verificada por el sistema o si aún está en proceso de confirmación. En la misma línea, el modo de información del vehículo, particularmente Mode 09, permite consultar datos de identificación como el VIN y otros elementos útiles para asociar el automóvil con un perfil concreto. Para AutoSense esto es especialmente útil, ya que la lectura de identificación ayuda a resolver el perfil vehicular correcto y a confirmar si el conjunto de señales disponibles coincide con la configuración verificada para ese automóvil.
+El diagnóstico también revisa monitores de emisiones y condición de preparación del vehículo, conocida como \textit{readiness}. Este estado informa si los monitores internos completaron sus pruebas y si el vehículo se encuentra en condición adecuada para inspección o validación. Su lectura ayuda a distinguir entre una falla ya verificada y una condición todavía en proceso de confirmación. El modo de información del vehículo, particularmente Mode 09, permite consultar datos de identificación como el VIN. En AutoSense, esa lectura ayuda a resolver el perfil vehicular correcto y a confirmar si las señales disponibles coinciden con la configuración verificada para ese automóvil.
 
-Desde el punto de vista de la arquitectura del sistema, AutoSense implementa este diagnóstico como un flujo de solo lectura. El firmware del ESP32-S3 solicita datos por CAN, decodifica los servicios OBD-II permitidos y transmite los resultados por BLE hacia la aplicación móvil, donde el usuario visualiza el estado del vehículo y su historial. Este criterio evita intervenir funciones de escritura o control sobre la ECU y mantiene el proceso dentro de una política de consulta segura. En el proyecto también se emplea un guardián de lectura que bloquea servicios de borrado, control o reprogramación, de modo que el diagnóstico se conserve como observación y no como modificación del sistema embarcado. La medida preserva la integridad del vehículo durante la fase experimental y permite repetir las pruebas bajo condiciones estables.
+En la arquitectura de AutoSense, el diagnóstico opera como un flujo de solo lectura. El firmware del ESP32-S3 solicita datos por CAN, decodifica los servicios OBD-II permitidos y transmite los resultados por BLE hacia la aplicación móvil, donde el usuario visualiza el estado del vehículo y su historial. Este criterio evita intervenir funciones de escritura o control sobre la ECU y mantiene el proceso dentro de una política de consulta segura. El proyecto emplea un guardián de lectura que bloquea servicios de borrado, control o reprogramación, de modo que el diagnóstico se conserve como observación y no como modificación del sistema embarcado. La medida preserva la integridad del vehículo durante la fase experimental y permite repetir las pruebas bajo condiciones estables.
 
-La compatibilidad entre vehículos es un aspecto que no puede asumirse de forma automática. Aunque OBD-II define una base común, cada fabricante puede variar en la disponibilidad de PIDs, en la respuesta de ciertas ECUs o en el conjunto de datos que expone a una herramienta externa. Por esa razón, AutoSense se apoya en perfiles de vehículo y en reglas verificadas para interpretar la información recibida. En el estado actual del proyecto, la validación se ha realizado sobre Volkswagen Passat 2016; por tanto, la extensión a otros modelos depende de que expongan información equivalente y de que respondan a las consultas previstas por el sistema. Esta condición no limita la propuesta, sino que la vuelve más precisa, porque evita asumir compatibilidad no comprobada y obliga a trabajar con datos realmente disponibles.
+La compatibilidad entre vehículos no puede asumirse de forma automática. Aunque OBD-II define una base común, cada fabricante puede variar la disponibilidad de PIDs, la respuesta de ciertas ECUs o el conjunto de datos expuesto a una herramienta externa. Por eso, AutoSense se apoya en perfiles de vehículo y reglas verificadas. En el estado actual del proyecto, la validación corresponde al Volkswagen Passat 2016; la extensión a otros modelos depende de que expongan información equivalente y respondan a las consultas previstas por el sistema. Esta condición evita prometer compatibilidad no comprobada y obliga a trabajar con datos disponibles.
 
 En AutoSense, el diagnóstico vehicular cumple una función doble: observar el estado del automóvil con datos estandarizados y servir como base para historial, anomalías y análisis posteriores. Esa función conecta el diagnóstico tradicional con el monitoreo inteligente propuesto, sin volver a explicar cada servicio OBD-II en las secciones siguientes.
 
@@ -392,7 +392,7 @@ En AutoSense, el diagnóstico vehicular cumple una función doble: observar el e
 
 \begin{table}[H]
     \centering
-    \caption{Tipos de información utilizados en el diagnóstico vehicular de AutoSense.}
+    \caption{Tipos de información utilizados en el diagnóstico vehicular de AutoSense. Elaboración propia.}
     \label{tab:diagnostico-autosense}
     \small
     \begin{tabular}{p{0.25\textwidth}p{0.40\textwidth}p{0.25\textwidth}}
@@ -415,7 +415,7 @@ La figura organiza el flujo de observación que sigue AutoSense desde el vehícu
 
 El sistema OBD-II (\textit{On-Board Diagnostics, segunda generación}) es la interfaz estandarizada que permite acceder a información de diagnóstico y de supervisión del vehículo mediante herramientas externas de prueba. Su propósito central es brindar un punto común de consulta para que un escáner pueda identificar el estado de los sistemas relacionados con emisiones, funcionamiento del motor y autoverificación de componentes, sin depender por completo de la lógica interna de cada fabricante \cite{sae2025_j1979_diagnostic_test_modes,epa2016_vehicle_emissions_obd}.
 
-En términos prácticos, OBD-II no es una sola pieza de hardware ni un bloque aislado de software. Es un conjunto de reglas que define qué información mínima debe estar disponible para un equipo genérico de diagnóstico y cómo debe solicitarse esa información. Por esa razón, el estándar resultó decisivo para la evolución de las herramientas de revisión vehicular, ya que permitió pasar de diagnósticos propietarios y cerrados a una consulta estructurada y repetible. En vehículos modernos, ese acceso se utiliza para inspección, mantenimiento preventivo, validación de emisiones y lectura de eventos que el controlador ha detectado durante la operación normal \cite{epa2016_vehicle_emissions_obd,sae2022_j1978_obdii_scan_tool}.
+En la práctica, OBD-II no es una sola pieza de hardware ni un bloque aislado de software. Es un conjunto de reglas que define qué información mínima debe estar disponible para un equipo genérico de diagnóstico y cómo debe solicitarse esa información. Por esa razón, el estándar resultó decisivo para la evolución de las herramientas de revisión vehicular, ya que permitió pasar de diagnósticos propietarios y cerrados a una consulta estructurada y repetible. En vehículos modernos, ese acceso se utiliza para inspección, mantenimiento preventivo, validación de emisiones y lectura de eventos que el controlador ha detectado durante la operación normal \cite{epa2016_vehicle_emissions_obd,sae2022_j1978_obdii_scan_tool}.
 
 La relevancia del sistema OBD-II también se explica por su alcance regulatorio y operativo. La EPA ha señalado que los vehículos equipados con OBD pueden aportar datos oportunos y precisos para los programas de inspección y mantenimiento, y que esta tecnología forma parte de la estrategia de control de emisiones en vehículos ligeros desde modelos 1996 y posteriores \cite{epa2016_vehicle_emissions_obd}. De forma complementaria, la familia de normas SAE J1979 organiza los modos de diagnóstico y la información que puede solicitar una herramienta externa, mientras que SAE J1978 establece las condiciones generales para el funcionamiento de un escáner compatible con OBD-II \cite{sae2025_j1979_diagnostic_test_modes,sae2022_j1978_obdii_scan_tool}.
 
@@ -456,7 +456,7 @@ Para AutoSense, OBD-II constituye la capa de consulta que hace posible la lectur
     \label{fig:obd2-autosense-general}
 \end{figure}
 
-Uno de los rasgos que hacen útil a OBD-II es que estandariza la lectura de estados de falla y de condiciones de operación. A través del sistema se pueden consultar códigos de diagnóstico, estado de pruebas internas, información de identificación del vehículo y, en algunos casos, datos históricos asociados al momento de una anomalía. Esa estructura facilita que un mismo flujo de consulta se aplique a distintos automóviles, siempre que expongan los modos y datos mínimos definidos por el estándar. En un trabajo como AutoSense, esta característica es importante porque permite construir una base común de lectura y luego adaptar el comportamiento mediante perfiles verificados, en lugar de programar reglas aisladas para cada modelo \cite{sae2025_j1979_diagnostic_test_modes,epa2013_obd_readiness_best_practices}.
+Uno de los rasgos que hacen útil a OBD-II es que estandariza la lectura de estados de falla y de condiciones de operación. A través del sistema se pueden consultar códigos de diagnóstico, estado de pruebas internas, información de identificación del vehículo y, en algunos casos, datos históricos asociados al momento de una anomalía. Esa estructura hace posible aplicar un mismo flujo de consulta a distintos automóviles, siempre que expongan los modos y datos mínimos definidos por el estándar. En AutoSense, esta base común se adapta mediante perfiles verificados, en lugar de programar reglas aisladas para cada modelo \cite{sae2025_j1979_diagnostic_test_modes,epa2013_obd_readiness_best_practices}.
 
 Otra ventaja del sistema es que separa la información por modos de diagnóstico. Esa organización evita que el escáner dependa de una única lectura monolítica y hace posible consultar distintos grupos de datos según el objetivo de la prueba. Por ejemplo, no es lo mismo revisar códigos almacenados que leer información del vehículo, verificar el estado de los monitores o consultar una captura congelada del momento en que ocurrió una falla. La utilidad del estándar está precisamente en esa separación funcional, porque cada modo responde a una necesidad distinta de análisis y mantiene una semántica conocida por las herramientas compatibles.
 
@@ -496,17 +496,17 @@ Otra ventaja del sistema es que separa la información por modos de diagnóstico
 
 En OBD-II, el acceso a la información se organiza mediante modos o servicios de diagnóstico. Para esta propuesta interesan especialmente aquellos que entregan información de lectura y verificación. El modo 01 recupera datos actuales del motor y de los sistemas asociados; el modo 02 devuelve freeze frame o imagen congelada del instante en que se registró un evento; el modo 03 expone los DTC almacenados; el modo 06 presenta resultados de monitores a bordo; el modo 07 lista DTC pendientes; el modo 09 entrega información del vehículo, como el VIN; y el modo 0A permite consultar DTC permanentes \cite{sae2025_j1979_diagnostic_test_modes,epa2013_obd_readiness_best_practices}.
 
-La existencia de estos modos no implica que todos los vehículos respondan igual ni que todos habiliten el mismo subconjunto de información. En la práctica, la disponibilidad depende del modelo, del año y de la implementación del fabricante, de modo que un escáner robusto debe primero identificar qué servicios son soportados. Esta condición es importante para AutoSense, porque el sistema no asume que toda la información estará presente en cualquier automóvil, sino que trabaja con un perfil validado y con una lista de datos cuya lectura ya fue confirmada en pruebas locales. Esa decisión evita interpretaciones erróneas y permite que la plataforma crezca sobre una base controlada.
+La existencia de estos modos no implica que todos los vehículos respondan igual ni que todos habiliten el mismo subconjunto de información. En la práctica, la disponibilidad depende del modelo, del año y de la implementación del fabricante, de modo que un escáner debe primero identificar qué servicios son soportados. AutoSense no asume que toda la información estará presente en cualquier automóvil; trabaja con un perfil validado y con una lista de datos cuya lectura ya fue confirmada en pruebas locales. Esa decisión evita interpretaciones erróneas y permite que la plataforma crezca sobre una base controlada.
 
 La lectura de DTC es probablemente el uso más conocido de OBD-II. Un código de falla no describe por sí solo la reparación exacta, pero sí señala qué sistema o condición activó la alerta. Cuando la ECU enciende el indicador MIL, el usuario recibe una advertencia de que el vehículo debe ser revisado, aunque la causa real puede requerir diagnóstico adicional. El estándar también contempla DTC permanentes, los cuales la EPA describe como códigos que no pueden borrarse mediante un escáner convencional ni por desconexión de batería, sino únicamente cuando el propio sistema confirma que la condición ya no persiste \cite{epa2013_obd_readiness_best_practices}. Para un sistema como AutoSense, esta distinción es útil porque evita tratar todos los códigos como equivalentes y permite mostrar un estado más preciso al usuario.
 
-La información de \textit{readiness} cumple una función complementaria. Los monitores de preparación indican si el sistema ha ejecutado sus comprobaciones internas y si se encuentra listo para una prueba de inspección o para una validación técnica. Este detalle es relevante en escenarios de mantenimiento, ya que un vehículo puede no haber completado todavía algunas verificaciones después de un borrado reciente de códigos o de una reparación. En términos de uso, el estado de readiness ayuda a interpretar si una ausencia de DTC realmente significa ausencia de falla o si todavía no se ha completado el ciclo de diagnóstico interno \cite{epa2013_obd_readiness_best_practices}.
+La información de \textit{readiness} cumple una función complementaria. Los monitores de preparación indican si el sistema ha ejecutado sus comprobaciones internas y si se encuentra listo para una prueba de inspección o para una validación técnica. Este detalle es relevante en escenarios de mantenimiento, ya que un vehículo puede no haber completado todavía algunas verificaciones después de un borrado reciente de códigos o de una reparación. En uso, el estado de readiness ayuda a interpretar si una ausencia de DTC realmente significa ausencia de falla o si todavía no se ha completado el ciclo de diagnóstico interno \cite{epa2013_obd_readiness_best_practices}.
 
-La otra pieza clave del sistema es la información del vehículo. El modo 09 permite consultar datos como el VIN y otros identificadores útiles para reconocer el automóvil, asociarlo con un perfil y diferenciarlo de otros modelos. En AutoSense esta capacidad es especialmente importante porque el proceso de aplicación de perfiles se basa en reconocer el vehículo y cargar únicamente la configuración compatible. Así, OBD-II no se limita a informar que existe una falla o que un monitor está listo, sino que también aporta datos de identidad para organizar el flujo completo de diagnóstico.
+La otra pieza clave del sistema es la información del vehículo. El modo 09 permite consultar datos como el VIN y otros identificadores útiles para reconocer el automóvil, asociarlo con un perfil y diferenciarlo de otros modelos. En AutoSense, el proceso de aplicación de perfiles parte de esa identificación para cargar únicamente la configuración compatible. Así, OBD-II no se limita a informar que existe una falla o que un monitor está listo, sino que también aporta datos de identidad para organizar el flujo completo de diagnóstico.
 
 \begin{table}[H]
     \centering
-    \caption{Modos OBD-II relevantes para AutoSense.}
+    \caption{Modos OBD-II relevantes para AutoSense. Elaboración propia con base en los modos de diagnóstico citados.}
     \label{tab:modos-obd2-autosense}
     \small
     \begin{tabular}{p{0.12\textwidth}p{0.28\textwidth}p{0.42\textwidth}}
@@ -530,7 +530,7 @@ En AutoSense, OBD-II se utiliza como la capa lógica que organiza la lectura del
 
 El enfoque de solo lectura es una decisión metodológica y técnica. Primero, porque mantiene el sistema dentro de la lógica del diagnóstico y evita funciones de borrado o control sobre la ECU. Segundo, porque facilita pruebas repetibles sobre el mismo vehículo sin alterar el estado de los monitores ni eliminar evidencia diagnóstica. Tercero, porque permite concentrar el desarrollo en la interpretación de datos y en la visualización de resultados, que son los aportes centrales del proyecto. Por eso, los modos de escritura o de control no forman parte del alcance de esta sección ni del uso actual de AutoSense.
 
-En la versión actual del proyecto, la validación se ha realizado sobre Volkswagen Passat 2016, y esa referencia sirve como base para el perfil activo que maneja la aplicación y el firmware. Esto significa que la compatibilidad con otros vehículos no se asume de forma automática, sino que depende de que el automóvil responda a los modos de diagnóstico y a los datos esperados por el sistema. Esa restricción hace más sólida la propuesta, porque evita prometer compatibilidad no verificada y obliga a trabajar con datos reales obtenidos del vehículo de prueba.
+En la versión actual del proyecto, el Volkswagen Passat 2016 es la referencia del perfil activo que maneja la aplicación y el firmware. Esto significa que la compatibilidad con otros vehículos no se asume de forma automática, sino que depende de que el automóvil responda a los modos de diagnóstico y a los datos esperados por el sistema. Esa restricción hace más sólida la propuesta, porque evita prometer compatibilidad no verificada y obliga a trabajar con datos reales obtenidos del vehículo de prueba.
 
 La codificación detallada de PIDs, la estructura del bus y la interpretación de respuestas por CAN se desarrollan en secciones posteriores, por lo que aquí solo se presenta el papel del estándar como interfaz de diagnóstico. Esta separación ayuda a evitar repeticiones y deja claro que el sistema OBD-II es la puerta de entrada a los datos que AutoSense utiliza para monitoreo y análisis, mientras que las capas físicas y de transporte se estudian más adelante.
 
@@ -559,13 +559,13 @@ El protocolo CAN (\textit{Controller Area Network}) es una red de comunicación 
     \label{fig:can-autosense-topologia}
 \end{figure}
 
-La transmisión en CAN clásico se realiza sobre dos líneas diferenciales, CANH y CANL, lo que mejora la inmunidad frente al ruido electromagnético presente en el entorno automotriz. Esta propiedad es importante porque el vehículo integra motores, actuadores y otros componentes eléctricos capaces de introducir perturbaciones en la comunicación. El uso de señal diferencial permite mantener la integridad de los mensajes y favorecer una lectura estable desde el firmware del ESP32-S3, incluso cuando el sistema opera con el vehículo en funcionamiento \cite{vector2021_can_bus,vector2021_can_bus_levels}.
+La transmisión en CAN clásico se realiza sobre dos líneas diferenciales, CANH y CANL, lo que mejora la inmunidad frente al ruido electromagnético presente en el entorno automotriz. El vehículo integra motores, actuadores y otros componentes eléctricos capaces de introducir perturbaciones en la comunicación. La señal diferencial ayuda a mantener la integridad de los mensajes y favorece una lectura estable desde el firmware del ESP32-S3, incluso cuando el sistema opera con el vehículo en funcionamiento \cite{vector2021_can_bus,vector2021_can_bus_levels}.
 
 Otro rasgo esencial del protocolo es el arbitraje no destructivo por prioridad. Cuando varios nodos intentan transmitir al mismo tiempo, el mensaje con el identificador de menor valor numérico conserva el control del bus, mientras los demás esperan sin corromper la trama ganadora. Este mecanismo evita colisiones y permite que la red mantenga un comportamiento determinista suficiente para aplicaciones de control y diagnóstico. En AutoSense, esta característica resulta útil porque el dispositivo no necesita imponer tráfico propio sobre la red, sino observar y consultar la información permitida respetando la prioridad natural del bus \cite{vector2022_can_bitwise_arbitration}.
 
 \begin{table}[H]
     \centering
-    \caption{Elementos básicos del protocolo CAN y su relación con AutoSense.}
+    \caption{Elementos básicos del protocolo CAN y su relación con AutoSense. Elaboración propia con base en la documentación técnica citada.}
     \label{tab:can-autosense-elementos}
     \small
     \begin{tabular}{p{0.18\textwidth}p{0.36\textwidth}p{0.34\textwidth}}
@@ -585,7 +585,7 @@ En AutoSense, el protocolo CAN funciona como la capa de transporte que hace posi
 
 \section{PIDs vehiculares}
 
-Los \textit{Parameter Identifiers} o PIDs constituyen el mecanismo mediante el cual el estándar OBD-II expone magnitudes de diagnóstico normalizadas para consulta externa. Cada PID identifica una variable concreta y define la estructura básica de su respuesta, de modo que el equipo de escaneo pueda interpretar el dato sin depender de la marca o del modelo del vehículo \cite{sae2022_j1978_obdii_scan_tool,sae2025_j1979_diagnostic_test_modes,sae2011_j1979_da}. En AutoSense, esta abstracción es importante porque el sistema no trabaja con una lista abierta de señales, sino con un conjunto controlado de identificadores definidos en los perfiles del proyecto y validados según el vehículo de prueba.
+Los \textit{Parameter Identifiers} o PIDs constituyen el mecanismo mediante el cual el estándar OBD-II expone magnitudes de diagnóstico normalizadas para consulta externa. Cada PID identifica una variable concreta y define la estructura básica de su respuesta, de modo que el equipo de escaneo pueda interpretar el dato sin depender de la marca o del modelo del vehículo \cite{sae2022_j1978_obdii_scan_tool,sae2025_j1979_diagnostic_test_modes,sae2011_j1979_da}. En AutoSense, esta abstracción evita trabajar con una lista abierta de señales: el sistema usa identificadores definidos en los perfiles del proyecto y validados según el vehículo de prueba.
 
 \subsection{Definición y alcance de los PIDs}
 
@@ -595,7 +595,7 @@ AutoSense no intenta construir un catálogo exhaustivo de todos los PIDs posible
 
 \subsection{Descubrimiento de PIDs y selección del perfil}
 
-El proceso de descubrimiento comienza con las consultas de soporte del modo 01. AutoSense interroga sucesivamente los bloques \texttt{0100}, \texttt{0120}, \texttt{0140}, \texttt{0160}, \texttt{0180}, \texttt{01A0} y \texttt{01C0}, que funcionan como mapas de disponibilidad de PIDs para el rango estándar. La respuesta de cada bloque permite saber qué identificadores declara la ECU antes de intentar un sondeo más fino. De esta forma, el sistema reduce consultas innecesarias y construye una lista de lectura alineada con el soporte real del vehículo, en lugar de asumir que todos los parámetros están presentes.
+El proceso de descubrimiento comienza con las consultas de soporte del modo 01. AutoSense interroga sucesivamente los bloques \texttt{0100}, \texttt{0120}, \texttt{0140}, \texttt{0160}, \texttt{0180}, \texttt{01A0} y \texttt{01C0}, que funcionan como mapas de disponibilidad de PIDs para el rango estándar. La respuesta de cada bloque permite saber qué identificadores declara la ECU antes de intentar un sondeo más fino. Así, el sistema reduce consultas innecesarias y construye una lista de lectura alineada con el soporte real del vehículo, en lugar de asumir que todos los parámetros están presentes.
 
 Una vez obtenida la disponibilidad básica, el firmware solicita \texttt{Mode 09 PID 02} para recuperar el VIN. Ese dato se utiliza en la aplicación para resolver el perfil de vehículo correspondiente y descargar la configuración correcta desde el backend. En el flujo del proyecto, esta decisión es clave porque el mismo conjunto de respuestas puede interpretarse de manera diferente según la marca, el modelo y el año. Cuando el perfil resuelto es \texttt{vw\_passat\_2016}, el sistema conserva las señales confirmadas para ese vehículo y deja como opcionales aquellas que existen en el estándar, pero que aún no fueron validadas.
 
@@ -603,7 +603,7 @@ Este diseño también explica por qué el archivo de perfil incluye una estructu
 
 \subsection{Conversión de respuesta bruta a unidades de ingeniería}
 
-La utilidad real de un PID no está solo en su identificación, sino en la conversión de la respuesta cruda a una magnitud comprensible. En AutoSense, la decodificación se limita a un conjunto pequeño de transformaciones permitidas, con el fin de mantener el proceso reproducible y fácil de auditar. Para respuestas de un byte, el sistema usa relaciones directas como \texttt{A}, \texttt{A-40} o \texttt{A*100/255}; para respuestas de dos bytes, emplea combinaciones big-endian como \texttt{((A*256)+B)/4}, \texttt{((A*256)+B)/100}, \texttt{((A*256)+B)/1000}, \texttt{A*256+B} y \texttt{(A-128)*100/128}. Esta restricción mantiene la interpretación dentro de las reglas ya verificadas en los perfiles del proyecto.
+La utilidad real de un PID no está solo en su identificación, sino en la conversión de la respuesta cruda a una magnitud comprensible. En AutoSense, la decodificación se limita a un conjunto pequeño de transformaciones permitidas para mantener el proceso reproducible y fácil de auditar. Para respuestas de un byte, el sistema usa relaciones directas como \texttt{A}, \texttt{A-40} o \texttt{A*100/255}; para respuestas de dos bytes, emplea combinaciones big-endian como \texttt{((A*256)+B)/4}, \texttt{((A*256)+B)/100}, \texttt{((A*256)+B)/1000}, \texttt{A*256+B} y \texttt{(A-128)*100/128}. Esta restricción mantiene la interpretación dentro de las reglas ya verificadas en los perfiles del proyecto.
 
 Con ese criterio, el perfil común utiliza PIDs como \texttt{04} para carga del motor, \texttt{05} para temperatura del refrigerante, \texttt{0B} para presión del múltiple de admisión, \texttt{0C} para revoluciones por minuto, \texttt{0D} para velocidad del vehículo, \texttt{0F} para temperatura del aire de admisión, \texttt{11} para posición del acelerador y \texttt{42} para voltaje de la ECU. Estas señales constituyen la base de lectura en AutoSense porque ofrecen una visión operativa suficiente para registrar estado del motor, demanda del conductor y condiciones generales de funcionamiento. A partir de ellas, el sistema puede construir series de tiempo útiles para visualización y análisis posterior sin entrar en parámetros propietarios complejos.
 
@@ -634,7 +634,7 @@ PID & Magnitud & Perfil & Uso en AutoSense \\
 10 / 2F / 5C / 5E & MAF, nivel de combustible, temperatura del aceite y caudal de combustible & \texttt{vw\_passat\_2016} & Opcionales desactivados por defecto \\
 \bottomrule
 \end{tabular}
-\caption{PIDs implementados en los perfiles de AutoSense y su uso funcional.}
+\caption{PIDs implementados en los perfiles de AutoSense y su uso funcional. Elaboración propia con base en los perfiles del proyecto.}
 \end{table}
 
 La capa de PIDs convierte el intercambio de bytes con la ECU en una lista de variables legibles y comparables. Esa transformación permite que AutoSense pase de una respuesta técnica de diagnóstico a una interfaz útil para el usuario, manteniendo la lectura dentro del alcance del estándar y del vehículo validado.
@@ -716,7 +716,7 @@ La función del ESP32-S3 dentro de esta arquitectura es central porque actúa co
 
 La dimensión IoT de AutoSense se consolida cuando la información deja de ser estrictamente local y pasa a formar parte de un ecosistema sincronizado. En el proyecto, Firebase cumple ese papel de soporte remoto: ayuda a resolver perfiles, conservar estado de usuario, registrar aplicación de perfiles y mantener consistencia entre sesiones. Esa estrategia permite que el sistema no dependa de una sola ejecución del firmware para conocer el contexto del vehículo, sino que reutilice datos ya validados para acelerar la interacción futura con la plataforma.
 
-La supervisión remota también es importante porque convierte el monitoreo en una actividad continua y no solo en una lectura ocasional. El usuario puede retomar el estado del vehículo, revisar la información sincronizada y visualizar el historial sin reinstalar ni reconfigurar todo el sistema. En otras palabras, AutoSense usa la IoT para enlazar adquisición local, visualización inmediata y persistencia remota dentro de una misma cadena de trabajo. Ese diseño es coherente con propuestas de gestión vehicular y diagnóstico remoto basadas en OBD-II, donde el valor del sistema está en integrar telemetría, conectividad y trazabilidad de la información \cite{singh2021_obdii_iot,dabarera2022_iot_vehicle_management}.
+La supervisión remota convierte el monitoreo en una actividad continua y no solo en una lectura ocasional. El usuario puede retomar el estado del vehículo, revisar la información sincronizada y visualizar el historial sin reinstalar ni reconfigurar todo el sistema. AutoSense usa la IoT para enlazar adquisición local, visualización inmediata y persistencia remota dentro de una misma cadena de trabajo. Ese diseño es coherente con propuestas de gestión vehicular y diagnóstico remoto basadas en OBD-II, donde el valor del sistema está en integrar telemetría, conectividad y trazabilidad de la información \cite{singh2021_obdii_iot,dabarera2022_iot_vehicle_management}.
 
 La siguiente sección desarrolla la comunicación Bluetooth, Wi-Fi y USB, que es el mecanismo concreto mediante el cual esta arquitectura de borde y nube intercambia datos entre el ESP32-S3, la aplicación y los servicios auxiliares.
 
@@ -729,7 +729,7 @@ La comunicación de AutoSense reúne los canales que permiten mover la informaci
 
 Bluetooth Low Energy constituye el canal principal de enlace entre el ESP32-S3 y la aplicación móvil de AutoSense. En el repositorio, el dispositivo anuncia el nombre \texttt{AutoSense OBD2}, expone un servicio GATT propio y utiliza dos características diferenciadas: una para recibir comandos desde la app y otra para notificar respuestas y telemetría. Esa separación facilita que la app actúe como cliente y que el firmware permanezca como periférico, manteniendo un flujo simple de descubrimiento, conexión y lectura de datos.
 
-El intercambio por BLE no se limita a enviar valores en vivo. La aplicación también utiliza este canal para solicitar información del dispositivo, leer el estado del perfil activo, aplicar perfiles de vehículo y activar o detener el flujo de telemetría. En consecuencia, BLE funciona como la interfaz operativa del usuario con el sistema embebido: desde allí se desencadena la sesión de diagnóstico, se reciben notificaciones periódicas con las señales decodificadas y se actualiza la vista móvil sin necesidad de cables. Esa elección es coherente con la implementación del proyecto, donde la comunicación con el celular se resuelve mediante GATT y notificaciones, mientras la carga de trabajo pesada permanece en el firmware del ESP32-S3.
+El intercambio por BLE no se limita a enviar valores en vivo. La aplicación también utiliza este canal para solicitar información del dispositivo, leer el estado del perfil activo, aplicar perfiles de vehículo y activar o detener el flujo de telemetría. BLE funciona como la interfaz operativa del usuario con el sistema embebido: desde allí se desencadena la sesión de diagnóstico, se reciben notificaciones periódicas con las señales decodificadas y se actualiza la vista móvil sin necesidad de cables. Esa elección es coherente con la implementación del proyecto, donde la comunicación con el celular se resuelve mediante GATT y notificaciones, mientras la carga de trabajo pesada permanece en el firmware del ESP32-S3.
 
 \subsection{USB-CDC}
 
@@ -846,7 +846,7 @@ La aplicación se desarrolla con Expo SDK 56 y React Native 0.85.3, por lo que s
 
 El uso de BLE nativo obliga a trabajar con un \textit{development build} y no con Expo Go. La propia documentación de Expo indica que los \textit{development builds} incluyen \texttt{expo-dev-client} y permiten usar bibliotecas nativas que no están disponibles en Expo Go \cite{expo2026_development_build}. Esta condición no es un detalle de implementación menor: es la que permite que AutoSense use \texttt{react-native-ble-plx} para descubrir, conectar y notificar telemetría sin renunciar al resto del ecosistema de Expo.
 
-En términos de operación, la compatibilidad se expresa mejor como un conjunto de requisitos mínimos: sistema operativo soportado, Bluetooth Low Energy disponible y acceso a los permisos que el sistema pide para conectar con el dispositivo. Bajo esas condiciones, la app mantiene una experiencia estable en Android y iOS, y la misma base de código cubre ambas plataformas sin obligar a mantener dos implementaciones separadas.
+En operación, la compatibilidad depende de tres requisitos mínimos: sistema operativo soportado, Bluetooth Low Energy disponible y permisos habilitados para conectar con el dispositivo. Con esos requisitos, la app mantiene una experiencia estable en Android y iOS, y la misma base de código cubre ambas plataformas sin obligar a mantener dos implementaciones separadas.
 
 Con esta base, la siguiente sección desarrolla la inteligencia artificial, que aprovecha la telemetría ya capturada por la aplicación para construir análisis de comportamiento y apoyo al diagnóstico.
 
@@ -891,7 +891,7 @@ El módulo de IA de AutoSense consume el mismo \texttt{ObdCompactSample} que ya 
     \label{fig:autosense-ai-pipeline}
 \end{figure}
 
-La figura resume el recorrido de la IA local: primero se consolida la muestra, luego se construye la referencia estadística, después se estima cuán lejos está la señal de esa referencia y, finalmente, se calcula un score interpretado por el sistema. Esta secuencia es importante porque separa la observación estadística del juicio final, lo que permite que AutoSense funcione con un modelo ligero pero todavía explicable.
+La figura resume el recorrido de la IA local. El firmware consolida la muestra, actualiza la referencia estadística, calcula la distancia de cada señal respecto de esa referencia y genera un score interpretado por el sistema. La separación entre medición, referencia y decisión mantiene el análisis ligero sin convertirlo en una caja negra completa.
 
 \subsection{Baseline estadístico y Z-score}
 
@@ -913,13 +913,13 @@ El resultado no se interpreta como una avería concreta, sino como una medida de
 
 \subsection{Isolation Forest compacto}
 
-La segunda capa del detector es un \textit{Isolation Forest} pequeño, técnica planteada para aislar observaciones anómalas mediante árboles aleatorios y submuestreo \cite{liu2008_isolation_forest}. En AutoSense, el modelo está diseñado para ejecutarse en el ESP32-S3 sin memoria dinámica durante la inferencia. Usa 16 árboles, un tamaño de muestra de 64, una ventana circular de 128 muestras y una profundidad máxima de 6 niveles. Esa configuración busca equilibrar costo computacional y sensibilidad, porque el objetivo no es construir un modelo pesado de laboratorio, sino una detección robusta que pueda mantenerse activa mientras el vehículo circula.
+La segunda capa del detector es un \textit{Isolation Forest} pequeño, técnica planteada para aislar observaciones anómalas mediante árboles aleatorios y submuestreo \cite{liu2008_isolation_forest}. En AutoSense, el modelo está diseñado para ejecutarse en el ESP32-S3 sin memoria dinámica durante la inferencia. Usa 16 árboles, un tamaño de muestra de 64, una ventana circular de 128 muestras y una profundidad máxima de 6 niveles. Esa configuración busca equilibrar costo computacional y sensibilidad, porque el objetivo no es construir un modelo pesado de laboratorio, sino una detección estable que pueda mantenerse activa mientras el vehículo circula.
 
 El entrenamiento local ocurre solo cuando el contexto es estable. El firmware usa muestras de \texttt{IDLE} o \texttt{CRUISING} para alimentar el bosque y evita aprender a partir de escenarios claramente anómalos o demasiado inestables. Si el bosque aún no está listo, el score final depende exclusivamente del Z-score. Cuando ya existe modelo, el detector combina ambas señales con los pesos configurados en el firmware; por defecto, 70\% para Z-score y 30\% para Isolation Forest. Esta combinación favorece la interpretación estadística de la línea base, pero deja al bosque la tarea de reforzar patrones que no siempre se expresan como una desviación puntual de una sola señal.
 
 \begin{table}[H]
     \centering
-    \caption{Parámetros por defecto del detector de anomalías local.}
+    \caption{Parámetros por defecto del detector de anomalías local. Elaboración propia con base en el firmware AutoSense.}
     \label{tab:ai-anomaly-defaults}
     \renewcommand{\arraystretch}{1.08}
     \setlength{\tabcolsep}{4pt}
@@ -961,13 +961,13 @@ En AutoSense, el mantenimiento predictivo no se formula como una predicción exa
 
 AutoSense construye ese soporte predictivo a partir de la telemetría que ya produce el firmware. Las variables compactas de motor, velocidad, temperatura del refrigerante, posición del acelerador, carga del motor, MAP, MAF, voltaje de la ECU, temperatura de admisión y avance de chispa constituyen la base observable sobre la que se identifica el comportamiento normal del vehículo. Sobre esa base, el detector local calcula una referencia por vehículo y por contexto de conducción, de modo que el análisis no depende de una sola instantánea sino del patrón que se repite a lo largo del uso \cite{singh2021_obdii_iot,dabarera2022_iot_vehicle_management}.
 
-La lógica del sistema no se limita a marcar valores altos o bajos. Primero diferencia el contexto de conducción, por ejemplo, reposo, crucero, aceleración o desaceleración; después compara la muestra contra el historial local; y, finalmente, sintetiza el resultado en una severidad comprensible para la aplicación. Esa cadena de procesamiento es importante para mantenimiento predictivo porque reduce la confusión entre una condición normal de manejo y una señal que realmente se aparta del comportamiento esperado. En otras palabras, AutoSense no toma como anómalo todo cambio, sino aquellos cambios que se sostienen y se repiten fuera del perfil aprendido.
+La lógica del sistema no se limita a marcar valores altos o bajos. Primero diferencia el contexto de conducción, por ejemplo, reposo, crucero, aceleración o desaceleración; después compara la muestra contra el historial local; y, al final, sintetiza el resultado en una severidad comprensible para la aplicación. Esa cadena de procesamiento reduce la confusión entre una condición normal de manejo y una señal que se aparta del comportamiento esperado. AutoSense no toma como anómalo todo cambio, sino aquellos cambios que se sostienen y se repiten fuera del perfil aprendido.
 
 El módulo de clasificación de ruta complementa esta interpretación. Aunque no es un sistema de mantenimiento en sí mismo, ayuda a contextualizar el uso del vehículo al distinguir trayectos urbanos y de autopista. Ese contexto importa porque el desgaste, la carga y la temperatura operan de manera distinta según el tipo de recorrido. Con ello, AutoSense evita atribuir a falla lo que puede ser una consecuencia natural del estilo de conducción, y al mismo tiempo conserva una base más consistente para comparar sesiones \cite{camposferreira2023_vehicle_driver_monitoring}.
 
 \begin{table}[H]
     \centering
-    \caption{Relación entre los componentes analíticos de AutoSense y el mantenimiento predictivo.}
+    \caption{Relación entre los componentes analíticos de AutoSense y el mantenimiento predictivo. Elaboración propia.}
     \label{tab:autosense-predictive-maintenance}
     \renewcommand{\arraystretch}{1.08}
     \setlength{\tabcolsep}{4pt}
@@ -1019,13 +1019,13 @@ La relación de estos estudios con AutoSense es directa pero no idéntica. Todos
 
 El tercer grupo de trabajos enfoca el valor de los datos OBD y de la telemetría en el mantenimiento predictivo. Shafi et al. presentan un sistema de monitoreo remoto de salud vehicular y mantenimiento prognóstico basado en metodología guiada por datos, lo que anticipa el uso de series temporales para advertir degradaciones antes de que se vuelvan fallas visibles \cite{shafi2018_vehicle_remote_health}. Campos-Ferreira et al. extienden esta visión al integrar sensores a bordo y remotos en un sistema de monitoreo de vehículo y conductor, subrayando que el contexto operativo es tan importante como la medición puntual \cite{camposferreira2023_vehicle_driver_monitoring}.
 
-Más recientemente, Tormos et al. proponen un caso de uso de inteligencia artificial explicable sobre datos OBD para gestión del mantenimiento en autobuses urbanos \cite{tormos2025_explainable_ai}. Su interés no está solo en clasificar estados, sino en justificar por qué una señal o combinación de señales merece atención técnica. Esa orientación coincide con la revisión de Mahale, Kolhar y More, que resume el crecimiento del mantenimiento predictivo impulsado por IA en vehículos y destaca, entre otros retos, la necesidad de explicabilidad, robustez y adaptación al contexto real de operación \cite{mahale2025_review_predictive_maintenance}.
+Más recientemente, Tormos et al. proponen un caso de uso de inteligencia artificial explicable sobre datos OBD para gestión del mantenimiento en autobuses urbanos \cite{tormos2025_explainable_ai}. Su interés no está solo en clasificar estados, sino en justificar por qué una señal o combinación de señales merece atención técnica. Esa orientación coincide con la revisión de Mahale, Kolhar y More, que resume el crecimiento del mantenimiento predictivo impulsado por IA en vehículos y destaca, entre otros retos, la necesidad de explicabilidad, estabilidad y adaptación al contexto real de operación \cite{mahale2025_review_predictive_maintenance}.
 
 En AutoSense, esa misma preocupación por la interpretación se materializa en un diseño de borde con salida legible: baseline por vehículo, Z-score por señal, Isolation Forest compacto, severidad interpretada y señales más influyentes. El objetivo no es reemplazar la inspección mecánica, sino ofrecer una priorización sustentada en datos que ayude a decidir cuándo revisar el vehículo y qué área merece atención primero.
 
 \begin{table}[H]
     \centering
-    \caption{Trabajos representativos relacionados con AutoSense.}
+    \caption{Trabajos representativos relacionados con AutoSense. Elaboración propia con base en las fuentes citadas.}
     \label{tab:trabajos-relacionados-autosense}
     \renewcommand{\arraystretch}{1.08}
     \setlength{\tabcolsep}{4pt}
@@ -1059,7 +1059,7 @@ La presente investigación es de tipo aplicada, debido a que orienta el uso de c
 
 Asimismo, el estudio posee un carácter tecnológico y descriptivo. Es tecnológico porque se centra en la construcción e integración de hardware, firmware, aplicación móvil y servicios de soporte para producir una solución operativa; y es descriptivo porque analiza y organiza la información obtenida del vehículo para representar su comportamiento de manera ordenada, trazable y útil para la toma de decisiones. De forma complementaria, la investigación incorpora trabajo de campo y pruebas controladas sobre un vehículo real, lo que permite verificar el funcionamiento del sistema en condiciones cercanas a su uso práctico.
 
-En consecuencia, el tipo de investigación responde a una lógica de desarrollo e implementación de una solución concreta, más que a la formulación de teoría abstracta. Esta orientación es coherente con la naturaleza del proyecto, que busca integrar diagnóstico, monitoreo y visualización de datos dentro de una misma arquitectura funcional.
+Por su propósito, el tipo de investigación responde a una lógica de desarrollo e implementación de una solución concreta, más que a la formulación de teoría abstracta. Esta orientación es coherente con la naturaleza del proyecto, que busca integrar diagnóstico, monitoreo y visualización de datos dentro de una misma arquitectura funcional.
 
 \section{Enfoque de la investigación}
 
@@ -1069,7 +1069,7 @@ El enfoque de la investigación es predominantemente cuantitativo, debido a que 
 
 De forma complementaria, el estudio incorpora una orientación descriptiva en la interpretación de los resultados, ya que los datos obtenidos no se analizan como fenómenos abstractos, sino como indicadores del estado del vehículo y del desempeño del prototipo. Sin embargo, el núcleo del enfoque sigue siendo cuantitativo, porque la investigación no busca explorar percepciones, opiniones o significados subjetivos, sino verificar el comportamiento de una solución tecnológica a partir de evidencias observables y repetibles.
 
-En consecuencia, el enfoque adoptado resulta coherente con la naturaleza del proyecto: una propuesta de desarrollo e integración de hardware, firmware, aplicación móvil y servicios de soporte, cuyo funcionamiento debe ser evaluado mediante mediciones técnicas y pruebas controladas. El criterio metodológico permite analizar el sistema con indicadores verificables y dejar una base clara para las fases posteriores de diseño, implementación y validación.
+El enfoque adoptado resulta coherente con la naturaleza del proyecto: una propuesta de desarrollo e integración de hardware, firmware, aplicación móvil y servicios de soporte, cuyo funcionamiento debe ser evaluado mediante mediciones técnicas y pruebas controladas. El criterio metodológico permite analizar el sistema con indicadores verificables y dejar una base clara para las fases posteriores de diseño, implementación y validación.
 
 \section{Diseño metodológico}
 
@@ -1111,7 +1111,7 @@ La técnica empleada, por tanto, corresponde a una captura técnica automatizada
 
 \begin{table}[H]
 \centering
-\caption{Fuentes de recolección de datos empleadas en AutoSense.}
+\caption{Fuentes de recolección de datos empleadas en AutoSense. Elaboración propia.}
 \label{tab:fuentes-recoleccion-datos}
 \renewcommand{\arraystretch}{1.08}
 \small
@@ -1139,7 +1139,7 @@ Como herramientas de apoyo se emplearon los scripts del propio repositorio para 
 
 \begin{table}[H]
 \centering
-\caption{Herramientas principales utilizadas en AutoSense.}
+\caption{Herramientas principales utilizadas en AutoSense. Elaboración propia.}
 \label{tab:herramientas-utilizadas}
 \renewcommand{\arraystretch}{1.08}
 \small
@@ -1179,7 +1179,7 @@ El procedimiento metodológico siguió una lógica incremental, desde la prepara
 
     \item \textbf{Inicio de la aplicación y autenticación.} Se ejecutó la aplicación móvil en un development build de Expo, se validó la sesión del usuario mediante Firebase Auth y se restauró el estado persistido con SecureStore. Este paso permitió ingresar al flujo autenticado sin perder el contexto de la cuenta ni de los datos de prueba.
 
-    \item \textbf{Conexión BLE y lectura de VIN.} La aplicación buscó el dispositivo AutoSense OBD2, estableció la conexión BLE y solicitó la información base del hardware. Luego, el firmware intentó obtener el VIN mediante Mode 09 PID 02, que sirve como punto de partida para identificar el vehículo y resolver el perfil adecuado.
+    \item \textbf{Conexión BLE y lectura de VIN.} La aplicación buscó el dispositivo AutoSense OBD2, estableció la conexión BLE y solicitó la información base del hardware. Luego, el firmware intentó obtener el VIN mediante Mode 09 PID 02, dato usado como punto de partida para identificar el vehículo y resolver el perfil adecuado.
 
     \item \textbf{Resolución y aplicación del perfil.} Con el VIN disponible, la aplicación consultó Firebase Functions para resolver el perfil vehicular, descargó el archivo JSON desde Storage y verificó tamaño, esquema y SHA-256 antes de enviarlo al ESP32-S3 en fragmentos. El firmware validó el contenido, almacenó \texttt{/active\_profile.json} en LittleFS y reinició el plan de sondeo a partir de \texttt{signals[]}.
 
@@ -1196,11 +1196,11 @@ La validación siguió además una secuencia segura de operación: primero se ve
 
 \label{sec:criterios-evaluacion}
 
-La evaluación del prototipo se orientó a comprobar funcionamiento técnico verificable y no percepciones subjetivas. En consecuencia, los criterios se definieron a partir de señales observables en el dashboard del ESP32-S3, la aplicación móvil, el registro binario y la sincronización remota. Como umbral mínimo, una sesión se consideró válida cuando el enlace CAN permanecía activo, existían respuestas y decodificaciones OBD-II, la guardia de solo lectura no reportaba bloqueos, la muestra contenía señales válidas, el contador de log avanzaba y la aplicación recibía telemetría. Las métricas de latencia extremo a extremo, pérdida de paquetes BLE y tiempo de sincronización histórica se dejaron como mediciones de rendimiento pendientes, porque requieren instrumentación específica adicional.
+La evaluación del prototipo se orientó a comprobar funcionamiento técnico verificable y no percepciones subjetivas. Los criterios se definieron a partir de señales observables en el dashboard del ESP32-S3, la aplicación móvil, el registro binario y la sincronización remota. Como umbral mínimo, una sesión se consideró válida cuando el enlace CAN permanecía activo, existían respuestas y decodificaciones OBD-II, la guardia de solo lectura no reportaba bloqueos, la muestra contenía señales válidas, el contador de log avanzaba y la aplicación recibía telemetría. Las métricas de latencia extremo a extremo, pérdida de paquetes BLE y tiempo de sincronización histórica se dejaron como mediciones de rendimiento pendientes, porque requieren instrumentación específica adicional.
 
 \begin{table}[H]
 \centering
-\caption{Criterios de evaluación del sistema AutoSense.}
+\caption{Criterios de evaluación del sistema AutoSense. Elaboración propia.}
 \label{tab:criterios-evaluacion}
 \renewcommand{\arraystretch}{1.08}
 \small
@@ -1223,6 +1223,10 @@ Continuidad de la campaña & Marcas de tiempo distribuidas durante el periodo de
 \end{table}
 
 Si alguno de estos criterios no se cumplía, el ajuste regresaba a la fase de integración y validación para corregir el firmware, el perfil vehicular o la configuración de la aplicación antes de aceptar la sesión como válida.
+
+\subsection*{Tratamiento de fuentes y datos}
+
+La redacción de la tesis se preparó siguiendo un criterio de trazabilidad académica: las fuentes externas se citan en formato IEEE, las referencias empleadas se listan en la bibliografía y las figuras o tablas se identifican como elaboración propia, adaptación de una fuente técnica o visualización generada con datos del proyecto. Los resultados experimentales incluidos en el documento se presentan como evidencia propia derivada del firmware, la aplicación, los reportes de prueba y el archivo Excel de salida.
 
 \newpage
 
@@ -1315,7 +1319,7 @@ Firebase cubre el plano de control y respaldo. Authentication mantiene el acceso
 
 \begin{table}[H]
 \centering
-\caption{Componentes principales de la arquitectura de AutoSense.}
+\caption{Componentes principales de la arquitectura de AutoSense. Elaboración propia.}
 \label{tab:componentes-arquitectura}
 \renewcommand{\arraystretch}{1.08}
 \setlength{\tabcolsep}{4pt}
@@ -1340,7 +1344,7 @@ Esta arquitectura desacopla los bloques principales: el firmware puede ajustar e
 
 El diseño de hardware de AutoSense corresponde a una placa impresa propia para conectar el prototipo directamente al puerto OBD-II del vehículo, acondicionar la comunicación CAN y alojar el microcontrolador ESP32-S3 que ejecuta el firmware del sistema. A diferencia de una solución basada en módulos sueltos, la placa integra en un mismo circuito el conector OBD-II, el transceptor CAN, las etapas de alimentación, la interfaz USB-C, el selector de modo de operación y el módulo ESP32-S3-WROOM-1. Esta integración reduce cableado externo, mejora la repetibilidad de las pruebas y permite que el dispositivo se comporte como un adaptador compacto para uso dentro del vehículo.
 
-La propuesta tomó como referencia funcional el \emph{ESP32 CAN Bus Shield v1.2} de MrDIY, el cual combina un ESP32, un transceptor CAN, conector OBD-II, conversión de alimentación a 3.3 V, protección del bus y selector de modo de lectura/escritura \cite{mrdiy2026_esp32_can_shield_v12}. Sin embargo, AutoSense no replica el shield de forma directa: el diseño fue adaptado para integrar el ESP32-S3-WROOM-1 en la PCB, exponer USB-C para programación y depuración, separar redes internas de 3.3 V y mantener la política de uso orientada a lectura segura del bus vehicular. En consecuencia, el hardware no se plantea como una tarjeta genérica de experimentación CAN, sino como la base física del sistema AutoSense.
+La propuesta tomó como referencia funcional el \emph{ESP32 CAN Bus Shield v1.2} de MrDIY, el cual combina un ESP32, un transceptor CAN, conector OBD-II, conversión de alimentación a 3.3 V, protección del bus y selector de modo de lectura/escritura \cite{mrdiy2026_esp32_can_shield_v12}. Sin embargo, AutoSense no replica el shield de forma directa: el diseño fue adaptado para integrar el ESP32-S3-WROOM-1 en la PCB, exponer USB-C para programación y depuración, separar redes internas de 3.3 V y mantener la política de uso orientada a lectura segura del bus vehicular. Por diseño, el hardware no se plantea como una tarjeta genérica de experimentación CAN, sino como la base física del sistema AutoSense.
 
 \subsection{Referencia de diseño y bloques funcionales}
 
@@ -1357,7 +1361,7 @@ En la figura \ref{fig:hardware-schematic-autosense} se observa que el conector O
 
 \begin{table}[H]
 \centering
-\caption{Componentes principales del hardware AutoSense.}
+\caption{Componentes principales del hardware AutoSense. Elaboración propia con base en el esquemático KiCad.}
 \label{tab:hardware-componentes-principales}
 \renewcommand{\arraystretch}{1.08}
 \setlength{\tabcolsep}{4pt}
@@ -1381,7 +1385,7 @@ SW3/SW4 & Pulsadores & Botones de BOOT y RESET para carga de firmware y reinicio
 \end{table}
 
 \begin{longtable}{@{}p{0.20\textwidth}p{0.08\textwidth}p{0.20\textwidth}p{0.42\textwidth}@{}}
-\caption{Lista de materiales agrupada del PCB AutoSense.}
+\caption{Lista de materiales agrupada del PCB AutoSense. Elaboración propia con base en la lista de materiales del proyecto.}
 \label{tab:hardware-bom-agrupado}\\
 \toprule
 Referencias & Cant. & Valor & Función en la placa \\
@@ -1440,7 +1444,7 @@ El punto de entrada del sistema es el conector J1, correspondiente a un conector
 
 \begin{table}[H]
 \centering
-\caption{Pines OBD-II utilizados por AutoSense.}
+\caption{Pines OBD-II utilizados por AutoSense. Elaboración propia con base en el esquemático KiCad y la función del conector OBD-II.}
 \label{tab:hardware-pines-obd}
 \renewcommand{\arraystretch}{1.08}
 \setlength{\tabcolsep}{5pt}
@@ -1480,7 +1484,7 @@ La PCB separa redes como \texttt{3V3\_SYS}, \texttt{3V3\_OBD} y \texttt{3V3\_USB
 
 El núcleo de procesamiento de la placa es U2, ESP32-S3-WROOM-1. Este módulo concentra el microcontrolador, radio, memoria integrada del módulo y antena PCB. En AutoSense, el ESP32-S3 ejecuta el firmware de adquisición OBD-II, administra el perfil activo, procesa muestras compactas, expone datos por BLE y permite monitoreo local por USB. La elección del ESP32-S3 se relaciona con sus capacidades de comunicación y soporte oficial para BLE y consola USB, ya descritas por Espressif \cite{espressif2026_esp32s3_get_started,espressif2026_esp32s3_ble_overview,espressif2026_esp32s3_usb_otg_console}.
 
-El diseño deja visible una zona de exclusión de antena en la PCB. Esta zona evita colocar cobre o componentes debajo del área de radiación del módulo, lo cual ayuda a conservar el desempeño de la comunicación inalámbrica. En la práctica, esto es importante para AutoSense porque la app móvil se comunica con el dispositivo por BLE; una mala ubicación del módulo o una antena obstruida podría reducir alcance, estabilidad de conexión o calidad de emparejamiento.
+El diseño deja visible una zona de exclusión de antena en la PCB. Esta zona evita colocar cobre o componentes debajo del área de radiación del módulo, lo cual ayuda a conservar el desempeño de la comunicación inalámbrica. Como la app móvil se comunica con el dispositivo por BLE, una mala ubicación del módulo o una antena obstruida podría reducir alcance, estabilidad de conexión o calidad de emparejamiento.
 
 Los pulsadores SW3 y SW4 corresponden a BOOT y RESET. Estos controles permiten ingresar al modo de carga de firmware y reiniciar el dispositivo sin desconectarlo físicamente. Además, la placa incluye resistencias de polarización, resistencias serie y LEDs de estado que apoyan la puesta en marcha y la verificación visual durante pruebas. Estos elementos no ejecutan el diagnóstico por sí mismos, pero reducen fricción durante programación, validación de hardware y depuración.
 
@@ -1488,7 +1492,7 @@ Los pulsadores SW3 y SW4 corresponden a BOOT y RESET. Estos controles permiten i
 
 La interfaz J2 corresponde a un conector USB-C limitado a USB 2.0. En el diseño de AutoSense, este puerto cumple tres propósitos: alimentar la placa durante pruebas de escritorio, cargar el firmware al ESP32-S3 y abrir una consola local de depuración. Las líneas \texttt{D+} y \texttt{D-} conectan la comunicación USB hacia el microcontrolador, mientras que las resistencias de 5.1 k en las líneas CC permiten que el puerto sea reconocido correctamente como dispositivo USB.
 
-Esta interfaz es especialmente útil antes de conectar el equipo al vehículo. Durante el desarrollo, el USB-C permite verificar que el ESP32-S3 arranca, que la consola responde y que el firmware se ejecuta antes de energizar la placa desde el puerto OBD-II. En pruebas reales, USB-CDC sirve como canal de contraste frente a BLE, porque permite observar mensajes de estado, telemetría y errores locales desde el monitor serial.
+Esta interfaz es especialmente útil antes de conectar el equipo al vehículo. Durante el desarrollo, el USB-C permite verificar que el ESP32-S3 arranca, que la consola responde y que el firmware se ejecuta antes de energizar la placa desde el puerto OBD-II. En pruebas reales, USB-CDC actúa como canal de contraste frente a BLE, porque permite observar mensajes de estado, telemetría y errores locales desde el monitor serial.
 
 \subsection{Diseño físico de la PCB y proceso de ensamble}
 
@@ -1501,7 +1505,7 @@ La PCB fue diseñada para alojar el conector OBD-II en un extremo y el módulo E
 \label{fig:hardware-pcb-layout}
 \end{figure}
 
-El proceso de ensamble se desarrolló de forma incremental para reducir el riesgo de fallas acumuladas. En primer lugar, se recibió y revisó la PCB fabricada, antes de instalar el módulo principal y el conector OBD-II. Esta inspección inicial permitió verificar la correspondencia entre el diseño y la placa física: huella del ESP32-S3, ubicación del USB-C, botones BOOT y RESET, pads de componentes SMD, serigrafía, taladros de fijación y espacio reservado para la antena. Esta etapa es importante porque cualquier error mecánico o de huella resulta más fácil de detectar antes de soldar componentes costosos o difíciles de retirar.
+El ensamble avanzó de forma incremental para reducir el riesgo de fallas acumuladas. Primero se recibió y revisó la PCB fabricada, antes de instalar el módulo principal y el conector OBD-II. Esta inspección inicial permitió verificar la correspondencia entre el diseño y la placa física: huella del ESP32-S3, ubicación del USB-C, botones BOOT y RESET, pads de componentes SMD, serigrafía, taladros de fijación y espacio reservado para la antena. Cualquier error mecánico o de huella resulta más fácil de detectar antes de soldar componentes costosos o difíciles de retirar.
 
 \begin{figure}[H]
 \centering
@@ -1538,13 +1542,13 @@ Desde el punto de vista funcional, el firmware se diseñó bajo un criterio de s
 
 \subsection{Entorno de compilación y organización del firmware}
 
-El proyecto de firmware se encuentra organizado como una aplicación PlatformIO para la placa ESP32-S3 DevKitM-1, con framework Arduino, flash de 8 MB, sistema de archivos LittleFS y tabla de particiones propia. La configuración de compilación activa USB-CDC desde el arranque, lo que permite utilizar la consola local sin depender de un adaptador serial externo. Esta configuración resulta importante porque el mismo firmware debe funcionar tanto durante pruebas de escritorio como durante validaciones conectadas al puerto OBD-II del vehículo.
+El proyecto de firmware se encuentra organizado como una aplicación PlatformIO para la placa ESP32-S3 DevKitM-1, con framework Arduino, flash de 8 MB, sistema de archivos LittleFS y tabla de particiones propia. La configuración de compilación activa USB-CDC desde el arranque, lo que permite utilizar la consola local sin depender de un adaptador serial externo. El mismo firmware puede usarse durante pruebas de escritorio y durante validaciones conectadas al puerto OBD-II del vehículo.
 
 La tabla de particiones separa los espacios de trabajo del firmware. La aplicación principal ocupa la partición \texttt{app0}; \texttt{configfs} almacena configuración, perfil activo y modelo local de anomalías; \texttt{obdlog} funciona como partición binaria cruda para el historial circular; y \texttt{coredump} queda reservada para diagnóstico de fallos del propio ESP32-S3. Esta distribución evita guardar el historial como texto dentro del sistema de archivos y permite usar una partición optimizada para registros compactos.
 
 \begin{table}[H]
 \centering
-\caption{Módulos principales del firmware AutoSense.}
+\caption{Módulos principales del firmware AutoSense. Elaboración propia con base en el repositorio del proyecto.}
 \label{tab:firmware-modulos}
 \renewcommand{\arraystretch}{1.08}
 \setlength{\tabcolsep}{4pt}
@@ -1702,7 +1706,7 @@ El firmware no queda amarrado de forma permanente a un único vehículo. La lóg
 
 La transferencia del perfil no se acepta de manera ciega. El firmware valida tamaño, SHA-256, estructura JSON, existencia de \texttt{signals[]}, fórmulas permitidas y configuración extendida de solo lectura. Si el perfil pasa estas verificaciones, se guarda como \texttt{/active\_profile.json} en LittleFS y se reinicia el plan de sondeo a partir de las señales definidas. Esto permite que el comportamiento del firmware se adapte al vehículo sin recompilar el código.
 
-El soporte VW/VAG extendido se mantiene bajo dos condiciones simultáneas: la configuración VAG debe estar habilitada y el perfil activo debe contener permisos extendidos de solo lectura. En consecuencia, el ESP32-S3 no activa el escaneo extendido solo por detectar un VIN de Volkswagen. La regla evita consultas ampliadas sin autorización explícita del perfil y mantiene el diseño coherente con el principio de lectura segura.
+El soporte VW/VAG extendido se mantiene bajo dos condiciones simultáneas: la configuración VAG debe estar habilitada y el perfil activo debe contener permisos extendidos de solo lectura. El ESP32-S3 no activa el escaneo extendido solo por detectar un VIN de Volkswagen. La regla evita consultas ampliadas sin autorización explícita del perfil y mantiene el diseño coherente con el principio de lectura segura.
 
 \subsection{Política de solo lectura}
 
@@ -1712,7 +1716,7 @@ La guardia también permite frames de control de flujo ISO-TP cuando forman part
 
 \begin{table}[H]
 \centering
-\caption{Servicios permitidos y bloqueados por la política de solo lectura.}
+\caption{Servicios permitidos y bloqueados por la política de solo lectura. Elaboración propia con base en el firmware AutoSense.}
 \label{tab:firmware-solo-lectura}
 \renewcommand{\arraystretch}{1.08}
 \setlength{\tabcolsep}{5pt}
@@ -1740,7 +1744,7 @@ La telemetría en vivo sale por BLE mediante un servicio GATT propio. El disposi
 
 \begin{table}[H]
 \centering
-\caption{Intervalos principales de ejecución del firmware.}
+\caption{Intervalos principales de ejecución del firmware. Elaboración propia con base en la configuración del firmware.}
 \label{tab:firmware-intervalos}
 \renewcommand{\arraystretch}{1.08}
 \setlength{\tabcolsep}{5pt}
@@ -1781,15 +1785,15 @@ En síntesis, el firmware de AutoSense está diseñado como una capa embebida de
 
 \section{Diseño de la aplicación móvil}
 
-La aplicación móvil de AutoSense constituye la interfaz principal entre el usuario y el sistema de adquisición vehicular. Su diseño no se limita a mostrar valores recibidos desde el ESP32-S3; también organiza la sesión del usuario, conserva datos básicos del vehículo, administra el estado de conexión con el adaptador OBD-II, presenta métricas resumidas de eficiencia y alertas, y sincroniza información con los servicios en la nube del proyecto. Por esta razón, dentro de la arquitectura general, la aplicación cumple el papel de capa de visualización, control operativo y consulta histórica.
+La aplicación móvil de AutoSense constituye la interfaz principal entre el usuario y el sistema de adquisición vehicular. Su diseño no se limita a mostrar valores recibidos desde el ESP32-S3; también organiza la sesión del usuario, conserva datos básicos del vehículo, administra el estado de conexión con el adaptador OBD-II, presenta métricas resumidas de eficiencia y alertas, y sincroniza información con los servicios en la nube del proyecto. Dentro de la arquitectura general, la aplicación cumple el papel de capa de visualización, control operativo y consulta histórica.
 
-El desarrollo se implementó con React Native sobre Expo, usando Expo Router para organizar la navegación por archivos. Esta elección permite mantener una base de código orientada a iOS y Android, con componentes nativos cuando son necesarios. La compatibilidad práctica queda condicionada por los requisitos vigentes del SDK de Expo y por la disponibilidad de Bluetooth Low Energy en el teléfono; en el caso del SDK empleado, Expo documenta soporte para sistemas Android e iOS modernos, mientras que las funciones BLE nativas requieren una \emph{development build} y no dependen de Expo Go \cite{expo2026_sdk_support,expo2026_development_build}. En consecuencia, la interfaz puede probarse en simulador para navegación, autenticación y estados demo, pero la conexión real con el ESP32-S3 debe validarse en un dispositivo físico con BLE.
+La aplicación usa React Native sobre Expo, con Expo Router para organizar la navegación por archivos. Esta elección permite mantener una base de código orientada a iOS y Android, con componentes nativos cuando son necesarios. La compatibilidad práctica queda condicionada por los requisitos vigentes del SDK de Expo y por la disponibilidad de Bluetooth Low Energy en el teléfono; en el caso del SDK empleado, Expo documenta soporte para sistemas Android e iOS modernos, mientras que las funciones BLE nativas requieren una \emph{development build} y no dependen de Expo Go \cite{expo2026_sdk_support,expo2026_development_build}. Por ello, la interfaz puede probarse en simulador para navegación, autenticación y estados demo, pero la conexión real con el ESP32-S3 debe validarse en un dispositivo físico con BLE.
 
 \subsection{Arquitectura de navegación}
 
 La navegación móvil está separada en dos grupos principales. El primer grupo corresponde al flujo de acceso, donde se ubican el inicio de sesión, el registro de usuario y la recuperación de cuenta. El segundo grupo corresponde al flujo autenticado, compuesto por las pestañas \emph{Inicio}, \emph{Tiempo real} y \emph{Perfil}. Esta separación evita que las pantallas internas estén disponibles sin sesión activa y simplifica la transición entre usuario no autenticado y usuario autenticado.
 
-El componente \texttt{SessionProvider} actúa como contenedor global de la sesión. Desde allí se escucha el estado de Firebase Authentication, se consulta la información asociada al usuario y se expone a las pantallas internas una vista coherente del perfil activo. La persistencia de la sesión se realiza mediante almacenamiento seguro del dispositivo, de modo que el usuario no tenga que iniciar sesión cada vez que abre la aplicación, pero sin guardar credenciales visibles dentro del código o en almacenamiento plano. Esta estructura es importante para AutoSense porque la telemetría, los perfiles vehiculares y las preferencias de visualización quedan asociados a un usuario concreto.
+El componente \texttt{SessionProvider} actúa como contenedor global de la sesión. Desde allí se escucha el estado de Firebase Authentication, se consulta la información asociada al usuario y se expone a las pantallas internas una vista coherente del perfil activo. La persistencia de la sesión se realiza mediante almacenamiento seguro del dispositivo, de modo que el usuario no tenga que iniciar sesión cada vez que abre la aplicación, pero sin guardar credenciales visibles dentro del código o en almacenamiento plano. Esta estructura asocia telemetría, perfiles vehiculares y preferencias de visualización a un usuario concreto.
 
 \begin{figure}[H]
 \centering
@@ -1825,7 +1829,7 @@ El diseño también contempla que no toda la información procede de la nube. Cu
 
 \begin{table}[H]
 \centering
-\caption{Responsabilidades principales de la aplicación móvil AutoSense.}
+\caption{Responsabilidades principales de la aplicación móvil AutoSense. Elaboración propia con base en el repositorio móvil.}
 \label{tab:mobile-responsabilidades}
 \small
 \begin{tabular}{@{}p{0.24\textwidth}p{0.36\textwidth}p{0.30\textwidth}@{}}
@@ -2029,7 +2033,7 @@ El registro se escribe según el intervalo de guardado configurado; en la config
 \begin{table}[H]
 \centering
 \small
-\caption{Niveles de almacenamiento utilizados por AutoSense.}
+\caption{Niveles de almacenamiento utilizados por AutoSense. Elaboración propia con base en la implementación del proyecto.}
 \label{tab:storage-layers}
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}p{0.18\textwidth} p{0.20\textwidth} p{0.28\textwidth} p{0.24\textwidth}@{}}
@@ -2052,7 +2056,7 @@ El formato de registro v1 está orientado a guardar solo las variables necesaria
 \begin{table}[H]
 \centering
 \small
-\caption{Estructura del registro binario v1 en la partición \texttt{obdlog}.}
+\caption{Estructura del registro binario v1 en la partición \texttt{obdlog}. Elaboración propia con base en el firmware AutoSense.}
 \label{tab:obdlog-record}
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}p{0.24\textwidth} p{0.12\textwidth} p{0.58\textwidth}@{}}
@@ -2121,7 +2125,7 @@ La transferencia de perfil se realiza en cuatro pasos. Primero, la app envía \t
 \begin{table}[H]
 \centering
 \footnotesize
-\caption{Comandos principales de interacción BLE entre la app y el ESP32-S3.}
+\caption{Comandos principales de interacción BLE entre la app y el ESP32-S3. Elaboración propia con base en el protocolo BLE del proyecto.}
 \label{tab:system-interaction-ble-commands}
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.30\textwidth} >{\raggedright\arraybackslash}p{0.19\textwidth} >{\raggedright\arraybackslash}p{0.41\textwidth}@{}}
@@ -2182,7 +2186,7 @@ Además de mostrar datos, la aplicación actualiza estado remoto de forma contro
 
 La interacción del sistema contempla fallos esperados en un entorno móvil y automotriz. Si el VIN no puede leerse, la aplicación no detiene el flujo completo; presenta selección manual de perfil. Si la resolución remota de perfil falla, también se habilita el modo manual. Si BLE no responde dentro del tiempo esperado, la solicitud queda rechazada por \emph{timeout} y la pantalla muestra un estado de conexión fallida. Esta lógica evita que el usuario quede en una pantalla indefinida sin saber si el problema está en Bluetooth, en el firmware o en el vehículo.
 
-El protocolo BLE también incorpora mecanismos de continuidad. La app mantiene una tabla de solicitudes pendientes con identificador único, de manera que cada respuesta pueda asociarse al comando que la originó. Si una notificación BLE llega truncada o no se procesa correctamente, la app intenta leer la característica TX como respaldo. Este mecanismo no cambia la lógica del firmware; solo mejora la robustez del cliente móvil ante diferencias de comportamiento entre plataformas BLE.
+El protocolo BLE también incorpora mecanismos de continuidad. La app mantiene una tabla de solicitudes pendientes con identificador único, de manera que cada respuesta pueda asociarse al comando que la originó. Si una notificación BLE llega truncada o no se procesa correctamente, la app intenta leer la característica TX como respaldo. Este mecanismo no cambia la lógica del firmware; solo mejora la tolerancia del cliente móvil ante diferencias de comportamiento entre plataformas BLE.
 
 En el ESP32-S3, la desconexión de un cliente BLE desactiva el streaming, limpia notificaciones pendientes, descarta transferencias incompletas y reinicia la publicidad del dispositivo. Esto permite que una sesión interrumpida pueda empezar nuevamente sin reiniciar físicamente el adaptador. Del lado de la aplicación, al salir de la pantalla en vivo se detiene el seguimiento de viaje, se marca el estado de conexión como inactivo y se cancela la conexión BLE activa.
 
@@ -2198,7 +2202,7 @@ En el prototipo, el análisis se ejecuta en el ESP32-S3 y se apoya en dos bloque
 
 La entrada del módulo de análisis es la estructura \texttt{ObdCompactSample}, generada por el servicio OBD-II del firmware. Esta estructura concentra únicamente las señales útiles para historial, transmisión BLE y análisis local: RPM, velocidad, temperatura del refrigerante, posición del acelerador, nivel de combustible, carga del motor, presión MAP, flujo MAF, voltaje ECU, temperatura de admisión y avance de encendido cuando están disponibles. Cada muestra incluye además una máscara \texttt{validMask}, que indica qué campos contienen datos recientes y evita que el análisis trate como válidos valores ausentes o vencidos.
 
-Antes de procesar una muestra, el firmware verifica que exista al menos una señal válida y que se haya cumplido el intervalo configurado para inferencia. En la configuración actual, el análisis de anomalías intenta ejecutarse cada 10 segundos, lo cual coincide con la lógica de recolección histórica y reduce el costo de cómputo frente a un análisis en cada paquete BLE. Esta decisión es importante porque el ESP32-S3 también atiende adquisición OBD-II, clasificación de ruta, almacenamiento local, comunicación BLE y dashboard USB-CDC; por tanto, el análisis debe ser periódico, ligero y no bloqueante.
+Antes de procesar una muestra, el firmware verifica que exista al menos una señal válida y que se haya cumplido el intervalo configurado para inferencia. En la configuración actual, el análisis de anomalías intenta ejecutarse cada 10 segundos, lo cual coincide con la lógica de recolección histórica y reduce el costo de cómputo frente a un análisis en cada paquete BLE. El ESP32-S3 también atiende adquisición OBD-II, clasificación de ruta, almacenamiento local, comunicación BLE y dashboard USB-CDC; por tanto, el análisis debe ser periódico, ligero y no bloqueante.
 
 El diseño evita duplicar consultas al vehículo. El mismo dato que alimenta el logger binario y la telemetría en vivo se transforma internamente en una muestra de análisis, conservando la máscara de validez y las magnitudes ya decodificadas. Con esto, el sistema mantiene una separación clara entre adquisición y análisis: la capa OBD-II se encarga de obtener y convertir respuestas, mientras que el módulo analítico evalúa el comportamiento de las señales ya disponibles.
 
@@ -2218,7 +2222,7 @@ El resultado se traduce en cuatro niveles de severidad: \texttt{NORMAL}, \texttt
 
 El análisis de datos también incorpora la clasificación de ruta. Este bloque utiliza principalmente velocidad, RPM, carga del motor y posición del acelerador para estimar si el vehículo opera en ciudad, carretera o en un estado intermedio. La clasificación no depende de GPS; se basa en el comportamiento dinámico observado desde la telemetría OBD-II. Por ejemplo, una velocidad promedio alta, pocas detenciones y baja variación de aceleración favorecen la clasificación de carretera, mientras que velocidades bajas, paradas frecuentes y cambios repetidos favorecen la clasificación urbana.
 
-Esta información es relevante porque la campaña de recolección de datos del proyecto contempla conducción real en contextos \texttt{city} y \texttt{highway}. Al separar esos escenarios, AutoSense puede interpretar las muestras con mayor coherencia: el consumo, la carga del motor, la velocidad y los cambios de aceleración no tienen el mismo comportamiento esperado en tráfico urbano que en una ruta sostenida. Además, la etiqueta de ruta facilita el análisis posterior de los datos exportados, ya que permite comparar segmentos por condición de conducción y no solamente por tiempo.
+La campaña de recolección contempla conducción real en contextos \texttt{city} y \texttt{highway}. Al separar esos escenarios, AutoSense interpreta mejor las muestras: el consumo, la carga del motor, la velocidad y los cambios de aceleración no siguen el mismo patrón en tráfico urbano que en carretera. La etiqueta de ruta también ordena el análisis posterior, porque permite comparar segmentos por condición de conducción y no solo por tiempo.
 
 El clasificador trabaja con una ventana temporal y no con una única lectura. Esto reduce cambios bruscos de estado cuando el vehículo atraviesa transiciones cortas, como una salida de carretera, una parada temporal o una aceleración puntual. La salida incluye tipo de ruta, estado interno, nivel de confianza, puntaje y una razón textual breve. Estos campos se transmiten junto con la telemetría y sirven para que la aplicación móvil muestre una interpretación más completa del estado de conducción.
 
@@ -2239,7 +2243,7 @@ El campo de área probable no identifica una pieza dañada. Su función es agrup
 \begin{table}[htbp]
 \centering
 \small
-\caption{Componentes del módulo de análisis de datos en AutoSense.}
+\caption{Componentes del módulo de análisis de datos en AutoSense. Elaboración propia con base en el firmware AutoSense.}
 \label{tab:data-analysis-module}
 \begin{tabular}{p{0.25\textwidth}p{0.39\textwidth}p{0.27\textwidth}}
 \toprule
@@ -2309,7 +2313,7 @@ En Firebase Storage se aplica una política similar. Las imágenes de perfil se 
 \begin{table}[htbp]
 \centering
 \small
-\caption{Controles de seguridad aplicados en AutoSense.}
+\caption{Controles de seguridad aplicados en AutoSense. Elaboración propia con base en el firmware, la app y las reglas Firebase del proyecto.}
 \label{tab:system-security-controls}
 \begin{tabular}{p{0.23\textwidth}p{0.39\textwidth}p{0.29\textwidth}}
 \toprule
@@ -2355,7 +2359,7 @@ Cuando el perfil debe aplicarse o actualizarse, la app descarga el JSON, valida 
 \begin{table}[htbp]
 \centering
 \small
-\caption{Resumen operativo de una sesión AutoSense.}
+\caption{Resumen operativo de una sesión AutoSense. Elaboración propia.}
 \label{tab:autosense-general-operation}
 \begin{tabular}{p{0.24\textwidth}p{0.36\textwidth}p{0.31\textwidth}}
 \toprule
@@ -2398,7 +2402,7 @@ El cierre de una sesión ocurre cuando el usuario detiene la transmisión, cierr
 
 La continuidad se apoya en la persistencia local y en el cursor de sincronización. El perfil activo queda guardado como \texttt{/active\_profile.json}, el historial binario permanece en el almacenamiento circular del ESP32-S3 y la app descarga únicamente los registros posteriores al último respaldo conocido. Esa descarga no borra el historial del adaptador; solo crea una copia local y, si corresponde, la sube a Firebase Storage.
 
-En términos funcionales, AutoSense opera como una cadena de observación no invasiva: toma datos del vehículo, los valida, los convierte, los registra, los analiza y los presenta al usuario. Su resultado es una plataforma integrada para monitorear condiciones vehiculares, detectar desviaciones y conservar evidencia de operación.
+Funcionalmente, AutoSense opera como una cadena de observación no invasiva: toma datos del vehículo, los valida, los convierte, los registra, los analiza y los presenta al usuario. Su resultado es una plataforma integrada para monitorear condiciones vehiculares, detectar desviaciones y conservar evidencia de operación.
 
 \newpage
 
@@ -2424,13 +2428,13 @@ El escenario de pruebas inició con la verificación física del prototipo. En e
 \label{fig:test-adapter-powered}
 \end{figure}
 
-Después de esta comprobación inicial, las pruebas se dividieron en dos grupos principales. El primer grupo correspondió a pruebas reales sobre el Volkswagen Passat 2016, que constituye el vehículo de referencia del proyecto. El segundo grupo se realizó con un simulador OBD-II, utilizado para variar parámetros de diagnóstico de forma controlada y validar el comportamiento del sistema con un perfil genérico.
+Después de esta comprobación inicial, las pruebas se dividieron en dos grupos principales. El primer grupo correspondió a pruebas reales sobre el Volkswagen Passat 2016, vehículo de referencia del proyecto. El segundo grupo usó un simulador OBD-II para variar parámetros de diagnóstico de forma controlada y validar el comportamiento del sistema con un perfil genérico.
 
 \subsection{Prueba en vehículo real}
 
 El escenario principal de validación fue un Volkswagen Passat 2016. En este vehículo se utilizó el perfil \path{vw_passat_2016}, porque corresponde al perfil verificado dentro del proyecto y permite recorrer el flujo completo de AutoSense: conexión al puerto OBD-II, lectura de datos por CAN, identificación del vehículo, aplicación del perfil, transmisión BLE hacia la aplicación móvil, registro de datos y posterior análisis de telemetría.
 
-La campaña de recolección se desarrolló entre el 5 de mayo y el 3 de julio de 2026. Durante ese periodo se consolidaron 86\,998 registros con una cadencia de 10 segundos, equivalentes a 241.7 horas efectivas de observación. Los datos incluyen conducción real en trayectos urbanos y de carretera. Esta distinción fue importante porque el comportamiento del vehículo no es igual en tráfico urbano, donde existen paradas frecuentes, aceleraciones cortas y variación de velocidad, que en carretera, donde predominan velocidades más sostenidas y condiciones de carga más estables.
+La campaña de recolección cubrió el periodo del 5 de mayo al 3 de julio de 2026. Durante ese periodo se consolidaron 86\,998 registros con una cadencia de 10 segundos, equivalentes a 241.7 horas efectivas de observación. Los datos incluyen conducción real en trayectos urbanos y de carretera. Esta distinción fue importante porque el comportamiento del vehículo no es igual en tráfico urbano, donde existen paradas frecuentes, aceleraciones cortas y variación de velocidad, que en carretera, donde predominan velocidades más sostenidas y condiciones de carga más estables.
 
 \begin{figure}[H]
 \centering
@@ -2443,7 +2447,7 @@ En esta etapa no se trabajó con datos simulados. Las muestras provinieron del v
 
 \subsection{Prueba con simulador OBD-II}
 
-El simulador OBD-II se utilizó como ambiente de apoyo para reproducir señales vehiculares sin depender del automóvil. Este equipo permite ajustar manualmente parámetros como velocidad del vehículo, revoluciones del motor, temperatura, posición del acelerador, voltaje y otros valores de diagnóstico. Por esta razón, fue útil para validar que el adaptador recibiera respuestas OBD-II, que la aplicación mostrara los cambios esperados y que el flujo de comunicación funcionara en condiciones controladas.
+El simulador OBD-II se utilizó como ambiente de apoyo para reproducir señales vehiculares sin depender del automóvil. Este equipo permite ajustar manualmente parámetros como velocidad del vehículo, revoluciones del motor, temperatura, posición del acelerador, voltaje y otros valores de diagnóstico. Con esa posibilidad se validó que el adaptador recibiera respuestas OBD-II, que la aplicación mostrara los cambios esperados y que el flujo de comunicación funcionara en condiciones controladas.
 
 En este escenario se empleó el perfil genérico de OBD-II. A diferencia del Volkswagen Passat 2016, el simulador no representa todas las características particulares del vehículo real, pero sí permite comprobar el comportamiento base del sistema frente a PIDs comunes. Esto resultó conveniente para pruebas preliminares, depuración de comunicación y verificación rápida de pantallas antes de llevar el sistema al vehículo.
 
@@ -2463,7 +2467,7 @@ La tabla \ref{tab:test-scenarios} resume los escenarios utilizados y su función
 \begin{table}[H]
 \centering
 \scriptsize
-\caption{Escenarios utilizados para la validación de AutoSense.}
+\caption{Escenarios utilizados para la validación de AutoSense. Elaboración propia.}
 \label{tab:test-scenarios}
 \begin{tabular}{@{}p{0.20\textwidth}p{0.18\textwidth}p{0.30\textwidth}p{0.20\textwidth}@{}}
 \toprule
@@ -2482,16 +2486,16 @@ Simulador OBD-II & Perfil genérico OBD-II & Variar parámetros de diagnóstico 
 
 Las pruebas funcionales verificaron que AutoSense cumpliera el flujo operativo previsto después del montaje físico y la preparación del entorno de prueba. A diferencia del escenario descrito en la sección anterior, este apartado no se enfoca en el lugar o en los equipos utilizados, sino en comprobar que cada función principal del sistema respondiera de forma coherente: arranque del adaptador, identificación del vehículo, selección de perfil, lectura de telemetría, registro local, visualización en la aplicación y restricción de comandos de solo lectura.
 
-La validación se realizó con evidencia generada por el propio proyecto. En el firmware se utilizaron los reportes de salida del dashboard USB-CDC, el archivo de métricas OBD-II y el registro exportado desde la partición de historial. En la aplicación y en el backend se verificó la resolución de perfiles mediante pruebas automáticas de la función de selección de perfil vehicular. El caso del Volkswagen Passat 2016 resolvió correctamente hacia \path{vw_passat_2016}, mientras que los casos no soportados fueron dirigidos al perfil genérico y el modo de simulador resolvió hacia \path{obd2_simulator}. La prueba automática ejecutada sobre el resolutor de perfiles reportó tres pruebas aprobadas, sin fallos.
+La validación se sustentó en evidencia generada por el propio proyecto. En el firmware se utilizaron los reportes de salida del dashboard USB-CDC, el archivo de métricas OBD-II y el registro exportado desde la partición de historial. En la aplicación y en el backend se verificó la resolución de perfiles mediante pruebas automáticas de la función de selección de perfil vehicular. El caso del Volkswagen Passat 2016 resolvió correctamente hacia \path{vw_passat_2016}, mientras que los casos no soportados fueron dirigidos al perfil genérico y el modo de simulador resolvió hacia \path{obd2_simulator}. La prueba automática ejecutada sobre el resolutor de perfiles reportó tres pruebas aprobadas, sin fallos.
 
 El flujo funcional validado inicia cuando el ESP32-S3 arranca el firmware, habilita la salida USB-CDC y carga la configuración disponible en memoria local. Luego el sistema establece la comunicación con el bus OBD-II/CAN, consulta la información de identificación del vehículo y aplica el perfil correspondiente. Una vez activo el perfil, el firmware inicia el sondeo de señales, compacta las muestras en la estructura de telemetría, actualiza el dashboard, registra muestras históricas y expone los datos hacia la aplicación móvil por BLE. Esta secuencia permitió comprobar que los módulos desarrollados no funcionan como piezas aisladas, sino como una cadena integrada de adquisición, procesamiento y visualización.
 
-También se verificó la política de seguridad funcional del adaptador. En los reportes de dashboard aparece el indicador \path{guard=0}, lo cual evidencia que no se registraron intentos bloqueados durante la sesión validada. Esto es importante porque el sistema está diseñado para operar como lector de datos, no como herramienta de escritura, reprogramación o control activo del vehículo. Por tanto, la prueba funcional no buscó alterar el estado de la ECU, borrar códigos ni ejecutar rutinas de servicio; su objetivo fue confirmar que AutoSense puede observar y registrar información sin modificar parámetros del vehículo.
+También se verificó la política de seguridad funcional del adaptador. En los reportes de dashboard aparece el indicador \path{guard=0}, lo que indica que no se registraron intentos bloqueados durante la sesión validada. El sistema está diseñado para operar como lector de datos, no como herramienta de escritura, reprogramación o control activo del vehículo. Por tanto, la prueba funcional no buscó alterar el estado de la ECU, borrar códigos ni ejecutar rutinas de servicio; su objetivo fue confirmar que AutoSense registra información sin modificar parámetros del vehículo.
 
 \begin{table}[H]
 \centering
 \scriptsize
-\caption{Pruebas funcionales aplicadas a AutoSense.}
+\caption{Pruebas funcionales aplicadas a AutoSense. Elaboración propia.}
 \label{tab:functional-tests}
 \begin{tabular}{@{}p{0.18\textwidth}p{0.24\textwidth}p{0.25\textwidth}p{0.11\textwidth}@{}}
 \toprule
@@ -2525,7 +2529,7 @@ El tercer canal fue BLE, usado por la aplicación móvil para descubrir el adapt
 \begin{table}[H]
 \centering
 \scriptsize
-\caption{Indicadores de comunicación verificados durante las pruebas.}
+\caption{Indicadores de comunicación verificados durante las pruebas. Elaboración propia.}
 \label{tab:communication-tests}
 \begin{tabular}{@{}p{0.16\textwidth}p{0.25\textwidth}p{0.27\textwidth}p{0.10\textwidth}@{}}
 \toprule
@@ -2544,7 +2548,7 @@ Guardia de lectura & Evitar comandos no permitidos durante la comunicación con 
 \end{tabular}
 \end{table}
 
-Estos resultados permiten concluir que los canales de comunicación necesarios para la validación inicial funcionaron de manera coordinada. USB-CDC permitió supervisión técnica, CAN permitió acceso a la red de diagnóstico, BLE permitió interacción con la aplicación móvil y la resolución de perfil permitió seleccionar la configuración adecuada para el vehículo o para el simulador. Las mediciones de latencia, estabilidad prolongada y rendimiento sostenido se reservan para los apartados de rendimiento y análisis de resultados.
+La prueba confirmó que los canales necesarios para la validación inicial funcionaron de manera coordinada. USB-CDC permitió supervisión técnica, CAN permitió acceso a la red de diagnóstico, BLE permitió interacción con la aplicación móvil y la resolución de perfil permitió seleccionar la configuración adecuada para el vehículo o para el simulador. Las mediciones de latencia, estabilidad prolongada y rendimiento sostenido se reservan para los apartados de rendimiento y análisis de resultados.
 
 \section{Pruebas de lectura OBD-II}
 
@@ -2555,7 +2559,7 @@ En Mode 01 se validó la lectura de variables en tiempo real. El reporte de mét
 \begin{table}[H]
 \centering
 \scriptsize
-\caption{Lecturas Mode 01 observadas en reportes OBD-II de prueba.}
+\caption{Lecturas Mode 01 observadas en reportes OBD-II de prueba. Elaboración propia con base en reportes del firmware.}
 \label{tab:obd-pid-tests}
 \begin{tabular}{@{}p{0.08\textwidth}p{0.27\textwidth}p{0.14\textwidth}p{0.11\textwidth}p{0.10\textwidth}@{}}
 \toprule
@@ -2581,7 +2585,7 @@ Mode 09 permitió validar la identificación técnica de módulos. En el reporte
 \begin{table}[H]
 \centering
 \scriptsize
-\caption{Modos OBD-II verificados durante las pruebas de lectura.}
+\caption{Modos OBD-II verificados durante las pruebas de lectura. Elaboración propia con base en reportes del firmware.}
 \label{tab:obd-mode-tests}
 \begin{tabular}{@{}p{0.10\textwidth}p{0.27\textwidth}p{0.29\textwidth}p{0.10\textwidth}@{}}
 \toprule
@@ -2606,7 +2610,7 @@ Con estas pruebas se comprobó que el adaptador realiza la lectura OBD-II necesa
 
 Las pruebas de almacenamiento se enfocaron en verificar que AutoSense conservara evidencia de la sesión sin depender únicamente de la visualización en tiempo real. El punto principal de la prueba fue el registro local del ESP32-S3, debido a que este módulo puede permanecer conectado al vehículo aunque el teléfono no esté activo todo el tiempo. Por esa razón, la validación se centró en confirmar que el firmware mantuviera el logger encendido, incrementara el contador de muestras y permitiera exportar registros para análisis posterior.
 
-En los reportes del dashboard USB-CDC se observó el estado \path{log=ON}, con secuencia activa, contador de registros y capacidad total de almacenamiento. En la captura del vehículo real se registró \path{rec=1542/274720}, intervalo de escritura de 10 segundos y \path{err=0}. En el escenario con simulador también se observó el logger activo, con \path{rec=1707/274720}. Estos indicadores permiten establecer que la escritura local se encontraba habilitada, que el contador avanzaba y que no se reportaron errores de almacenamiento durante las sesiones observadas.
+Los reportes del dashboard USB-CDC mostraron el estado \path{log=ON}, con secuencia activa, contador de registros y capacidad total de almacenamiento. En la captura del vehículo real se registró \path{rec=1542/274720}, intervalo de escritura de 10 segundos y \path{err=0}. En el escenario con simulador también apareció el logger activo, con \path{rec=1707/274720}. Estos indicadores permiten establecer que la escritura local se encontraba habilitada, que el contador avanzaba y que no se reportaron errores de almacenamiento durante las sesiones observadas.
 
 La exportación \path{obdlog.csv} permitió revisar el formato de salida del historial. El archivo contiene campos como \path{sequence}, \path{uptime_seconds}, \path{valid_mask}, \path{rpm}, \path{speed_kph}, \path{coolant_c}, \path{throttle_pct}, \path{fuel_level_pct}, \path{engine_load_pct}, \path{map_kpa}, \path{maf_gps} y \path{ecu_voltage_v}. La presencia de \path{valid_mask} es relevante porque no todas las señales están disponibles en cada muestra; por tanto, el registro conserva cuáles magnitudes fueron válidas y evita interpretar espacios vacíos como mediciones reales.
 
@@ -2615,7 +2619,7 @@ En la capa móvil se verificó que la aplicación dispone de persistencia de ses
 \begin{table}[H]
 \centering
 \scriptsize
-\caption{Validación del almacenamiento de datos en AutoSense.}
+\caption{Validación del almacenamiento de datos en AutoSense. Elaboración propia.}
 \label{tab:storage-tests}
 \begin{tabular}{@{}p{0.17\textwidth}p{0.26\textwidth}p{0.30\textwidth}p{0.11\textwidth}@{}}
 \toprule
@@ -2640,14 +2644,14 @@ Las pruebas de visualización verificaron que la información capturada por Auto
 
 La evidencia visual se apoyó en las capturas ya generadas de la aplicación móvil. Las pantallas de acceso permitieron verificar que el usuario puede iniciar sesión, registrarse y recuperar cuenta. Las pantallas principales mostraron la navegación hacia inicio, eficiencia, alertas, perfil y vehículo. La pantalla de emparejamiento y la vista de telemetría en vivo permitieron validar el flujo esperado de conexión con el adaptador, incluyendo la activación del stream BLE mediante el comando \path{START_STREAM}.
 
-En las pantallas de alertas se verificó que la aplicación no agrupe toda la información en una sola vista, sino que distribuya la inspección por categorías. Las vistas de batería, frenos, temperatura, llantas y consumo permiten presentar al usuario áreas específicas de revisión. Esta organización es coherente con el objetivo del sistema, porque AutoSense no busca entregar un diagnóstico mecánico exacto, sino mostrar señales, estados y advertencias de forma ordenada para facilitar el seguimiento del vehículo.
+En las pantallas de alertas se verificó que la aplicación no agrupe toda la información en una sola vista, sino que distribuya la inspección por categorías. Las vistas de batería, frenos, temperatura, llantas y consumo presentan al usuario áreas específicas de revisión. Esa organización responde al alcance de AutoSense: no entregar un diagnóstico mecánico exacto, sino mostrar señales, estados y advertencias de forma ordenada para facilitar el seguimiento del vehículo.
 
 La validación también consideró la consistencia entre los datos técnicos y la experiencia de uso. El dashboard USB-CDC y las métricas OBD-II demuestran que existen valores decodificados, mientras que las pantallas móviles evidencian que esos datos pueden representarse en una interfaz de usuario. En esta etapa no se midió usabilidad con usuarios externos ni tiempos de interacción; la prueba se limitó a confirmar disponibilidad visual, navegación y correspondencia general entre módulos del sistema.
 
 \begin{table}[H]
 \centering
 \scriptsize
-\caption{Validación visual de pantallas móviles.}
+\caption{Validación visual de pantallas móviles. Elaboración propia con base en capturas del proyecto.}
 \label{tab:visual-tests}
 \begin{tabular}{@{}p{0.18\textwidth}p{0.28\textwidth}p{0.28\textwidth}p{0.10\textwidth}@{}}
 \toprule
@@ -2679,7 +2683,7 @@ El rendimiento del registro local se evaluó mediante el intervalo de escritura 
 \begin{table}[H]
 \centering
 \scriptsize
-\caption{Indicadores de rendimiento observados durante las pruebas.}
+\caption{Indicadores de rendimiento observados durante las pruebas. Elaboración propia con base en reportes del firmware.}
 \label{tab:performance-tests}
 \begin{tabular}{@{}p{0.24\textwidth}p{0.20\textwidth}p{0.28\textwidth}p{0.12\textwidth}@{}}
 \toprule
@@ -2706,18 +2710,18 @@ Tiempo de sincronización histórica & No medido en campaña completa & Flujo im
 \end{tabular}
 \end{table}
 
-Los resultados muestran que el prototipo mantuvo tasas de consulta y decodificación suficientes para la visualización y el registro planteados en esta etapa. La prueba no pretende establecer el límite máximo del sistema, sino confirmar que, bajo los escenarios utilizados, el flujo de adquisición, transmisión BLE, dashboard USB-CDC y almacenamiento local se mantuvo operativo. Las métricas de latencia extremo a extremo, pérdida de paquetes BLE y duración de sincronización histórica quedan identificadas como mediciones pendientes para una validación de rendimiento más estricta.
+Las pruebas indican que el prototipo mantuvo tasas de consulta y decodificación suficientes para la visualización y el registro planteados en esta etapa. La prueba no pretende establecer el límite máximo del sistema, sino confirmar que, bajo los escenarios utilizados, el flujo de adquisición, transmisión BLE, dashboard USB-CDC y almacenamiento local se mantuvo operativo. Las métricas de latencia extremo a extremo, pérdida de paquetes BLE y duración de sincronización histórica quedan identificadas como mediciones pendientes para una validación de rendimiento más estricta.
 
 \section{Resultados obtenidos}
 
-Los resultados obtenidos se presentan a partir de la telemetría recolectada con AutoSense y consolidada en el archivo \path{vw_passat_2016_raw_route_classified_60d_10s.xlsx}. Para esta sección se seleccionó un segmento urbano de veinte minutos, exportado desde la hoja de datos procesada hacia archivos CSV individuales y visualizado mediante Datawrapper. La finalidad de estos gráficos es mostrar el comportamiento de variables representativas del vehículo durante una sesión real de conducción, no establecer un diagnóstico mecánico definitivo.
+Los resultados se basan en la telemetría recolectada con AutoSense y consolidada en el archivo \path{vw_passat_2016_raw_route_classified_60d_10s.xlsx}. Para esta sección se seleccionó un segmento urbano de veinte minutos, exportado desde la hoja de datos procesada hacia archivos CSV individuales y visualizado mediante Datawrapper. Los gráficos muestran el comportamiento de variables representativas durante una sesión real de conducción; no constituyen un diagnóstico mecánico definitivo.
 
-El segmento utilizado contiene 775 muestras válidas por variable después de separar los registros auxiliares empleados para la visualización. Las métricas seleccionadas corresponden a señales relevantes para el seguimiento operativo del vehículo: velocidad, revoluciones del motor, temperatura del refrigerante, carga del motor, consumo instantáneo y una vista normalizada mediante Z-score.
+El segmento utilizado contiene 775 muestras válidas por variable después de separar los registros auxiliares usados para visualización. Las métricas seleccionadas cubren señales de seguimiento operativo: velocidad, revoluciones del motor, temperatura del refrigerante, carga del motor, consumo instantáneo y una vista normalizada mediante Z-score.
 
 \begin{table}[H]
 \centering
 \scriptsize
-\caption{Resumen estadístico del segmento urbano utilizado en los gráficos de resultados.}
+\caption{Resumen estadístico del segmento urbano utilizado en los gráficos de resultados. Elaboración propia con base en el Excel de salida.}
 \label{tab:resultados-datawrapper-resumen}
 \begin{tabular}{@{}p{0.30\textwidth}p{0.18\textwidth}p{0.18\textwidth}p{0.20\textwidth}@{}}
 \toprule
@@ -2736,7 +2740,7 @@ Consumo instantáneo & 4,02 L/h & 11,69 L/h & 0,53 a 11,69 L/h \\
 \end{tabular}
 \end{table}
 
-Además del segmento urbano usado para los gráficos, la campaña completa fue clasificada por contexto de ruta. Esta lectura permite verificar que AutoSense no se evaluó únicamente con una muestra aislada, sino con registros distribuidos entre ciudad, carretera y segmentos conservadores no determinados.
+La campaña completa también fue clasificada por contexto de ruta. AutoSense no se evaluó con una muestra aislada: el archivo contiene registros de ciudad, carretera y segmentos conservadores no determinados.
 
 \begin{table}[H]
 \centering
@@ -2766,7 +2770,7 @@ La Figura~\ref{fig:resultados-speed} muestra la variación de la velocidad duran
 \label{fig:resultados-speed}
 \end{figure}
 
-Este resultado permite comprobar que el sistema registra cambios dinámicos de conducción y no solo valores estáticos. Para AutoSense, esta variable también es importante porque contribuye a diferenciar el contexto de uso del vehículo, especialmente cuando se contrasta el comportamiento urbano con trayectos de carretera.
+Este resultado comprueba que el sistema registra cambios dinámicos de conducción, no solo valores estáticos. La velocidad ayuda a diferenciar el contexto de uso del vehículo, especialmente al comparar tráfico urbano con trayectos de carretera.
 
 \subsection{Comportamiento de las revoluciones del motor}
 
@@ -2783,7 +2787,7 @@ La lectura de RPM confirma que el módulo AutoSense pudo capturar una señal de 
 
 \subsection{Temperatura del refrigerante}
 
-La Figura~\ref{fig:resultados-coolant} muestra la temperatura del refrigerante. Se observa una etapa inicial de incremento térmico hasta alcanzar un rango estable cercano al promedio de 89,74 $^\circ$C. Este comportamiento es coherente con el calentamiento progresivo del motor y su posterior operación dentro de una zona de temperatura relativamente estable durante la conducción.
+La Figura~\ref{fig:resultados-coolant} muestra la temperatura del refrigerante. La señal presenta una etapa inicial de incremento térmico hasta alcanzar un rango estable cercano al promedio de 89,74 $^\circ$C. Este comportamiento es coherente con el calentamiento progresivo del motor y su posterior operación dentro de una zona de temperatura relativamente estable durante la conducción.
 
 \begin{figure}[H]
 \centering
@@ -2792,7 +2796,7 @@ La Figura~\ref{fig:resultados-coolant} muestra la temperatura del refrigerante. 
 \label{fig:resultados-coolant}
 \end{figure}
 
-Este resultado es relevante porque demuestra que AutoSense puede registrar variables térmicas de evolución lenta, no solamente señales instantáneas como velocidad o RPM. La estabilización de la temperatura facilita la identificación de condiciones fuera de patrón cuando se compara contra la línea base del vehículo.
+La lectura térmica muestra que AutoSense registra variables de evolución lenta, no solo señales instantáneas como velocidad o RPM. Una temperatura estabilizada facilita comparar el comportamiento observado contra la línea base del vehículo.
 
 \subsection{Carga del motor}
 
@@ -2818,11 +2822,11 @@ La Figura~\ref{fig:resultados-fuel-rate} muestra el consumo instantáneo estimad
 \label{fig:resultados-fuel-rate}
 \end{figure}
 
-Este gráfico permite observar que el consumo no se mantiene constante, sino que cambia en función de la operación del vehículo. Para el sistema propuesto, esta información es útil como indicador de eficiencia y como señal complementaria dentro del seguimiento de condiciones de conducción.
+El consumo no se mantiene constante; cambia con la operación del vehículo. En AutoSense, esta variable funciona como indicador de eficiencia y como señal complementaria para interpretar condiciones de conducción.
 
 \subsection{Comparación normalizada mediante Z-score}
 
-La Figura~\ref{fig:resultados-zscore} presenta una comparación normalizada de las variables seleccionadas mediante puntajes Z-score. Esta representación permite observar desviaciones relativas entre señales que originalmente tienen unidades distintas. Por ejemplo, velocidad, RPM, temperatura, carga y consumo no pueden compararse directamente por escala, pero su normalización permite identificar momentos donde una o varias señales se alejan de su comportamiento medio dentro del segmento analizado.
+La Figura~\ref{fig:resultados-zscore} presenta una comparación normalizada de las variables seleccionadas mediante puntajes Z-score. Esta representación muestra desviaciones relativas entre señales que originalmente tienen unidades distintas. Por ejemplo, velocidad, RPM, temperatura, carga y consumo no pueden compararse directamente por escala, pero su normalización permite identificar momentos donde una o varias señales se alejan de su comportamiento medio dentro del segmento analizado.
 
 \begin{figure}[H]
 \centering
@@ -2831,30 +2835,30 @@ La Figura~\ref{fig:resultados-zscore} presenta una comparación normalizada de l
 \label{fig:resultados-zscore}
 \end{figure}
 
-La utilidad principal de esta visualización es apoyar la interpretación del módulo de análisis de datos. Cuando una señal se aparta de su comportamiento esperado, el sistema puede usar esa desviación como insumo para alertas o para revisión posterior. No obstante, este resultado debe interpretarse como detección de variaciones y condiciones anómalas en los datos, no como predicción exacta de fallas mecánicas.
+Esta visualización apoya la interpretación del módulo de análisis de datos. Cuando una señal se aparta de su comportamiento esperado, el sistema puede usar esa desviación como insumo para alertas o revisión posterior. El resultado debe entenderse como detección de variaciones y condiciones anómalas en los datos, no como predicción exacta de fallas mecánicas.
 
-En síntesis, los gráficos obtenidos muestran que AutoSense logró capturar, almacenar y procesar señales vehiculares suficientes para describir el comportamiento operativo del Volkswagen Passat 2016 durante una sesión urbana real. Las variables presentan coherencia entre sí: los cambios de velocidad se relacionan con variaciones de RPM, carga y consumo, mientras que la temperatura del refrigerante muestra una evolución más gradual hasta estabilizarse. Estos resultados respaldan la funcionalidad del sistema como herramienta de monitoreo vehicular basada en datos OBD-II/CAN.
+Los gráficos muestran que AutoSense capturó, almacenó y procesó señales suficientes para describir el comportamiento operativo del Volkswagen Passat 2016 durante una sesión urbana real. Las variables son coherentes entre sí: los cambios de velocidad se relacionan con variaciones de RPM, carga y consumo, mientras que la temperatura del refrigerante evoluciona con mayor lentitud hasta estabilizarse. Estos resultados respaldan el funcionamiento del sistema como herramienta de monitoreo vehicular basada en datos OBD-II/CAN.
 
 \section{Análisis de resultados}
 
 \subsection{Interpretación técnica de las señales}
 
-El segmento urbano utilizado para las Figuras~\ref{fig:resultados-speed} a~\ref{fig:resultados-fuel-rate} muestra un comportamiento compatible con una conducción real en ciudad. La velocidad media de 28,47 km/h no debe analizarse de forma aislada, sino junto con las variaciones de RPM, carga del motor y consumo instantáneo. Cuando la velocidad aumenta o cambia con frecuencia, las revoluciones y la carga tienden a reflejar la respuesta del motor ante aceleraciones, reducciones de velocidad y transiciones propias del tráfico urbano. Esta relación confirma que las señales capturadas por AutoSense no son lecturas independientes sin contexto, sino variables que se comportan de manera coordinada dentro de una sesión real de manejo.
+El segmento urbano de las Figuras~\ref{fig:resultados-speed} a~\ref{fig:resultados-fuel-rate} corresponde a una conducción real en ciudad. La velocidad media de 28,47 km/h no explica por sí sola el comportamiento del vehículo; debe leerse junto con RPM, carga del motor y consumo instantáneo. Cuando la velocidad aumenta o cambia con frecuencia, las revoluciones y la carga reflejan la respuesta del motor ante aceleraciones, reducciones de velocidad y transiciones del tráfico urbano. Las señales capturadas por AutoSense no son lecturas sueltas: forman un conjunto coherente dentro de una sesión de manejo.
 
-La temperatura del refrigerante aporta una lectura distinta. Mientras velocidad, RPM, carga y consumo responden rápidamente al estilo de conducción, la temperatura presenta una dinámica más lenta y tiende a estabilizarse cerca de 89,74 $^\circ$C. Esta diferencia es importante para el análisis predictivo, porque no todas las variables deben evaluarse con la misma sensibilidad temporal. Una variación rápida en RPM puede ser normal durante una aceleración, pero una desviación sostenida de temperatura puede representar una condición que requiere seguimiento. Por ello, la utilidad de AutoSense no se limita a mostrar datos en tiempo real, sino a conservar un historial que permite distinguir entre cambios transitorios y comportamientos persistentes.
+La temperatura del refrigerante se comporta de otra manera. Mientras velocidad, RPM, carga y consumo reaccionan rápido ante el estilo de conducción, la temperatura cambia con más lentitud y tiende a estabilizarse cerca de 89,74 $^\circ$C. Esa diferencia afecta el análisis predictivo: no todas las variables deben evaluarse con la misma sensibilidad temporal. Una variación rápida en RPM puede ser normal durante una aceleración; una desviación térmica sostenida, en cambio, requiere seguimiento. Por eso el historial resulta necesario para separar cambios transitorios de comportamientos persistentes.
 
-El consumo instantáneo promedio de 4,02 L/h y la carga media del motor de 34,09\% también deben interpretarse como indicadores dependientes del contexto. En ciudad, los cambios de acelerador, detenciones y arranques producen oscilaciones que no necesariamente representan una anomalía. Sin embargo, al relacionar consumo, carga, velocidad y RPM, el sistema puede construir una lectura más completa del estado operativo del vehículo. Esta interpretación multivariable es más útil que una revisión individual de cada señal, porque reduce el riesgo de atribuir significado anómalo a una variación que en realidad responde al patrón normal de conducción.
+El consumo instantáneo promedio de 4,02 L/h y la carga media de 34,09\% dependen del contexto. En ciudad, los cambios de acelerador, detenciones y arranques producen oscilaciones que no necesariamente indican anomalía. Al relacionar consumo, carga, velocidad y RPM, el sistema obtiene una lectura más completa del estado operativo. Esta lectura multivariable reduce el riesgo de marcar como anormal una variación que responde al patrón habitual de conducción.
 
 \subsection{Lectura de la campaña de recolección}
 
-La campaña completa de datos refuerza la validez operativa del prototipo, ya que el archivo clasificado contiene 86 998 registros distribuidos en 71 114 registros urbanos, 8521 de carretera y 7363 no determinados. La presencia de datos \path{city} y \path{highway} indica que el sistema fue expuesto a condiciones de operación diferentes. Esto es relevante porque un sistema de monitoreo vehicular no puede evaluarse únicamente con el vehículo detenido o con un simulador OBD-II; también debe observarse durante trayectos reales, donde aparecen variaciones de velocidad, carga, temperatura y consumo.
+La campaña completa aporta evidencia operativa: el archivo clasificado contiene 86 998 registros distribuidos en 71 114 urbanos, 8521 de carretera y 7363 no determinados. La presencia de datos \path{city} y \path{highway} muestra que el sistema se expuso a condiciones distintas. Un sistema de monitoreo vehicular no puede evaluarse solo con vehículo detenido o simulador OBD-II; necesita trayectos reales, donde cambian velocidad, carga, temperatura y consumo.
 
 El grupo \path{unknown} no debe interpretarse como una falla directa del sistema, sino como una decisión conservadora del clasificador de ruta. En una arquitectura de monitoreo, resulta preferible marcar un segmento como no determinado cuando la evidencia no es suficiente, antes que forzar una clasificación incorrecta. Esta estrategia mantiene la confiabilidad del análisis posterior, especialmente si los datos se utilizan para comparar comportamientos urbanos y de carretera o para entrenar una línea base por contexto de conducción.
 
 \begin{table}[H]
 \centering
 \scriptsize
-\caption{Discusión técnica de los hallazgos principales.}
+\caption{Discusión técnica de los hallazgos principales. Elaboración propia.}
 \label{tab:analisis-resultados}
 \begin{tabular}{@{}p{0.26\textwidth}p{0.34\textwidth}p{0.30\textwidth}@{}}
 \toprule
@@ -2877,7 +2881,7 @@ IA local en el ESP32-S3 & El firmware combina Welford, Z-score e Isolation Fores
 
 \subsection{Aporte del análisis estadístico e inteligencia artificial}
 
-El gráfico de Z-score de la Figura~\ref{fig:resultados-zscore} permite interpretar los resultados desde una perspectiva diferente a la lectura directa de unidades físicas. Velocidad, RPM, temperatura, carga y consumo poseen escalas distintas; por tanto, compararlas directamente puede producir una interpretación equivocada. Al normalizar las señales, el sistema observa qué tan lejos se encuentra cada variable de su comportamiento medio dentro del conjunto analizado. Esta representación es útil porque permite identificar desviaciones relativas, aunque las unidades originales sean diferentes.
+El gráfico de Z-score de la Figura~\ref{fig:resultados-zscore} evita comparar unidades incompatibles. Velocidad, RPM, temperatura, carga y consumo tienen escalas distintas; una lectura directa entre ellas puede llevar a conclusiones equivocadas. La normalización convierte cada señal en una medida de distancia respecto de su propio comportamiento medio. Así se identifican desviaciones relativas sin mezclar kilómetros por hora, revoluciones, grados Celsius o litros por hora.
 
 \begin{figure}[H]
 \centering
@@ -2886,11 +2890,11 @@ El gráfico de Z-score de la Figura~\ref{fig:resultados-zscore} permite interpre
 \label{fig:ai-zscore-deviation-index}
 \end{figure}
 
-La Figura~\ref{fig:ai-zscore-deviation-index} resume el mayor valor absoluto de Z-score entre variables seleccionadas. La mayor parte del segmento permanece en rangos bajos, mientras que algunos picos aislados superan el umbral visual de seguimiento. En el contexto de esta tesis, esos picos no se interpretan como fallas, sino como instantes donde una o varias señales se alejaron de su comportamiento medio dentro del tramo analizado. Esta lectura es coherente con el alcance del prototipo: identificar desviaciones que ameritan observación, no emitir un diagnóstico mecánico definitivo.
+La Figura~\ref{fig:ai-zscore-deviation-index} resume el mayor valor absoluto de Z-score entre las variables seleccionadas. La mayor parte del segmento permanece en rangos bajos; algunos picos aislados superan el umbral visual de seguimiento. Esos puntos no se interpretan como fallas. Indican momentos donde una o varias señales se alejaron de su comportamiento medio dentro del tramo analizado. Si una desviación aparece una sola vez, puede corresponder a una aceleración, una frenada, una subida o una transición normal. Si aparece de forma repetida o sostenida, el sistema la trata como condición que amerita revisión.
 
 En el firmware, este principio se implementa mediante una línea base estadística calculada con Welford. La ventaja de este método para un sistema embebido es que permite actualizar promedio y desviación estándar sin almacenar todas las muestras históricas en memoria. Esto se ajusta al enfoque de registro y procesamiento en el borde, donde el ESP32-S3 dispone de recursos limitados y debe mantener una operación estable durante periodos prolongados. La línea base convierte la telemetría en una referencia dinámica del comportamiento esperado del vehículo.
 
-El Z-score aporta una interpretación explicable: permite estimar cuánto se aleja una señal de su patrón aprendido. Esta característica es importante para una tesis aplicada, porque el sistema no se comporta como una caja negra completa; puede indicar qué señales contribuyen más a una desviación. Por ejemplo, una elevación simultánea de carga, consumo y caudal de aire no tiene el mismo significado que una desviación térmica sostenida. En el primer caso puede tratarse de una aceleración normal; en el segundo, puede requerir observación continua si se mantiene fuera de la línea base.
+El Z-score aporta una interpretación explicable: estima cuánto se aleja una señal de su patrón aprendido. El sistema no queda como una caja negra completa, porque puede indicar qué señales aportan más a una desviación. Una elevación simultánea de carga, consumo y caudal de aire puede corresponder a una aceleración normal; una desviación térmica sostenida requiere otra lectura, sobre todo si se mantiene fuera de la línea base.
 
 El Tiny Isolation Forest complementa el análisis estadístico al evaluar patrones multivariables. La implementación del firmware utiliza 16 árboles, tamaño de muestra 64 y profundidad máxima 6, con inferencia local y sin depender de memoria dinámica para la etapa de evaluación. Cuando el modelo ya se encuentra listo, el puntaje final combina 70\% del resultado por Z-score y 30\% del Isolation Forest. Esta ponderación mantiene mayor peso en una medida estadística explicable, mientras agrega una capa adicional para reconocer combinaciones de señales que podrían no apreciarse con una sola variable.
 
@@ -2926,7 +2930,7 @@ Los resultados muestran que AutoSense funciona como una base de monitoreo predic
 
 El alcance debe interpretarse con prudencia. Los datos disponibles permiten afirmar que el prototipo captura y analiza telemetría real del Volkswagen Passat 2016, y que el módulo de IA produce indicadores de desviación basados en línea base, Z-score e Isolation Forest. Convertir una alerta en diagnóstico de una pieza específica requeriría más vehículos, fallas confirmadas, comparación contra instrumentos profesionales y evaluación controlada de falsos positivos.
 
-La validación principal se realizó con un vehículo específico y con un perfil asociado a ese modelo. Aunque OBD-II permite acceder a señales comunes, la disponibilidad, precisión y comportamiento de cada PID puede variar entre marcas, modelos y años. Por ello, los resultados son sólidos para el entorno evaluado, pero la generalización exige perfiles adicionales y nuevas campañas de prueba.
+La validación principal utilizó un vehículo específico y un perfil asociado a ese modelo. Aunque OBD-II permite acceder a señales comunes, la disponibilidad, precisión y comportamiento de cada PID puede variar entre marcas, modelos y años. Por ello, los resultados son sólidos para el entorno evaluado, pero la generalización exige perfiles adicionales y nuevas campañas de prueba.
 
 En síntesis, el prototipo adquiere, registra, visualiza e interpreta señales vehiculares desde una arquitectura embebida. La combinación de registro local, clasificación de ruta, visualización móvil y análisis estadístico con Tiny Isolation Forest transforma lecturas OBD-II/CAN en evidencia continua e interpretable para seguimiento vehicular.
 
@@ -2949,11 +2953,11 @@ En cuanto a la aplicación móvil, se logró implementar una interfaz multiplata
 
 Los resultados de prueba muestran que AutoSense funcionó en escenarios complementarios: banco preliminar, simulador OBD-II y Volkswagen Passat 2016. La campaña de datos consolidó 86\,998 registros clasificados, de los cuales 71\,114 correspondieron a contexto urbano, 8521 a carretera y 7363 a segmentos no determinados. Esta evidencia permitió observar señales como velocidad, RPM, temperatura del refrigerante, carga del motor y consumo instantáneo en condiciones reales de conducción. La clasificación \path{unknown} se interpretó como una decisión conservadora del sistema cuando la evidencia de ruta no resultaba suficiente, no como una falla directa del prototipo.
 
-El análisis de resultados permitió establecer que las señales capturadas mantienen coherencia técnica entre sí. Las variaciones de velocidad se relacionaron con cambios en RPM, carga y consumo, mientras que la temperatura del refrigerante presentó una evolución más gradual hasta alcanzar un rango estable. Esta diferencia entre señales rápidas y señales lentas confirma la importancia de analizar el comportamiento vehicular por contexto y no mediante valores aislados. En ese sentido, el registro histórico y la clasificación de ruta aportan una base útil para distinguir entre cambios normales de operación y posibles desviaciones que ameriten seguimiento.
+El análisis de resultados mostró que las señales capturadas mantienen coherencia técnica entre sí. Las variaciones de velocidad se relacionaron con cambios en RPM, carga y consumo, mientras que la temperatura del refrigerante presentó una evolución más gradual hasta alcanzar un rango estable. Esta diferencia entre señales rápidas y señales lentas confirma la importancia de analizar el comportamiento vehicular por contexto y no mediante valores aislados. Por ello, el registro histórico y la clasificación de ruta aportan una base útil para distinguir entre cambios normales de operación y posibles desviaciones que ameriten seguimiento.
 
 El módulo de análisis local aportó una capa adicional al monitoreo. La combinación de línea base estadística mediante Welford, Z-score por señal y Tiny Isolation Forest permite producir indicadores de desviación ejecutados en el borde, asignar severidades y apoyar al usuario con alertas tempranas dentro del alcance validado.
 
-Finalmente, la investigación permitió concluir que AutoSense cumple su propósito como prototipo funcional de monitoreo vehicular inteligente. El sistema adquiere datos desde el vehículo, los procesa localmente, los registra, los transmite, los visualiza y los organiza para consulta posterior. Sus resultados son válidos principalmente para el entorno evaluado, especialmente el Volkswagen Passat 2016 y los escenarios de simulación utilizados. La extensión a otros vehículos requiere perfiles adicionales, validación de PIDs disponibles y nuevas campañas de prueba. Aun con esas limitaciones, el proyecto establece una base sólida para evolucionar hacia un sistema más amplio de mantenimiento predictivo apoyado en datos reales del vehículo.
+AutoSense cumple su propósito como prototipo funcional de monitoreo vehicular inteligente. El sistema adquiere datos desde el vehículo, los procesa localmente, los registra, los transmite, los visualiza y los organiza para consulta posterior. Sus resultados son válidos principalmente para el entorno evaluado, especialmente el Volkswagen Passat 2016 y los escenarios de simulación utilizados. La extensión a otros vehículos requiere perfiles adicionales, validación de PIDs disponibles y nuevas campañas de prueba. Aun con esas limitaciones, el proyecto establece una base sólida para evolucionar hacia un sistema más amplio de mantenimiento predictivo apoyado en datos reales del vehículo.
 
 \section{Cumplimiento de objetivos}
 
@@ -2962,7 +2966,7 @@ El cumplimiento de los objetivos se evaluó a partir de la correspondencia entre
 \begin{table}[H]
 \centering
 \scriptsize
-\caption{Cumplimiento de los objetivos específicos del proyecto.}
+\caption{Cumplimiento de los objetivos específicos del proyecto. Elaboración propia.}
 \label{tab:cumplimiento-objetivos}
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}p{0.31\textwidth}p{0.39\textwidth}p{0.20\textwidth}@{}}
@@ -2975,7 +2979,7 @@ Implementar un módulo de análisis de datos vehiculares que identifique variaci
 \addlinespace
 Implementar un entorno en la nube para almacenamiento estructurado, consultas históricas, visualización remota y respaldo. & La solución integró Firebase Auth, Firestore, Functions y Storage para usuario, vehículo, perfiles, estado, alertas y respaldo histórico. El ESP32-S3 conserva historial local en \path{obdlog}; la app incluye descarga incremental por BLE, archivo binario local, respaldo en Firebase Storage e índice con cursor en Firestore. & Cumplido en implementación; validación operacional parcial para exportaciones completas. \\
 \addlinespace
-Diseñar e integrar una aplicación móvil multiplataforma para visualizar estado, alertas e historial. & Se desarrolló una aplicación React Native/Expo con sesión autenticada, pantallas de inicio, eficiencia, alertas, tiempo real, perfil, vehículo y vistas de detalle. La app recibe telemetría por BLE, presenta datos en vivo y organiza información del usuario y vehículo. & Cumplido dentro de la versión funcional del prototipo. \\
+Diseñar e integrar una aplicación móvil multiplataforma para visualizar estado, alertas e historial. & La aplicación React Native/Expo integra sesión autenticada, pantallas de inicio, eficiencia, alertas, tiempo real, perfil, vehículo y vistas de detalle. La app recibe telemetría por BLE, presenta datos en vivo y organiza información del usuario y vehículo. & Cumplido dentro de la versión funcional del prototipo. \\
 \addlinespace
 Validar el funcionamiento integral mediante pruebas prácticas de adquisición, comunicación, almacenamiento, visualización y análisis local. & Se realizaron pruebas en banco, simulador OBD-II y Volkswagen Passat 2016. Se verificaron comunicación USB-CDC, BLE, CAN activo, lectura OBD-II, almacenamiento, visualización móvil y una campaña con 86\,998 registros clasificados en \texttt{city}, \texttt{highway} y \texttt{unknown}. & Cumplido para los escenarios evaluados. \\
 \bottomrule
@@ -2986,35 +2990,35 @@ Con base en la tabla anterior, el objetivo general se considera alcanzado en el 
 
 \section{Recomendaciones}
 
-Con base en el desarrollo y en las pruebas realizadas, se recomienda mantener el enfoque de AutoSense como sistema de monitoreo de solo lectura. Esta decisión debe conservarse en futuras versiones, debido a que reduce el riesgo de alterar el estado del vehículo y permite que el prototipo se utilice como herramienta de observación, análisis y apoyo al mantenimiento. Cualquier ampliación del sistema debería revisar primero la política de comandos permitidos, la validación de perfiles y el contador de bloqueos del firmware, de manera que el acceso OBD-II/CAN continúe limitado a servicios seguros.
+Con base en el desarrollo y en las pruebas realizadas, AutoSense debe conservar su enfoque de monitoreo de solo lectura. Esa decisión reduce el riesgo de alterar el estado del vehículo y permite usar el prototipo como herramienta de observación, análisis y apoyo al mantenimiento. Cualquier ampliación debe revisar primero la política de comandos permitidos, la validación de perfiles y el contador de bloqueos del firmware, de manera que el acceso OBD-II/CAN siga limitado a servicios seguros.
 
-También se recomienda ampliar la validación a otros vehículos compatibles con OBD-II. Aunque el sistema fue probado principalmente sobre el Volkswagen Passat 2016 y sobre simulador OBD-II, la compatibilidad real depende de los PIDs disponibles, la respuesta de la ECU, el protocolo de comunicación y el perfil aplicado. Por ello, cada nuevo modelo debe incorporarse mediante un perfil vehicular específico, una fase de descubrimiento de PIDs y una campaña mínima de pruebas que confirme la estabilidad de lectura antes de considerarlo soportado.
+La validación debe ampliarse a otros vehículos compatibles con OBD-II. Aunque el sistema fue probado principalmente sobre Volkswagen Passat 2016 y simulador OBD-II, la compatibilidad real depende de los PIDs disponibles, la respuesta de la ECU, el protocolo de comunicación y el perfil aplicado. Cada nuevo modelo requiere un perfil vehicular específico, una fase de descubrimiento de PIDs y una campaña mínima de pruebas antes de considerarlo soportado.
 
 En relación con la recolección de datos, se recomienda continuar separando los escenarios de prueba por contexto de conducción. La distinción entre \texttt{city}, \texttt{highway} y \texttt{unknown} permite analizar las señales con mayor precisión y evita comparar condiciones operativas diferentes como si fueran equivalentes. Para futuras campañas, conviene documentar la duración de cada sesión, el tipo de ruta, el estado del vehículo, la versión del firmware, el perfil aplicado y cualquier evento observado durante la conducción.
 
 Respecto al almacenamiento, se recomienda definir políticas de retención, consulta y depuración para los archivos históricos ya sincronizados. El flujo implementado descarga registros incrementales del ESP32-S3, conserva una copia local en el teléfono y respalda el binario en Firebase Storage, mientras Firestore mantiene el cursor y el índice de exportación. A partir de esa base, futuras versiones deberían documentar en cada exportación el rango de secuencias, el tamaño del archivo, la ruta local, la ruta en Storage y el documento Firestore asociado. También conviene establecer cuánto tiempo se conservan los archivos, cómo se agrupan por viaje o día y qué resúmenes se generan para evitar depender de la descarga completa del binario en cada consulta.
 
-Para el módulo de análisis de datos, se recomienda continuar calibrando la línea base estadística y los umbrales de alerta con más sesiones reales. El uso de Welford, Z-score e Isolation Forest ligero resulta adecuado para análisis local, pero su precisión práctica depende de la cantidad y variedad de datos observados. Antes de asociar una alerta con una falla concreta, sería necesario contrastarla con inspecciones técnicas, códigos DTC confirmados o evidencia de mantenimiento.
+El módulo de análisis de datos necesita más calibración con sesiones reales. Welford, Z-score e Isolation Forest ligero son adecuados para análisis local, pero su precisión práctica depende de la cantidad y variedad de datos observados. Antes de asociar una alerta con una falla concreta, se debe contrastar la señal con inspecciones técnicas, códigos DTC confirmados o evidencia de mantenimiento.
 
-En la aplicación móvil, se recomienda mantener una diferenciación visible entre datos reales, datos demo y señales no disponibles. Esta separación evita interpretaciones incorrectas por parte del usuario y mejora la transparencia del sistema. Asimismo, las pantallas de alerta deben indicar cuándo una categoría depende de información leída directamente desde OBD-II y cuándo corresponde a una regla visual, estimación o estado pendiente de validación. Esto es especialmente importante para señales cuya disponibilidad puede variar entre vehículos y fabricantes.
+En la aplicación móvil conviene mantener una diferenciación visible entre datos reales, datos demo y señales no disponibles. Esta separación evita interpretaciones incorrectas por parte del usuario. Las pantallas de alerta también deben indicar cuándo una categoría depende de información leída directamente desde OBD-II y cuándo corresponde a una regla visual, estimación o estado pendiente de validación. Esta precisión es necesaria porque la disponibilidad de señales varía entre vehículos y fabricantes.
 
-Finalmente, se recomienda conservar una metodología de prueba incremental. Antes de cada campaña real, el sistema debería verificarse primero en banco, luego con simulador y finalmente en vehículo detenido antes de pasar a conducción. Indicadores como \path{can=UP}, \path{rsp/s > 0}, \path{decoded/s > 0}, \path{guard=0}, perfil aplicado correctamente y secuencia de log incrementando deben revisarse como condiciones mínimas de operación. Esta práctica reduce errores de configuración, protege la integridad de los datos y permite identificar fallos antes de una sesión prolongada de recolección.
+La metodología de prueba debe seguir siendo incremental. Antes de cada campaña real, el sistema debería verificarse en banco, después con simulador y luego en vehículo detenido antes de pasar a conducción. Indicadores como \path{can=UP}, \path{rsp/s > 0}, \path{decoded/s > 0}, \path{guard=0}, perfil aplicado correctamente y secuencia de log incrementando deben revisarse como condiciones mínimas de operación. Esta práctica reduce errores de configuración, protege la integridad de los datos y permite identificar fallos antes de una sesión prolongada de recolección.
 
 \section{Trabajos futuros}
 
-Como trabajo futuro se propone evolucionar AutoSense desde un adaptador dependiente de la conexión móvil hacia una arquitectura con un módulo central dedicado dentro del vehículo. En la versión actual, el ESP32-S3 realiza adquisición, registro local, análisis ligero y transmisión hacia la aplicación móvil cuando esta se conecta por BLE. Esta solución cumple el objetivo del prototipo y reduce la complejidad del sistema; sin embargo, para una versión más avanzada sería conveniente incorporar un dispositivo central con pantalla, mayor capacidad de almacenamiento, conectividad permanente y recursos de procesamiento superiores. Dicho módulo permitiría que el sistema continúe mostrando información y ejecutando análisis aun cuando el teléfono del usuario no esté conectado.
+Como trabajo futuro se propone evolucionar AutoSense desde un adaptador dependiente de la conexión móvil hacia una arquitectura con un módulo central dedicado dentro del vehículo. En la versión actual, el ESP32-S3 realiza adquisición, registro local, análisis ligero y transmisión hacia la aplicación móvil cuando esta se conecta por BLE. Una versión más avanzada podría incorporar un dispositivo central con pantalla, mayor almacenamiento, conectividad permanente y más capacidad de procesamiento. Ese módulo permitiría mostrar información y ejecutar análisis aun cuando el teléfono del usuario no esté conectado.
 
 El dispositivo central propuesto funcionaría como una unidad de borde ampliada. A diferencia del adaptador actual, que utiliza indicadores simples y delega la visualización principal a la app móvil, esta unidad podría integrar una pantalla para presentar telemetría, alertas, estado de conexión, severidad de anomalías, historial resumido y recomendaciones básicas de revisión. Esto permitiría consultar datos esenciales desde el propio vehículo sin depender exclusivamente del celular. La aplicación móvil seguiría siendo útil para configuración, sincronización, reportes y consulta histórica, pero el monitoreo inmediato quedaría disponible en el tablero o en una pantalla auxiliar.
 
-Otra línea de mejora consiste en ampliar la capacidad de almacenamiento y procesamiento local. El log binario del ESP32-S3 es eficiente para conservar muestras compactas durante la conducción, pero un módulo central con memoria externa o almacenamiento de mayor capacidad permitiría guardar ventanas más largas de datos, agrupar sesiones por viaje, conservar eventos de alta frecuencia y mantener resúmenes históricos sin depender de una descarga inmediata. Esta ampliación también facilitaría ejecutar algoritmos más exigentes que los utilizados en la versión actual. Además de Welford, Z-score y Tiny Isolation Forest, podrían evaluarse modelos de series temporales, redes neuronales ligeras, aprendizaje incremental, modelos híbridos estadístico-supervisados o análisis multivariable entrenado con campañas más extensas.
+Otra mejora consiste en ampliar almacenamiento y procesamiento local. El log binario del ESP32-S3 conserva muestras compactas durante la conducción, pero un módulo central con memoria externa permitiría guardar ventanas más largas, agrupar sesiones por viaje, conservar eventos de alta frecuencia y mantener resúmenes históricos sin depender de una descarga inmediata. Con más recursos podrían evaluarse modelos de series temporales, redes neuronales ligeras, aprendizaje incremental, modelos híbridos estadístico-supervisados o análisis multivariable entrenado con campañas más extensas.
 
-El avance hacia algoritmos más robustos debe mantenerse ligado a la disponibilidad de datos reales. Para que el sistema mejore su capacidad de análisis predictivo, sería necesario recolectar información de más vehículos, más rutas, más condiciones ambientales y más estados de mantenimiento. Con esa base, el módulo de análisis podría pasar de detectar desviaciones generales a reconocer patrones asociados con condiciones específicas, siempre manteniendo una separación clara entre alerta temprana, recomendación de inspección y diagnóstico mecánico definitivo. Esta evolución requeriría validar cada modelo contra evidencia técnica, códigos DTC, inspecciones de mantenimiento o registros confirmados de fallas.
+El avance hacia algoritmos más precisos debe mantenerse ligado a la disponibilidad de datos reales. Para que el sistema mejore su capacidad de análisis predictivo, sería necesario recolectar información de más vehículos, más rutas, más condiciones ambientales y más estados de mantenimiento. Con esa base, el módulo de análisis podría pasar de detectar desviaciones generales a reconocer patrones asociados con condiciones específicas, siempre manteniendo una separación clara entre alerta temprana, recomendación de inspección y diagnóstico mecánico definitivo. Esta evolución requeriría validar cada modelo contra evidencia técnica, códigos DTC, inspecciones de mantenimiento o registros confirmados de fallas.
 
 También se plantea como trabajo futuro estudiar funciones de interacción avanzada con el vehículo. En la presente investigación, AutoSense se mantiene deliberadamente como sistema de solo lectura, porque su objetivo es monitorear y no modificar el comportamiento del automóvil. Una versión futura podría investigar, primero en banco y simulador, la posibilidad de enviar comandos autorizados y no críticos, por ejemplo para interactuar con funciones de confort como climatización, configuración de pantalla o estados auxiliares cuando el vehículo y su arquitectura lo permitan. Esta línea no debe implementarse directamente sobre un vehículo real sin una política estricta de seguridad, autenticación, permisos, validación de comandos, pruebas en entorno controlado y cumplimiento normativo.
 
-En una etapa más avanzada, la integración de un módulo central, almacenamiento ampliado, sensores adicionales, análisis local más potente y comunicación bidireccional podría servir como base experimental para investigaciones relacionadas con asistencia a la conducción. No obstante, el manejo autónomo representa un campo de complejidad mucho mayor que el monitoreo predictivo desarrollado en esta tesis. Para avanzar hacia ese objetivo serían necesarios sistemas redundantes de percepción, control, actuación, localización, toma de decisiones, seguridad funcional, ciberseguridad, pruebas cerradas y validación regulatoria. Por tanto, en el marco de AutoSense, la autonomía debe entenderse como una línea de investigación de largo plazo y no como una extensión directa del prototipo actual.
+En una etapa más avanzada, un módulo central con almacenamiento ampliado, sensores adicionales, análisis local más potente y comunicación bidireccional podría servir como base experimental para investigaciones de asistencia a la conducción. El manejo autónomo, sin embargo, pertenece a un campo mucho más complejo que el monitoreo predictivo desarrollado en esta tesis. Para avanzar hacia ese objetivo se necesitarían sistemas redundantes de percepción, control, actuación, localización, toma de decisiones, seguridad funcional, ciberseguridad, pruebas cerradas y validación regulatoria. En AutoSense, la autonomía debe entenderse como una línea de investigación de largo plazo, no como una extensión directa del prototipo actual.
 
-Finalmente, se recomienda que las próximas versiones mantengan una evolución gradual. Primero, consolidar el módulo central con pantalla y almacenamiento ampliado; segundo, optimizar la consulta, retención y generación de resúmenes históricos; tercero, entrenar modelos de análisis con más campañas reales; cuarto, validar funciones de interacción únicamente en simuladores y bancos de prueba; y, solo después, evaluar capacidades de asistencia o control bajo condiciones seguras. Esta secuencia permite que AutoSense crezca sin perder trazabilidad técnica, seguridad operacional ni coherencia con su propósito inicial de monitoreo vehicular inteligente.
+Las próximas versiones deberían avanzar por etapas: consolidar el módulo central con pantalla y almacenamiento ampliado; optimizar consulta, retención y resúmenes históricos; entrenar modelos con más campañas reales; validar cualquier interacción activa solo en simuladores y bancos de prueba; y evaluar capacidades de asistencia o control únicamente bajo condiciones seguras. Esta secuencia permite que AutoSense crezca sin perder trazabilidad técnica, seguridad operacional ni coherencia con su propósito inicial de monitoreo vehicular inteligente.
 
 \newpage
 
