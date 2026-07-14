@@ -32,6 +32,12 @@
 
 \newcommand{\autosenseicon}[1]{\includegraphics[height=0.42cm]{Figures/icons/#1.png}}
 \newcommand{\autosenseiconsmall}[1]{\includegraphics[height=0.32cm]{Figures/icons/#1.png}}
+\newcommand{\imagewithborder}[2][]{%
+    \begin{tikzpicture}
+        \node[inner sep=0pt,outer sep=0pt] (autosenseimage) {\includegraphics[#1]{#2}};
+        \draw[black!60,line width=0.5pt,overlay] (autosenseimage.south west) rectangle (autosenseimage.north east);
+    \end{tikzpicture}%
+}
 
 % =========================
 % FORMATO FISC / UTP
@@ -548,13 +554,13 @@ El protocolo CAN (\textit{Controller Area Network}) es una red de comunicación 
     \centering
     \begin{minipage}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{Figures/can_high_speed_bus_levels.png}
+        \imagewithborder[width=\linewidth]{Figures/can_high_speed_bus_levels.png}
         \par\vspace{0.15cm}
         {\footnotesize Niveles diferenciales CANH/CANL}
     \end{minipage}\hfill
     \begin{minipage}[t]{0.48\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{Figures/can_bus_access_procedure.png}
+        \imagewithborder[width=\linewidth]{Figures/can_bus_access_procedure.png}
         \par\vspace{0.15cm}
         {\footnotesize Procedimiento de acceso al bus}
     \end{minipage}
@@ -1343,7 +1349,7 @@ El hardware se organizó en bloques para que cada función crítica quedara sepa
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=\textwidth,height=0.58\textheight,keepaspectratio]{Figures/hardware_schematic_autosense.pdf}
+\imagewithborder[width=\textwidth,height=0.58\textheight,keepaspectratio]{Figures/hardware_schematic_autosense.pdf}
 \caption{Esquemático general del hardware AutoSense generado en KiCad. Elaboración propia.}
 \label{fig:hardware-schematic-autosense}
 \end{figure}
@@ -1491,7 +1497,7 @@ La PCB fue diseñada para alojar el conector OBD-II en un extremo y el módulo E
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.78\textwidth,height=0.62\textheight,keepaspectratio]{Figures/hardware_pcb_layout.png}
+\imagewithborder[width=0.78\textwidth,height=0.62\textheight,keepaspectratio]{Figures/hardware_pcb_layout.png}
 \caption{Vista de layout de la PCB AutoSense en KiCad. Elaboración propia.}
 \label{fig:hardware-pcb-layout}
 \end{figure}
@@ -1500,7 +1506,7 @@ El ensamble avanzó de forma incremental para reducir el riesgo de fallas acumul
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.72\textwidth,height=0.52\textheight,keepaspectratio]{Figures/hardware_pcb_empty.jpg}
+\imagewithborder[width=0.72\textwidth,height=0.52\textheight,keepaspectratio]{Figures/hardware_pcb_empty.jpg}
 \caption{PCB AutoSense recibida antes del montaje del módulo ESP32-S3. Elaboración propia.}
 \label{fig:hardware-pcb-empty}
 \end{figure}
@@ -1509,7 +1515,7 @@ Después de la inspección de la tarjeta, se procedió con el montaje de los ele
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.78\textwidth,height=0.60\textheight,keepaspectratio]{Figures/hardware_pcb_esp32_mount.jpg}
+\imagewithborder[width=0.78\textwidth,height=0.60\textheight,keepaspectratio]{Figures/hardware_pcb_esp32_mount.jpg}
 \caption{Montaje del módulo ESP32-S3-WROOM-1 sobre la PCB AutoSense. Elaboración propia.}
 \label{fig:hardware-pcb-esp32-mount}
 \end{figure}
@@ -1518,7 +1524,7 @@ Finalmente, se integró el conector OBD-II macho, completando la interfaz físic
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.78\textwidth,height=0.60\textheight,keepaspectratio]{Figures/hardware_pcb_final_assembly.jpg}
+\imagewithborder[width=0.78\textwidth,height=0.60\textheight,keepaspectratio]{Figures/hardware_pcb_final_assembly.jpg}
 \caption{Prototipo AutoSense ensamblado con conector OBD-II macho. Elaboración propia.}
 \label{fig:hardware-pcb-final-assembly}
 \end{figure}
@@ -1789,21 +1795,21 @@ La navegación se separa en acceso y flujo autenticado. El acceso contiene inici
 \centering
 \begin{minipage}{0.30\textwidth}
 \centering
-\includegraphics[width=\linewidth]{Figures/mobile_login.png}
+\imagewithborder[width=\linewidth]{Figures/mobile_login.png}
 \vspace{2mm}
 {\footnotesize Inicio de sesión}
 \end{minipage}
 \hfill
 \begin{minipage}{0.30\textwidth}
 \centering
-\includegraphics[width=\linewidth]{Figures/mobile_register.png}
+\imagewithborder[width=\linewidth]{Figures/mobile_register.png}
 \vspace{2mm}
 {\footnotesize Registro de usuario}
 \end{minipage}
 \hfill
 \begin{minipage}{0.30\textwidth}
 \centering
-\includegraphics[width=\linewidth]{Figures/mobile_recovery.png}
+\imagewithborder[width=\linewidth]{Figures/mobile_recovery.png}
 \vspace{2mm}
 {\footnotesize Recuperación de cuenta}
 \end{minipage}
@@ -1846,21 +1852,21 @@ La pantalla de eficiencia presenta puntaje general, aceleración, frenado, ralen
 \centering
 \begin{minipage}{0.30\textwidth}
 \centering
-\includegraphics[width=\linewidth]{Figures/mobile_home.png}
+\imagewithborder[width=\linewidth]{Figures/mobile_home.png}
 \vspace{2mm}
 {\footnotesize Inicio}
 \end{minipage}
 \hfill
 \begin{minipage}{0.30\textwidth}
 \centering
-\includegraphics[width=\linewidth]{Figures/mobile_efficiency.png}
+\imagewithborder[width=\linewidth]{Figures/mobile_efficiency.png}
 \vspace{2mm}
 {\footnotesize Eficiencia}
 \end{minipage}
 \hfill
 \begin{minipage}{0.30\textwidth}
 \centering
-\includegraphics[width=\linewidth]{Figures/mobile_alerts.png}
+\imagewithborder[width=\linewidth]{Figures/mobile_alerts.png}
 \vspace{2mm}
 {\footnotesize Avisos}
 \end{minipage}
@@ -1874,21 +1880,21 @@ Las vistas de batería, frenos, temperatura y llantas muestran estado actual, fu
 \centering
 \begin{minipage}{0.30\textwidth}
 \centering
-\includegraphics[width=\linewidth]{Figures/mobile_alert_battery.png}
+\imagewithborder[width=\linewidth]{Figures/mobile_alert_battery.png}
 \vspace{2mm}
 {\footnotesize Batería}
 \end{minipage}
 \hfill
 \begin{minipage}{0.30\textwidth}
 \centering
-\includegraphics[width=\linewidth]{Figures/mobile_alert_brakes.png}
+\imagewithborder[width=\linewidth]{Figures/mobile_alert_brakes.png}
 \vspace{2mm}
 {\footnotesize Frenos}
 \end{minipage}
 \hfill
 \begin{minipage}{0.30\textwidth}
 \centering
-\includegraphics[width=\linewidth]{Figures/mobile_alert_temperature.png}
+\imagewithborder[width=\linewidth]{Figures/mobile_alert_temperature.png}
 \vspace{2mm}
 {\footnotesize Temperatura}
 \end{minipage}
@@ -1900,14 +1906,14 @@ Las vistas de batería, frenos, temperatura y llantas muestran estado actual, fu
 \centering
 \begin{minipage}{0.38\textwidth}
 \centering
-\includegraphics[width=\linewidth]{Figures/mobile_alert_tires.png}
+\imagewithborder[width=\linewidth]{Figures/mobile_alert_tires.png}
 \vspace{2mm}
 {\footnotesize Llantas}
 \end{minipage}
 \hfill
 \begin{minipage}{0.38\textwidth}
 \centering
-\includegraphics[width=\linewidth]{Figures/mobile_alert_consumption.png}
+\imagewithborder[width=\linewidth]{Figures/mobile_alert_consumption.png}
 \vspace{2mm}
 {\footnotesize Consumo y eficiencia}
 \end{minipage}
@@ -1921,14 +1927,14 @@ El módulo de perfil reúne usuario, vehículo, emparejamiento y configuración.
 \centering
 \begin{minipage}{0.40\textwidth}
 \centering
-\includegraphics[width=\linewidth]{Figures/mobile_profile.png}
+\imagewithborder[width=\linewidth]{Figures/mobile_profile.png}
 \vspace{2mm}
 {\footnotesize Perfil y configuración}
 \end{minipage}
 \hfill
 \begin{minipage}{0.40\textwidth}
 \centering
-\includegraphics[width=\linewidth]{Figures/mobile_vehicle.png}
+\imagewithborder[width=\linewidth]{Figures/mobile_vehicle.png}
 \vspace{2mm}
 {\footnotesize Datos del vehículo}
 \end{minipage}
@@ -1948,14 +1954,14 @@ Se capturaron dos estados: emparejamiento sin hardware BLE conectado y telemetr�
 \centering
 \begin{minipage}{0.40\textwidth}
 \centering
-\includegraphics[width=\linewidth]{Figures/mobile_realtime_pairing.png}
+\imagewithborder[width=\linewidth]{Figures/mobile_realtime_pairing.png}
 \vspace{2mm}
 {\footnotesize Emparejamiento OBD-II}
 \end{minipage}
 \hfill
 \begin{minipage}{0.40\textwidth}
 \centering
-\includegraphics[width=\linewidth]{Figures/mobile_realtime_live.png}
+\imagewithborder[width=\linewidth]{Figures/mobile_realtime_live.png}
 \vspace{2mm}
 {\footnotesize Telemetría en vivo}
 \end{minipage}
@@ -2395,7 +2401,7 @@ La verificación física energizó el adaptador, confirmó el encendido del ESP3
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.64\textwidth,height=0.48\textheight,keepaspectratio]{Figures/test_autosense_adapter_powered.jpg}
+\imagewithborder[width=0.64\textwidth,height=0.48\textheight,keepaspectratio]{Figures/test_autosense_adapter_powered.jpg}
 \caption{Adaptador AutoSense energizado durante la verificación preliminar en banco. Elaboración propia.}
 \label{fig:test-adapter-powered}
 \end{figure}
@@ -2410,7 +2416,7 @@ La campaña de recolección cubrió el periodo del 5 de mayo al 3 de julio de 20
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.92\textwidth,height=0.58\textheight,keepaspectratio]{Figures/test_real_passat_2016.jpg}
+\imagewithborder[width=0.92\textwidth,height=0.58\textheight,keepaspectratio]{Figures/test_real_passat_2016.jpg}
 \caption{Escenario de recolección real de datos en Volkswagen Passat 2016 con el adaptador AutoSense conectado al puerto OBD-II. Elaboración propia.}
 \label{fig:test-real-passat-2016}
 \end{figure}
@@ -2425,7 +2431,7 @@ En este escenario se empleó el perfil genérico de OBD-II. A diferencia del Vol
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.64\textwidth,height=0.58\textheight,keepaspectratio]{Figures/test_obd_simulator_generic.jpg}
+\imagewithborder[width=0.64\textwidth,height=0.58\textheight,keepaspectratio]{Figures/test_obd_simulator_generic.jpg}
 \caption{Simulador OBD-II utilizado para variar parámetros vehiculares de forma controlada con perfil genérico. Elaboración propia.}
 \label{fig:test-obd-simulator-generic}
 \end{figure}
@@ -2781,7 +2787,7 @@ La Figura~\ref{fig:resultados-speed} muestra baja velocidad, detenciones y aumen
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_speed_kmh.png}
+\imagewithborder[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_speed_kmh.png}
 \caption{Velocidad del vehículo en el segmento urbano analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}
 \label{fig:resultados-speed}
 \end{figure}
@@ -2794,7 +2800,7 @@ La Figura~\ref{fig:resultados-rpm} muestra variaciones de RPM asociadas a aceler
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_rpm.png}
+\imagewithborder[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_rpm.png}
 \caption{Revoluciones del motor en el segmento urbano analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}
 \label{fig:resultados-rpm}
 \end{figure}
@@ -2807,7 +2813,7 @@ La Figura~\ref{fig:resultados-coolant} muestra incremento inicial y estabilizaci
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_coolant_c.png}
+\imagewithborder[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_coolant_c.png}
 \caption{Temperatura del refrigerante en el segmento urbano analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}
 \label{fig:resultados-coolant}
 \end{figure}
@@ -2820,7 +2826,7 @@ La Figura~\ref{fig:resultados-engine-load} presenta carga entre 9,80\% y 60,55\%
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_engine_load_pct.png}
+\imagewithborder[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_engine_load_pct.png}
 \caption{Carga del motor en el segmento urbano analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}
 \label{fig:resultados-engine-load}
 \end{figure}
@@ -2833,7 +2839,7 @@ La Figura~\ref{fig:resultados-fuel-rate} muestra consumo instantáneo medio de 4
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_fuel_rate_lph.png}
+\imagewithborder[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_fuel_rate_lph.png}
 \caption{Consumo instantáneo en el segmento urbano analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}
 \label{fig:resultados-fuel-rate}
 \end{figure}
@@ -2846,7 +2852,7 @@ La Figura~\ref{fig:resultados-zscore} compara variables con unidades distintas m
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.98\textwidth,height=0.56\textheight,keepaspectratio]{Figures/datawrapper_zscore_overlay.png}
+\imagewithborder[width=0.98\textwidth,height=0.56\textheight,keepaspectratio]{Figures/datawrapper_zscore_overlay.png}
 \caption{Comparación normalizada mediante Z-score para variables seleccionadas. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}
 \label{fig:resultados-zscore}
 \end{figure}
@@ -2859,7 +2865,7 @@ El tramo de carretera seleccionado permite contrastar el comportamiento urbano c
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_highway_speed_kmh.png}
+\imagewithborder[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_highway_speed_kmh.png}
 \caption{Velocidad del vehículo en el tramo de carretera analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}
 \label{fig:resultados-highway-speed}
 \end{figure}
@@ -2868,7 +2874,7 @@ La Figura~\ref{fig:resultados-highway-speed} muestra un tramo con velocidad medi
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_highway_rpm.png}
+\imagewithborder[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_highway_rpm.png}
 \caption{Revoluciones del motor en el tramo de carretera analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}
 \label{fig:resultados-highway-rpm}
 \end{figure}
@@ -2877,7 +2883,7 @@ La Figura~\ref{fig:resultados-highway-rpm} registra una media de 1899,74 rpm. En
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_highway_coolant_c.png}
+\imagewithborder[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_highway_coolant_c.png}
 \caption{Temperatura del refrigerante en el tramo de carretera analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}
 \label{fig:resultados-highway-coolant}
 \end{figure}
@@ -2886,7 +2892,7 @@ La Figura~\ref{fig:resultados-highway-coolant} muestra una temperatura media de 
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_highway_engine_load_pct.png}
+\imagewithborder[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_highway_engine_load_pct.png}
 \caption{Carga del motor en el tramo de carretera analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}
 \label{fig:resultados-highway-engine-load}
 \end{figure}
@@ -2895,7 +2901,7 @@ La Figura~\ref{fig:resultados-highway-engine-load} presenta una carga media de 3
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_highway_fuel_rate_lph.png}
+\imagewithborder[width=0.96\textwidth,height=0.54\textheight,keepaspectratio]{Figures/datawrapper_highway_fuel_rate_lph.png}
 \caption{Consumo instantáneo en el tramo de carretera analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}
 \label{fig:resultados-highway-fuel-rate}
 \end{figure}
@@ -2904,7 +2910,7 @@ La Figura~\ref{fig:resultados-highway-fuel-rate} muestra un consumo medio de 3,3
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.98\textwidth,height=0.56\textheight,keepaspectratio]{Figures/datawrapper_highway_zscore_overlay.png}
+\imagewithborder[width=0.98\textwidth,height=0.56\textheight,keepaspectratio]{Figures/datawrapper_highway_zscore_overlay.png}
 \caption{Comparación normalizada mediante Z-score para el tramo de carretera analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}
 \label{fig:resultados-highway-zscore}
 \end{figure}
@@ -2961,7 +2967,7 @@ Los gráficos de Z-score de las Figuras~\ref{fig:resultados-zscore} y~\ref{fig:r
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.98\textwidth,height=0.54\textheight,keepaspectratio]{Figures/ai_zscore_deviation_index.png}
+\imagewithborder[width=0.98\textwidth,height=0.54\textheight,keepaspectratio]{Figures/ai_zscore_deviation_index.png}
 \caption{Índice de desviación normalizada calculado a partir del segmento urbano analizado. Visualización propia generada con los datos exportados del Excel de salida; no representa una falla mecánica confirmada.}
 \label{fig:ai-zscore-deviation-index}
 \end{figure}
@@ -2970,7 +2976,7 @@ La Figura~\ref{fig:ai-zscore-deviation-index} resume el mayor valor absoluto de 
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.98\textwidth,height=0.54\textheight,keepaspectratio]{Figures/ai_zscore_deviation_index_highway.png}
+\imagewithborder[width=0.98\textwidth,height=0.54\textheight,keepaspectratio]{Figures/ai_zscore_deviation_index_highway.png}
 \caption{Índice de desviación normalizada calculado a partir del tramo de carretera analizado. Visualización propia generada con los datos exportados del Excel de salida; no representa una falla mecánica confirmada.}
 \label{fig:ai-zscore-deviation-index-highway}
 \end{figure}
