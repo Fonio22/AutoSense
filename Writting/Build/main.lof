@@ -1,43 +1,50 @@
 \babel@toc {spanish}{}\relax 
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {2.1}{\ignorespaces Esquemático de referencia del flujo de diagnóstico vehicular en AutoSense. Elaboración propia.}}{12}{figure.caption.6}%
-\contentsline {figure}{\numberline {2.2}{\ignorespaces Esquema conceptual del sistema OBD-II integrado a AutoSense. Elaboración propia.}}{14}{figure.caption.8}%
-\contentsline {figure}{\numberline {2.3}{\ignorespaces Secuencia conceptual de consulta y respuesta del sistema OBD-II. Elaboración propia.}}{14}{figure.caption.9}%
-\contentsline {figure}{\numberline {2.4}{\ignorespaces Relación entre los niveles diferenciales del bus CAN y el arbitraje por prioridad, adaptado de Vector Informatik \blx@tocontentsinit {0}\cite {vector2021_can_bus_levels,vector2022_can_bitwise_arbitration}.}}{18}{figure.caption.11}%
-\contentsline {figure}{\numberline {2.5}{\ignorespaces Arquitectura vertical de la IoT de AutoSense. Elaboración propia.}}{25}{figure.caption.14}%
-\contentsline {figure}{\numberline {2.6}{\ignorespaces Diagrama vertical de los canales de comunicación de AutoSense. Elaboración propia.}}{28}{figure.caption.15}%
-\contentsline {figure}{\numberline {2.7}{\ignorespaces Flujo vertical de la aplicación móvil de AutoSense. Elaboración propia.}}{30}{figure.caption.16}%
-\contentsline {figure}{\numberline {2.8}{\ignorespaces Pipeline local de inteligencia artificial de AutoSense. Elaboración propia.}}{33}{figure.caption.17}%
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Esquemático de referencia del flujo de diagnóstico vehicular en AutoSense. Elaboración propia.}}{11}{figure.caption.6}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Esquema conceptual del sistema OBD-II integrado a AutoSense. Elaboración propia.}}{12}{figure.caption.8}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Secuencia conceptual de consulta y respuesta del sistema OBD-II. Elaboración propia.}}{13}{figure.caption.9}%
+\contentsline {figure}{\numberline {2.4}{\ignorespaces Relación entre los niveles diferenciales del bus CAN y el arbitraje por prioridad, adaptado de Vector Informatik \blx@tocontentsinit {0}\cite {vector2021_can_bus_levels,vector2022_can_bitwise_arbitration}.}}{16}{figure.caption.11}%
+\contentsline {figure}{\numberline {2.5}{\ignorespaces Arquitectura vertical de la IoT de AutoSense. Elaboración propia.}}{22}{figure.caption.14}%
+\contentsline {figure}{\numberline {2.6}{\ignorespaces Diagrama vertical de los canales de comunicación de AutoSense. Elaboración propia.}}{25}{figure.caption.15}%
+\contentsline {figure}{\numberline {2.7}{\ignorespaces Flujo vertical de la aplicación móvil de AutoSense. Elaboración propia.}}{27}{figure.caption.16}%
+\contentsline {figure}{\numberline {2.8}{\ignorespaces Pipeline local de inteligencia artificial de AutoSense. Elaboración propia.}}{30}{figure.caption.17}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {4.1}{\ignorespaces Arquitectura lógica de AutoSense y relación entre sus capas principales. Elaboración propia.}}{55}{figure.caption.24}%
-\contentsline {figure}{\numberline {4.2}{\ignorespaces Esquemático general del hardware AutoSense generado en KiCad. Elaboración propia.}}{59}{figure.caption.26}%
-\contentsline {figure}{\numberline {4.3}{\ignorespaces Vista de layout de la PCB AutoSense en KiCad. Elaboración propia.}}{67}{figure.caption.29}%
-\contentsline {figure}{\numberline {4.4}{\ignorespaces PCB AutoSense recibida antes del montaje del módulo ESP32-S3. Elaboración propia.}}{68}{figure.caption.30}%
-\contentsline {figure}{\numberline {4.5}{\ignorespaces Montaje del módulo ESP32-S3-WROOM-1 sobre la PCB AutoSense. Elaboración propia.}}{69}{figure.caption.31}%
-\contentsline {figure}{\numberline {4.6}{\ignorespaces Prototipo AutoSense ensamblado con conector OBD-II macho. Elaboración propia.}}{70}{figure.caption.32}%
-\contentsline {figure}{\numberline {4.7}{\ignorespaces Flujo interno del firmware AutoSense desde el arranque hasta la persistencia y salida de datos. Elaboración propia.}}{73}{figure.caption.34}%
-\contentsline {figure}{\numberline {4.8}{\ignorespaces Ciclo lógico de ejecución de \texttt {appLoop()} en el firmware AutoSense. Elaboración propia.}}{75}{figure.caption.35}%
-\contentsline {figure}{\numberline {4.9}{\ignorespaces Flujo de acceso de la aplicación móvil AutoSense en simulador iOS. Elaboración propia.}}{82}{figure.caption.38}%
-\contentsline {figure}{\numberline {4.10}{\ignorespaces Pantallas principales de supervisión y resumen operativo en AutoSense. Elaboración propia.}}{84}{figure.caption.40}%
-\contentsline {figure}{\numberline {4.11}{\ignorespaces Pantallas de detalle para avisos de batería, frenos y temperatura. Elaboración propia.}}{85}{figure.caption.41}%
-\contentsline {figure}{\numberline {4.12}{\ignorespaces Pantallas de detalle para llantas y consumo dentro del flujo móvil. Elaboración propia.}}{86}{figure.caption.42}%
-\contentsline {figure}{\numberline {4.13}{\ignorespaces Perfil y vehículo en la aplicación móvil}}{87}{figure.caption.43}%
-\contentsline {figure}{\numberline {4.14}{\ignorespaces Estados de conexión y visualización en tiempo real desde la aplicación móvil. Elaboración propia.}}{89}{figure.caption.44}%
-\contentsline {figure}{\numberline {4.15}{\ignorespaces Flujo general de persistencia y sincronización de datos en AutoSense. Elaboración propia.}}{91}{figure.caption.45}%
-\contentsline {figure}{\numberline {4.16}{\ignorespaces Secuencia general de interacción entre usuario, aplicación, ESP32-S3 y Firebase. Elaboración propia.}}{101}{figure.caption.49}%
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Arquitectura lógica de AutoSense y relación entre sus capas principales. Elaboración propia.}}{49}{figure.caption.24}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Esquemático general del hardware AutoSense generado en KiCad. Elaboración propia.}}{55}{figure.caption.26}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Vista de layout de la PCB AutoSense en KiCad. Elaboración propia.}}{59}{figure.caption.29}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces PCB AutoSense recibida antes del montaje del módulo ESP32-S3. Elaboración propia.}}{60}{figure.caption.30}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces Montaje del módulo ESP32-S3-WROOM-1 sobre la PCB AutoSense. Elaboración propia.}}{61}{figure.caption.31}%
+\contentsline {figure}{\numberline {4.6}{\ignorespaces Prototipo AutoSense ensamblado con conector OBD-II macho. Elaboración propia.}}{62}{figure.caption.32}%
+\contentsline {figure}{\numberline {4.7}{\ignorespaces Flujo interno del firmware AutoSense desde el arranque hasta la persistencia y salida de datos. Elaboración propia.}}{64}{figure.caption.34}%
+\contentsline {figure}{\numberline {4.8}{\ignorespaces Ciclo lógico de ejecución de \texttt {appLoop()} en el firmware AutoSense. Elaboración propia.}}{65}{figure.caption.35}%
+\contentsline {figure}{\numberline {4.9}{\ignorespaces Flujo de acceso de la aplicación móvil AutoSense en simulador iOS. Elaboración propia.}}{72}{figure.caption.38}%
+\contentsline {figure}{\numberline {4.10}{\ignorespaces Pantallas principales de supervisión y resumen operativo en AutoSense. Elaboración propia.}}{74}{figure.caption.40}%
+\contentsline {figure}{\numberline {4.11}{\ignorespaces Pantallas de detalle para avisos de batería, frenos y temperatura. Elaboración propia.}}{75}{figure.caption.41}%
+\contentsline {figure}{\numberline {4.12}{\ignorespaces Pantallas de detalle para llantas y consumo dentro del flujo móvil. Elaboración propia.}}{76}{figure.caption.42}%
+\contentsline {figure}{\numberline {4.13}{\ignorespaces Perfil y vehículo en la aplicación móvil}}{77}{figure.caption.43}%
+\contentsline {figure}{\numberline {4.14}{\ignorespaces Estados de conexión y visualización en tiempo real desde la aplicación móvil. Elaboración propia.}}{79}{figure.caption.44}%
+\contentsline {figure}{\numberline {4.15}{\ignorespaces Flujo general de persistencia y sincronización de datos en AutoSense. Elaboración propia.}}{80}{figure.caption.45}%
+\contentsline {figure}{\numberline {4.16}{\ignorespaces Secuencia general de interacción entre usuario, aplicación, ESP32-S3 y Firebase. Elaboración propia.}}{86}{figure.caption.49}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {5.1}{\ignorespaces Adaptador AutoSense energizado durante la verificación preliminar en banco. Elaboración propia.}}{117}{figure.caption.53}%
-\contentsline {figure}{\numberline {5.2}{\ignorespaces Escenario de recolección real de datos en Volkswagen Passat 2016 con el adaptador AutoSense conectado al puerto OBD-II. Elaboración propia.}}{118}{figure.caption.54}%
-\contentsline {figure}{\numberline {5.3}{\ignorespaces Simulador OBD-II utilizado para variar parámetros vehiculares de forma controlada con perfil genérico. Elaboración propia.}}{119}{figure.caption.55}%
-\contentsline {figure}{\numberline {5.4}{\ignorespaces Velocidad del vehículo en el segmento urbano analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{133}{figure.caption.66}%
-\contentsline {figure}{\numberline {5.5}{\ignorespaces Revoluciones del motor en el segmento urbano analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{134}{figure.caption.67}%
-\contentsline {figure}{\numberline {5.6}{\ignorespaces Temperatura del refrigerante en el segmento urbano analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{135}{figure.caption.68}%
-\contentsline {figure}{\numberline {5.7}{\ignorespaces Carga del motor en el segmento urbano analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{136}{figure.caption.69}%
-\contentsline {figure}{\numberline {5.8}{\ignorespaces Consumo instantáneo en el segmento urbano analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{137}{figure.caption.70}%
-\contentsline {figure}{\numberline {5.9}{\ignorespaces Comparación normalizada mediante Z-score para variables seleccionadas. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{138}{figure.caption.71}%
-\contentsline {figure}{\numberline {5.10}{\ignorespaces Índice de desviación normalizada calculado a partir del segmento urbano analizado. Visualización propia generada con los datos exportados del Excel de salida; no representa una falla mecánica confirmada.}}{141}{figure.caption.73}%
+\contentsline {figure}{\numberline {5.1}{\ignorespaces Adaptador AutoSense energizado durante la verificación preliminar en banco. Elaboración propia.}}{96}{figure.caption.53}%
+\contentsline {figure}{\numberline {5.2}{\ignorespaces Escenario de recolección real de datos en Volkswagen Passat 2016 con el adaptador AutoSense conectado al puerto OBD-II. Elaboración propia.}}{97}{figure.caption.54}%
+\contentsline {figure}{\numberline {5.3}{\ignorespaces Simulador OBD-II utilizado para variar parámetros vehiculares de forma controlada con perfil genérico. Elaboración propia.}}{98}{figure.caption.55}%
+\contentsline {figure}{\numberline {5.4}{\ignorespaces Velocidad del vehículo en el segmento urbano analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{108}{figure.caption.68}%
+\contentsline {figure}{\numberline {5.5}{\ignorespaces Revoluciones del motor en el segmento urbano analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{109}{figure.caption.69}%
+\contentsline {figure}{\numberline {5.6}{\ignorespaces Temperatura del refrigerante en el segmento urbano analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{109}{figure.caption.70}%
+\contentsline {figure}{\numberline {5.7}{\ignorespaces Carga del motor en el segmento urbano analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{110}{figure.caption.71}%
+\contentsline {figure}{\numberline {5.8}{\ignorespaces Consumo instantáneo en el segmento urbano analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{111}{figure.caption.72}%
+\contentsline {figure}{\numberline {5.9}{\ignorespaces Comparación normalizada mediante Z-score para variables seleccionadas. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{112}{figure.caption.73}%
+\contentsline {figure}{\numberline {5.10}{\ignorespaces Velocidad del vehículo en el tramo de carretera analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{112}{figure.caption.74}%
+\contentsline {figure}{\numberline {5.11}{\ignorespaces Revoluciones del motor en el tramo de carretera analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{113}{figure.caption.75}%
+\contentsline {figure}{\numberline {5.12}{\ignorespaces Temperatura del refrigerante en el tramo de carretera analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{113}{figure.caption.76}%
+\contentsline {figure}{\numberline {5.13}{\ignorespaces Carga del motor en el tramo de carretera analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{114}{figure.caption.77}%
+\contentsline {figure}{\numberline {5.14}{\ignorespaces Consumo instantáneo en el tramo de carretera analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{115}{figure.caption.78}%
+\contentsline {figure}{\numberline {5.15}{\ignorespaces Comparación normalizada mediante Z-score para el tramo de carretera analizado. Gráfico generado en Datawrapper con datos del Excel de salida. Elaboración propia.}}{115}{figure.caption.79}%
+\contentsline {figure}{\numberline {5.16}{\ignorespaces Índice de desviación normalizada calculado a partir del segmento urbano analizado. Visualización propia generada con los datos exportados del Excel de salida; no representa una falla mecánica confirmada.}}{118}{figure.caption.81}%
+\contentsline {figure}{\numberline {5.17}{\ignorespaces Índice de desviación normalizada calculado a partir del tramo de carretera analizado. Visualización propia generada con los datos exportados del Excel de salida; no representa una falla mecánica confirmada.}}{119}{figure.caption.82}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }

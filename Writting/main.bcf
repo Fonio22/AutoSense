@@ -2386,45 +2386,45 @@
     <bcf:citekey order="6" intorder="3">kalalas2025_ai_driven_monitoring</bcf:citekey>
     <bcf:citekey order="7" intorder="1">selvaraj2023_advanced_telematics</bcf:citekey>
     <bcf:citekey order="7" intorder="2">michailidis2025_obdii_review</bcf:citekey>
-    <bcf:citekey order="8" intorder="1">mahale2025_review_predictive_maintenance</bcf:citekey>
-    <bcf:citekey order="8" intorder="2">sae2022_j1978_obdii_scan_tool</bcf:citekey>
-    <bcf:citekey order="9" intorder="1">nhtsa2018_critical_reasons_crashes</bcf:citekey>
-    <bcf:citekey order="10" intorder="1">laprensa2025_fallas_vehiculos</bcf:citekey>
-    <bcf:citekey order="10" intorder="2">laprensa2025_fallas_autos</bcf:citekey>
-    <bcf:citekey order="11" intorder="1">selvaraj2023_advanced_telematics</bcf:citekey>
-    <bcf:citekey order="12" intorder="1">kalalas2025_ai_driven_monitoring</bcf:citekey>
-    <bcf:citekey order="13" intorder="1">singh2021_obdii_iot</bcf:citekey>
-    <bcf:citekey order="13" intorder="2">dabarera2022_iot_vehicle_management</bcf:citekey>
-    <bcf:citekey order="14" intorder="1">tormos2025_explainable_ai</bcf:citekey>
-    <bcf:citekey order="14" intorder="2">mahale2025_review_predictive_maintenance</bcf:citekey>
-    <bcf:citekey order="15" intorder="1">mahale2025_review_predictive_maintenance</bcf:citekey>
-    <bcf:citekey order="16" intorder="1">michailidis2025_obdii_review</bcf:citekey>
-    <bcf:citekey order="16" intorder="2">zhang2020_iov_edge</bcf:citekey>
-    <bcf:citekey order="16" intorder="3">kalalas2025_ai_driven_monitoring</bcf:citekey>
+    <bcf:citekey order="7" intorder="3">mahale2025_review_predictive_maintenance</bcf:citekey>
+    <bcf:citekey order="7" intorder="4">sae2022_j1978_obdii_scan_tool</bcf:citekey>
+    <bcf:citekey order="8" intorder="1">nhtsa2018_critical_reasons_crashes</bcf:citekey>
+    <bcf:citekey order="9" intorder="1">laprensa2025_fallas_vehiculos</bcf:citekey>
+    <bcf:citekey order="9" intorder="2">laprensa2025_fallas_autos</bcf:citekey>
+    <bcf:citekey order="10" intorder="1">selvaraj2023_advanced_telematics</bcf:citekey>
+    <bcf:citekey order="11" intorder="1">kalalas2025_ai_driven_monitoring</bcf:citekey>
+    <bcf:citekey order="12" intorder="1">singh2021_obdii_iot</bcf:citekey>
+    <bcf:citekey order="12" intorder="2">dabarera2022_iot_vehicle_management</bcf:citekey>
+    <bcf:citekey order="13" intorder="1">tormos2025_explainable_ai</bcf:citekey>
+    <bcf:citekey order="13" intorder="2">mahale2025_review_predictive_maintenance</bcf:citekey>
+    <bcf:citekey order="14" intorder="1">mahale2025_review_predictive_maintenance</bcf:citekey>
+    <bcf:citekey order="15" intorder="1">michailidis2025_obdii_review</bcf:citekey>
+    <bcf:citekey order="15" intorder="2">zhang2020_iov_edge</bcf:citekey>
+    <bcf:citekey order="15" intorder="3">kalalas2025_ai_driven_monitoring</bcf:citekey>
+    <bcf:citekey order="16" intorder="1">sae2022_j1978_obdii_scan_tool</bcf:citekey>
+    <bcf:citekey order="16" intorder="2">mahale2025_review_predictive_maintenance</bcf:citekey>
+    <bcf:citekey order="16" intorder="3">tormos2025_explainable_ai</bcf:citekey>
     <bcf:citekey order="17" intorder="1">sae2022_j1978_obdii_scan_tool</bcf:citekey>
-    <bcf:citekey order="17" intorder="2">mahale2025_review_predictive_maintenance</bcf:citekey>
-    <bcf:citekey order="17" intorder="3">tormos2025_explainable_ai</bcf:citekey>
-    <bcf:citekey order="18" intorder="1">sae2022_j1978_obdii_scan_tool</bcf:citekey>
-    <bcf:citekey order="18" intorder="2">michailidis2025_obdii_review</bcf:citekey>
-    <bcf:citekey order="19" intorder="1">zhang2020_iov_edge</bcf:citekey>
-    <bcf:citekey order="19" intorder="2">kalalas2025_ai_driven_monitoring</bcf:citekey>
+    <bcf:citekey order="17" intorder="2">michailidis2025_obdii_review</bcf:citekey>
+    <bcf:citekey order="18" intorder="1">zhang2020_iov_edge</bcf:citekey>
+    <bcf:citekey order="18" intorder="2">kalalas2025_ai_driven_monitoring</bcf:citekey>
+    <bcf:citekey order="19" intorder="1">sae2022_j1978_obdii_scan_tool</bcf:citekey>
+    <bcf:citekey order="19" intorder="2">michailidis2025_obdii_review</bcf:citekey>
+    <bcf:citekey order="19" intorder="3">zhang2020_iov_edge</bcf:citekey>
     <bcf:citekey order="20" intorder="1">sae2022_j1978_obdii_scan_tool</bcf:citekey>
     <bcf:citekey order="20" intorder="2">michailidis2025_obdii_review</bcf:citekey>
-    <bcf:citekey order="20" intorder="3">zhang2020_iov_edge</bcf:citekey>
-    <bcf:citekey order="21" intorder="1">sae2022_j1978_obdii_scan_tool</bcf:citekey>
-    <bcf:citekey order="21" intorder="2">michailidis2025_obdii_review</bcf:citekey>
-    <bcf:citekey order="21" intorder="3">mahale2025_review_predictive_maintenance</bcf:citekey>
-    <bcf:citekey order="22" intorder="1">shafi2018_vehicle_remote_health</bcf:citekey>
-    <bcf:citekey order="23" intorder="1">singh2021_obdii_iot</bcf:citekey>
-    <bcf:citekey order="23" intorder="2">dabarera2022_iot_vehicle_management</bcf:citekey>
-    <bcf:citekey order="24" intorder="1">meseguer2017_drivingstyles</bcf:citekey>
-    <bcf:citekey order="25" intorder="1">camposferreira2023_vehicle_driver_monitoring</bcf:citekey>
-    <bcf:citekey order="26" intorder="1">yen2021_universal_obdii</bcf:citekey>
-    <bcf:citekey order="27" intorder="1">zhang2020_iov_edge</bcf:citekey>
-    <bcf:citekey order="27" intorder="2">kalalas2025_ai_driven_monitoring</bcf:citekey>
-    <bcf:citekey order="27" intorder="3">selvaraj2023_advanced_telematics</bcf:citekey>
-    <bcf:citekey order="27" intorder="4">michailidis2025_obdii_review</bcf:citekey>
-    <bcf:citekey order="27" intorder="5">tormos2025_explainable_ai</bcf:citekey>
+    <bcf:citekey order="20" intorder="3">mahale2025_review_predictive_maintenance</bcf:citekey>
+    <bcf:citekey order="21" intorder="1">shafi2018_vehicle_remote_health</bcf:citekey>
+    <bcf:citekey order="22" intorder="1">singh2021_obdii_iot</bcf:citekey>
+    <bcf:citekey order="22" intorder="2">dabarera2022_iot_vehicle_management</bcf:citekey>
+    <bcf:citekey order="23" intorder="1">meseguer2017_drivingstyles</bcf:citekey>
+    <bcf:citekey order="24" intorder="1">camposferreira2023_vehicle_driver_monitoring</bcf:citekey>
+    <bcf:citekey order="25" intorder="1">yen2021_universal_obdii</bcf:citekey>
+    <bcf:citekey order="26" intorder="1">zhang2020_iov_edge</bcf:citekey>
+    <bcf:citekey order="26" intorder="2">kalalas2025_ai_driven_monitoring</bcf:citekey>
+    <bcf:citekey order="26" intorder="3">selvaraj2023_advanced_telematics</bcf:citekey>
+    <bcf:citekey order="27" intorder="1">michailidis2025_obdii_review</bcf:citekey>
+    <bcf:citekey order="27" intorder="2">tormos2025_explainable_ai</bcf:citekey>
     <bcf:citekey order="28" intorder="1">sae2022_j1978_obdii_scan_tool</bcf:citekey>
     <bcf:citekey order="28" intorder="2">epa2016_obd_information_exchange</bcf:citekey>
     <bcf:citekey order="29" intorder="1">sae2022_j1978_obdii_scan_tool</bcf:citekey>

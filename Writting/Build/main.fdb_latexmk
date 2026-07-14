@@ -1,12 +1,12 @@
 # Fdb version 4
-["biber Build/main"] 1783610633.78507 "Build/main.bcf" "Build/main.bbl" "Build/main" 1783610642.13678 0
-  "Build/main.bcf" 1783610641.97155 123268 e230c9465dd14f91b0ea954434abba70 "pdflatex"
+["biber Build/main"] 1784002071.47476 "Build/main.bcf" "Build/main.bbl" "Build/main" 1784003407.58021 0
+  "Build/main.bcf" 1784003407.41991 123264 45995d67083beec7087c93237ecfc7a0 "pdflatex"
   "Reference/references.bib" 1783573783.67006 13904 f498ab7b8a5a9fea8b18f73fb51512a1 ""
   (generated)
   "Build/main.bbl"
   "Build/main.blg"
   (rewritten before read)
-["pdflatex"] 1783610638.91777 "main.tex" "Build/main.pdf" "main" 1783610642.13708 0
+["pdflatex"] 1784003404.45293 "main.tex" "Build/main.pdf" "main" 1784003407.58046 0
   "/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2026/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -206,19 +206,26 @@
   "/usr/local/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1783208907 5573038 b99aad5e4898a9034e953632f940512b ""
   "/usr/local/texlive/2026/texmf-var/web2c/pdftex/pdflatex.fmt" 1774209607 3636776 dc5fa9b6b1453b9d196cd42edf876004 ""
   "/usr/local/texlive/2026/texmf.cnf" 1774209515 577 648cd9f92f9c0eac486f4c71c85cfbbe ""
-  "Build/main.aux" 1783610641.94985 75109 9553a9229176a1c04be5c83073df7e14 "pdflatex"
-  "Build/main.bbl" 1783610635.61661 62414 f7c6b673b1e671794c3dc0efb088fa62 "biber Build/main"
-  "Build/main.lof" 1783610641.97226 6623 e944eaba1bc4e92d4c3340f82abd1481 "pdflatex"
-  "Build/main.lot" 1783610641.9723 7583 f15e8e4227afc998fe8873bfb8120beb "pdflatex"
-  "Build/main.out" 1783610641.97053 32333 7c0cbe7322fe7d55fff6ce8a7b674714 "pdflatex"
-  "Build/main.run.xml" 1783610641.97212 2412 a14d7b0021cfb58933eab0e0321f79a4 "pdflatex"
-  "Build/main.toc" 1783610641.97219 14742 3d2acfc400cd4d416d3e871c34aa4cf6 "pdflatex"
+  "Build/main.aux" 1784003407.39949 79711 99ac4b9109dcef7abb222fe74825bb1f "pdflatex"
+  "Build/main.bbl" 1784002090.57441 62414 f6f4a0bcdfa8237c56ae25866d4c09f6 "biber Build/main"
+  "Build/main.lof" 1784003407.42062 8294 d3406435272ea27286dc9eff8e1df18d "pdflatex"
+  "Build/main.lot" 1784003407.42068 7993 4c16dadab94783645be04e2d4f649920 "pdflatex"
+  "Build/main.out" 1784003407.41902 32573 7526b09b5356cd08ade674ee6ab8e68d "pdflatex"
+  "Build/main.run.xml" 1784003407.42047 2412 a14d7b0021cfb58933eab0e0321f79a4 "pdflatex"
+  "Build/main.toc" 1784003407.42052 14819 bff53971fa415099c7473fbbc35dcd5a "pdflatex"
   "Figures/ai_zscore_deviation_index.png" 1783440627.13782 60923 634bb62e36d35316d2fc5d360084dd82 ""
+  "Figures/ai_zscore_deviation_index_highway.png" 1784003358.25113 152621 43b4d788d2ed2e90337dd32932c29560 ""
   "Figures/can_bus_access_procedure.png" 1783258096.5389 23994 dea52f0f557acea05c3bba9a737a62de ""
   "Figures/can_high_speed_bus_levels.png" 1783258094.82502 13731 230f6309a6989a9e519aedf412a8a918 ""
   "Figures/datawrapper_coolant_c.png" 1783429074.52509 246637 9e1df0d9c90ce3dccc6905353214aac9 ""
   "Figures/datawrapper_engine_load_pct.png" 1783429078.33414 245360 5a20af7619d1e69410feee321221608c ""
   "Figures/datawrapper_fuel_rate_lph.png" 1783429082.23553 294068 6b0b3fd1f8664a941f8b8feceaa5e3c7 ""
+  "Figures/datawrapper_highway_coolant_c.png" 1784001873.67381 148015 0e23f9b216816b13be3b7617e8d011b2 ""
+  "Figures/datawrapper_highway_engine_load_pct.png" 1784001877.98727 261569 933c97fccfdb99a871166be2d0ea8677 ""
+  "Figures/datawrapper_highway_fuel_rate_lph.png" 1784001883.95561 277256 41627a74c21165a551bccc4edd639721 ""
+  "Figures/datawrapper_highway_rpm.png" 1784001869.32873 277588 f1177a8b99b898f7391938932172bbbe ""
+  "Figures/datawrapper_highway_speed_kmh.png" 1784001863.79463 186186 410618e2cb2902f0272c53c181dc9dbb ""
+  "Figures/datawrapper_highway_zscore_overlay.png" 1784001888.56322 563322 2ef37272b1e20d5de800b0ed556ef644 ""
   "Figures/datawrapper_rpm.png" 1783429070.94369 391043 15668f5e51c3edccff81bfdf0a5f1074 ""
   "Figures/datawrapper_speed_kmh.png" 1783429065.9775 383416 2836ecf9c7205c26328b96dcd36372d7 ""
   "Figures/datawrapper_zscore_overlay.png" 1783429086.9057 746176 f8e6595d18c044897b160c532d0a43c1 ""
@@ -263,7 +270,7 @@
   "Figures/test_autosense_adapter_powered.jpg" 1783427021.28258 830506 68c813364d6e27209c3d152db7aa3ecf ""
   "Figures/test_obd_simulator_generic.jpg" 1783427897.57537 682227 92d0d0daa51d735057c45370bbaee543 ""
   "Figures/test_real_passat_2016.jpg" 1783427021.68012 671380 a8e2dc45c1f0396892e6c8bf7e600c27 ""
-  "main.tex" 1783610620.87815 335023 ab5cbc161dad591e6cba114b5057d9c9 ""
+  "main.tex" 1784003386.62309 295646 3a9c1611bb5e0b269f69854799ea3a1e ""
   (generated)
   "Build/main.aux"
   "Build/main.bcf"

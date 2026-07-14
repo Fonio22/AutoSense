@@ -455,8 +455,8 @@
       \strng{authornamehash}{4cd4b81eac3caf7f23b51ec2f54c0558}
       \strng{authorfullhash}{4cd4b81eac3caf7f23b51ec2f54c0558}
       \strng{authorfullhashraw}{4cd4b81eac3caf7f23b51ec2f54c0558}
-      \field{sortinit}{9}
-      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{sortinit}{8}
+      \field{sortinithash}{a231b008ebf0ecbe0b4d96dcc159445f}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{number}{DOT HS 812 506}
@@ -475,8 +475,8 @@
       \endverb
     \endentry
     \entry{laprensa2025_fallas_vehiculos}{online}{}{}
-      \field{sortinit}{1}
-      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
       \field{labeltitlesource}{title}
       \field{title}{Fallas mecánicas en vehículos: Principales causas de accidentes}
       \field{urlday}{23}
@@ -504,8 +504,8 @@
       \strng{authornamehash}{e59aacbf246e4a95f3067123d9243c5d}
       \strng{authorfullhash}{e59aacbf246e4a95f3067123d9243c5d}
       \strng{authorfullhashraw}{e59aacbf246e4a95f3067123d9243c5d}
-      \field{sortinit}{1}
-      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{note}{www.laprensa.hn}

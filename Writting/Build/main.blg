@@ -1,14 +1,14 @@
 [0] Config.pm:328> INFO - This is Biber 2.21
 [0] Config.pm:331> INFO - Logfile is 'Build/main.blg'
-[31] biber-darwin:342> INFO - === Thu Jul  9, 2026, 10:23:55
-[40] Biber.pm:421> INFO - Reading 'Build/main.bcf'
-[89] Biber.pm:1002> INFO - Found 37 citekeys in bib section 0
-[97] Biber.pm:4487> INFO - Processing section 0
-[102] Biber.pm:4678> INFO - Looking for bibtex file 'Reference/references.bib' for section 0
-[103] bibtex.pm:1713> INFO - LaTeX decoding ...
-[114] bibtex.pm:1519> INFO - Found BibTeX data source 'Reference/references.bib'
-[216] UCollate.pm:68> INFO - Overriding locale 'es-ES' defaults 'variable = shifted' with 'variable = non-ignorable'
-[216] UCollate.pm:68> INFO - Overriding locale 'es-ES' defaults 'normalization = NFD' with 'normalization = prenormalized'
-[216] Biber.pm:4307> INFO - Sorting list 'none/global//global/global/global' of type 'entry' with template 'none' and locale 'es-ES'
-[229] bbl.pm:676> INFO - Writing 'Build/main.bbl' with encoding 'UTF-8'
-[237] bbl.pm:779> INFO - Output to Build/main.bbl
+[38] biber-darwin:342> INFO - === Mon Jul 13, 2026, 23:08:10
+[47] Biber.pm:421> INFO - Reading 'Build/main.bcf'
+[99] Biber.pm:1002> INFO - Found 37 citekeys in bib section 0
+[106] Biber.pm:4487> INFO - Processing section 0
+[113] Biber.pm:4678> INFO - Looking for bibtex file 'Reference/references.bib' for section 0
+[114] bibtex.pm:1713> INFO - LaTeX decoding ...
+[130] bibtex.pm:1519> INFO - Found BibTeX data source 'Reference/references.bib'
+[357] UCollate.pm:68> INFO - Overriding locale 'es-ES' defaults 'variable = shifted' with 'variable = non-ignorable'
+[357] UCollate.pm:68> INFO - Overriding locale 'es-ES' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[357] Biber.pm:4307> INFO - Sorting list 'none/global//global/global/global' of type 'entry' with template 'none' and locale 'es-ES'
+[384] bbl.pm:676> INFO - Writing 'Build/main.bbl' with encoding 'UTF-8'
+[391] bbl.pm:779> INFO - Output to Build/main.bbl

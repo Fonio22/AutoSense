@@ -1,0 +1,102 @@
+{
+  "artifacts": {
+    "core_csv": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_highway_only/highway_only_core_20min.csv",
+    "z_csv": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_highway_only/highway_only_core_20min_zscore.csv",
+    "metric_csvs": {
+      "speed_kmh": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_highway_only/speed_kmh_20min.csv",
+      "rpm": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_highway_only/rpm_20min.csv",
+      "coolant_c": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_highway_only/coolant_c_20min.csv",
+      "engine_load_pct": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_highway_only/engine_load_pct_20min.csv",
+      "fuel_rate_lph": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_highway_only/fuel_rate_lph_20min.csv"
+    }
+  },
+  "selection": {
+    "sheet": "Highway_Only",
+    "segment_id": "seg_0232",
+    "sample_rows": 120
+  },
+  "summary": {
+    "segment_id": "seg_0232",
+    "sample_rows": 120,
+    "first_timestamp": "2026-06-06 12:20:50",
+    "last_timestamp": "2026-06-06 12:40:40",
+    "metrics": {
+      "speed_kmh": {
+        "mean": 91.5142,
+        "min": 78.9,
+        "max": 103.4
+      },
+      "rpm": {
+        "mean": 1899.7417,
+        "min": 1616.0,
+        "max": 2211.0
+      },
+      "coolant_c": {
+        "mean": 93.8633,
+        "min": 93.5,
+        "max": 94.1
+      },
+      "engine_load_pct": {
+        "mean": 32.9708,
+        "min": 9.6,
+        "max": 45.4
+      },
+      "fuel_rate_lph": {
+        "mean": 3.3311,
+        "min": 0.15,
+        "max": 4.7
+      }
+    },
+    "zscore": {
+      "raw_max_abs": 3.3456,
+      "smooth_window": 5,
+      "smooth_max_abs": 2.5855,
+      "smooth_mean_abs": 1.3286
+    }
+  },
+  "charts": [
+    {
+      "id": "v1ezP",
+      "title": "VW Passat 2016 - Highway - Velocidad (km/h)",
+      "csv": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_highway_only/speed_kmh_20min.csv",
+      "image": "/Users/antoniozhong/Documents/dev/autosense/Writting/Figures/datawrapper_highway_speed_kmh.png",
+      "edit_url": "https://app.datawrapper.de/chart/v1ezP/visualize"
+    },
+    {
+      "id": "jx4LI",
+      "title": "VW Passat 2016 - Highway - RPM",
+      "csv": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_highway_only/rpm_20min.csv",
+      "image": "/Users/antoniozhong/Documents/dev/autosense/Writting/Figures/datawrapper_highway_rpm.png",
+      "edit_url": "https://app.datawrapper.de/chart/jx4LI/visualize"
+    },
+    {
+      "id": "jmKH4",
+      "title": "VW Passat 2016 - Highway - Refrigerante (C)",
+      "csv": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_highway_only/coolant_c_20min.csv",
+      "image": "/Users/antoniozhong/Documents/dev/autosense/Writting/Figures/datawrapper_highway_coolant_c.png",
+      "edit_url": "https://app.datawrapper.de/chart/jmKH4/visualize"
+    },
+    {
+      "id": "wPUPX",
+      "title": "VW Passat 2016 - Highway - Carga del motor (%)",
+      "csv": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_highway_only/engine_load_pct_20min.csv",
+      "image": "/Users/antoniozhong/Documents/dev/autosense/Writting/Figures/datawrapper_highway_engine_load_pct.png",
+      "edit_url": "https://app.datawrapper.de/chart/wPUPX/visualize"
+    },
+    {
+      "id": "pXYPL",
+      "title": "VW Passat 2016 - Highway - Consumo instantaneo (L/h)",
+      "csv": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_highway_only/fuel_rate_lph_20min.csv",
+      "image": "/Users/antoniozhong/Documents/dev/autosense/Writting/Figures/datawrapper_highway_fuel_rate_lph.png",
+      "edit_url": "https://app.datawrapper.de/chart/pXYPL/visualize"
+    },
+    {
+      "id": "ZbD9D",
+      "title": "VW Passat 2016 - Highway - Z-Score Overlay",
+      "csv": "/Users/antoniozhong/Documents/dev/autosense/outputs/datawrapper_highway_only/highway_only_core_20min_zscore.csv",
+      "image": "/Users/antoniozhong/Documents/dev/autosense/Writting/Figures/datawrapper_highway_zscore_overlay.png",
+      "edit_url": "https://app.datawrapper.de/chart/ZbD9D/visualize"
+    }
+  ],
+  "overlay_chart_id": "ZbD9D"
+}
